@@ -2,7 +2,7 @@ name: Actualizar Agenda Deportiva
 
 on:
   schedule:
-    - cron: '20 * * * *'
+    - cron: '40 * * * *'
   workflow_dispatch:
 
 permissions:
