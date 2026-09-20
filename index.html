@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Deportiva - Hoy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 20px 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1150px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px; }
+        h1 { font-size: 1.6rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-controls { display: flex; gap: 10px; align-items: center; }
+        .btn-update { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .btn-update:hover { background: #059669; }
+        .last-update { font-size: 0.8rem; color: var(--text-muted); background: var(--card-bg); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
+        .stat-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
+        .stat-card.active-card { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
+        .stat-card .val { font-size: 1.2rem; font-weight: 700; color: var(--accent-blue); }
+        .stat-card .lbl { font-size: 0.72rem; color: var(--text-muted); }
+        .filter-container { display: flex; gap: 15px; margin-bottom: 15px; }
+        .search-input { padding: 12px 16px; border-radius: 10px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.95rem; outline: none; width: 100%; }
+        .search-input:focus { border-color: var(--accent-blue); }
+        .table-card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
+        table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
+        th { background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; padding: 16px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 14px 16px; border-bottom: 1px solid #283548; font-size: 0.95rem; word-break: break-word; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #243146; }
+        .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 5px 10px; border-radius: 8px; font-size: 0.82rem; white-space: nowrap; border: 1px solid #475569; }
+        .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
+        .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; white-space: nowrap; display: inline-block; }
+        .sport-tag { font-weight: 600; }
+        .comp-title { font-weight: 600; color: #38bdf8; }
+        .event-title { font-weight: 700; color: #ffffff; }
+        .tv-container { display: flex; flex-wrap: wrap; gap: 6px; }
+        .tv-badge { display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 1.1rem; }
+
+        /* --- VISTA ADAPTADA A MÓVILES --- */
+        @media (max-width: 768px) {
+            body { padding: 12px 8px; }
+            .table-card { background: transparent; border: none; box-shadow: none; overflow: visible; }
+            table, thead, tbody, th, td, tr { display: block; width: 100%; }
+            thead { display: none; }
+            tr {
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 14px;
+                margin-bottom: 12px;
+                padding: 14px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+            td {
+                padding: 3px 0;
+                border: none;
+            }
+            .date-col { display: none; }
+            .time-col { display: inline-block; width: auto; margin-right: 8px; }
+            .sport-col { display: inline-block; width: auto; float: right; }
+            .comp-col { clear: both; margin-top: 8px; }
+            .comp-title { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
+            .event-col { margin: 6px 0 10px 0; }
+            .event-title { font-size: 1.05rem; line-height: 1.35; }
+            .tv-col { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px; margin-top: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
+        <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
+        <div class="last-update">Última actualización: <strong>20/09/2026 - 10:35 (UTC)</strong></div>
+    </header>
+    <div class="stats-grid">
+        <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
+            <div><div class="lbl">Todos</div><div class="val">74</div></div><div style="font-size:1.3rem">📌</div>
+        </div>
+        <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
+            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">11</div></div><div style="font-size:1.3rem">⭐</div>
+        </div>
+        <div class="stat-card" id="card-fútbol" onclick="setFilter('fútbol')">
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">37</div></div><div style="font-size:1.3rem">⚽</div>
+        </div>
+        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">1</div></div><div style="font-size:1.3rem">🏀</div>
+        </div>
+        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">5</div></div><div style="font-size:1.3rem">🎾</div>
+        </div>
+        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">5</div></div><div style="font-size:1.3rem">🏎️</div>
+        </div>
+        <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
+            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">25</div></div><div style="font-size:1.3rem">🎯</div>
+        </div>
+    </div>
+    <div class="filter-container">
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar por partido, equipo, tenista o canal TV...">
+    </div>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 110px;">Fecha</th>
+                    <th style="width: 85px;">Hora</th>
+                    <th style="width: 120px;">Deporte</th>
+                    <th style="width: 180px;">Competición</th>
+                    <th>Evento / Partido</th>
+                    <th style="width: 240px;">Canal de TV</th>
+                </tr>
+            </thead>
+            <tbody id="agendaTable">
+                
+            <tr data-sport="tenis" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">0:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                <td class="comp-col"><div class="comp-title">Copa Davis</div></td>
+                <td class="event-col"><div class="event-title">Canadá - Francia</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
+            </tr>
+            
+            <tr data-sport="tenis" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">1:05</span></td>
+                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                <td class="comp-col"><div class="comp-title">WTA Torneo de Guadalajara</div></td>
+                <td class="event-col"><div class="event-title">P. Stearns - I. Jovic</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">1:15</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NCAA</div></td>
+                <td class="event-col"><div class="event-title">Washington Athletics - Eastern Washington</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">1:30</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NCAA</div></td>
+                <td class="event-col"><div class="event-title">Northwestern - Colorado Buffaloes</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">1:30</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NCAA</div></td>
+                <td class="event-col"><div class="event-title">Maryland - Virginia Tech</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="motor" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">1:30</span></td>
+                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                <td class="comp-col"><div class="comp-title">NASCAR</div></td>
+                <td class="event-col"><div class="event-title">NASCAR Cup Series Bristol Speedway (Ver en directo)</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">2:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Título Interino</div></td>
+                <td class="event-col"><div class="event-title">I. Cruz - N. Bravo</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 2(M73)</span></div></td>
+            </tr>
+            
+            <tr data-sport="motor" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">8:45</span></td>
+                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                <td class="comp-col"><div class="comp-title">Red Bull MotoGP Rookies Cup</div></td>
+                <td class="event-col"><div class="event-title">Red Bull MotoGP Rookies Cup G.P. Austria (Red Bull Ring) (Ver en directo) 3(M196) Red Bull TV</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 3(M196)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">9:10</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Campeonato Mundial Ruta</div></td>
+                <td class="event-col"><div class="event-title">Campeonato Mundial Ruta Media Maratón RTVE Play</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span></div></td>
+            </tr>
+            
+            <tr data-sport="motor" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">11:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                <td class="comp-col"><div class="comp-title">Moto3</div></td>
+                <td class="event-col"><div class="event-title">Moto3 G.P. Austria (Red Bull Ring) (Ver en directo) MotoGP Videopass MotoGP(M71 O105)</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN MotoGP(M71 O105)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">12:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">División Honor Juvenil</div></td>
+                <td class="event-col"><div class="event-title">Villarreal Academy - Elche Academy</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Villarreal TV</span><span class="tv-badge">Facebook Live Villarreal CF</span><span class="tv-badge">Twitter Villarreal CF</span><span class="tv-badge">VillarrealCF YouTube</span><span class="tv-badge">Twitch VillarrealCF</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">12:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">División Honor Juvenil</div></td>
+                <td class="event-col"><div class="event-title">Osasuna Academy - Huesca Academy</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Osasuna TV</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">12:15</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Memorial José Luis Abós</div></td>
+                <td class="event-col"><div class="event-title">Casademont Zaragoza - UCAM Murcia CB</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Aragón Play</span></div></td>
+            </tr>
+            
+            <tr data-sport="motor" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">12:15</span></td>
+                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                <td class="comp-col"><div class="comp-title">Moto2</div></td>
+                <td class="event-col"><div class="event-title">Moto2 G.P. Austria (Red Bull Ring) (Ver en directo) MotoGP Videopass MotoGP(M71 O105)</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN MotoGP(M71 O105)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">12:15</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Eredivisie</div></td>
+                <td class="event-col"><div class="event-title">Feyenoord - Utrecht</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">12:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">Fiorentina - Napoli</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Liga de Campeones(M60 O115)</span><span class="tv-badge">DAZN</span><span class="tv-badge">Movistar Plus+(M7)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">13:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
+                <td class="event-col"><div class="event-title">Jaén FS - Noia Portus Apostoli FS</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">13:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                <td class="event-col"><div class="event-title">Energie Cottbus - St. Pauli</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">13:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Jupiler Pro League</div></td>
+                <td class="event-col"><div class="event-title">Antwerp - Saint-Gilloise</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">14:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga EA Sports</div></td>
+                <td class="event-col"><div class="event-title">Getafe - Málaga</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN LaLiga 2(M58 O114)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">14:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                <td class="event-col"><div class="event-title">Sabadell - Real Oviedo</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+            </tr>
+            
+            <tr data-sport="motor" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">14:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                <td class="comp-col"><div class="comp-title">MotoGP</div></td>
+                <td class="event-col"><div class="event-title">MotoGP G.P. Austria (Red Bull Ring) (Ver en directo) MotoGP Videopass MotoGP(M71 O105)</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN MotoGP(M71 O105)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">14:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Eredivisie</div></td>
+                <td class="event-col"><div class="event-title">AZ Alkmaar - SC Telstar</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">14:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Eredivisie</div></td>
+                <td class="event-col"><div class="event-title">Twente - PSV Eindhoven</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">14:50</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Mundial de Ciclismo en Ruta</div></td>
+                <td class="event-col"><div class="event-title">Mundial de Ciclismo en Ruta Contrarreloj Femenina RTVE Play (Ver en directo) HBO MAX</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                <td class="event-col"><div class="event-title">Bournemouth - Liverpool</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 1(M72)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                <td class="event-col"><div class="event-title">Leeds Utd - Crystal Palace</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 3(M196)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                <td class="event-col"><div class="event-title">Manchester City - Sunderland</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 2(M73)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">Frosinone - Como 1907</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">Parma - Genoa</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                <td class="event-col"><div class="event-title">Auxerre - Stade Brestois</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">15:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                <td class="event-col"><div class="event-title">Bayer Leverkusen - RB Leipzig</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">16:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">Grêmio - Palmeiras</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Liga de Campeones(M60 O115)</span><span class="tv-badge">M+ Vamos 3(53)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">16:15</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                <td class="event-col"><div class="event-title">AD Ceuta - Real Valladolid</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">16:15</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga EA Sports</div></td>
+                <td class="event-col"><div class="event-title">At. Madrid - Real Madrid</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN LaLiga(M55 O113)</span></div></td>
+            </tr>
+            
+            <tr data-sport="tenis" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">17:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                <td class="comp-col"><div class="comp-title">Copa Davis</div></td>
+                <td class="event-col"><div class="event-title">Chile - España</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span><span class="tv-badge">M+ Vamos(8 y 50)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">17:15</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                <td class="event-col"><div class="event-title">Nice - Lille</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">17:30</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Trofeo Ciudad de Zaragoza</div></td>
+                <td class="event-col"><div class="event-title">Casademont Zaragoza - Athinaikos</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Aragón Play</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">17:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                <td class="event-col"><div class="event-title">Fulham - Manchester Utd.</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 1(M72)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">17:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                <td class="event-col"><div class="event-title">Schalke 04 - SV Elversberg</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">Juventus - Atalanta</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                <td class="event-col"><div class="event-title">UD Las Palmas - Burgos CF</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga EA Sports</div></td>
+                <td class="event-col"><div class="event-title">Deportivo - Real Betis</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN LaLiga 2(M58 O114)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga EA Sports</div></td>
+                <td class="event-col"><div class="event-title">Villarreal - Levante</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ LALIGA(M54 O110)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                <td class="event-col"><div class="event-title">UD Almería - Celta B</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion 2(M59 O121)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Jupiler Pro League</div></td>
+                <td class="event-col"><div class="event-title">Club Brugge - Genk</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="ciclismo" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">18:35</span></td>
+                <td class="sport-col"><span class="sport-tag">🚴‍♂️ Ciclismo</span></td>
+                <td class="comp-col"><div class="comp-title">Mundial de Ciclismo en Ruta</div></td>
+                <td class="event-col"><div class="event-title">Mundial de Ciclismo en Ruta Contrarreloj Masculina RTVE Play (Ver en directo) HBO MAX</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
+                <td class="event-col"><div class="event-title">Viña Albali Valdepeñas - Osasuna Magna</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Liga portuguesa</div></td>
+                <td class="event-col"><div class="event-title">Santa Clara - SC Braga</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="baloncesto" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                <td class="comp-col"><div class="comp-title">Supercopa Endesa</div></td>
+                <td class="event-col"><div class="event-title">Joventut Badalona - Barça Basket</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">Movistar Plus+(M7)</span><span class="tv-badge">DAZN Baloncesto(M74 O126)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Atlanta Falcons - Carolina Panthers</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Baltimore Ravens - New Orleans Saints</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Chicago Bears - Minnesota Vikings</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 3(M196)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Houston Texans - Cincinnati Bengals</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">New England Patriots - Pittsburgh Steelers</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">New York Jets - Green Bay Packers</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Tampa Bay Buccaneers - Cleveland Browns</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Tennessee Titans - Philadelphia Eagles</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
+            </tr>
+            
+            <tr data-sport="tenis" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                <td class="comp-col"><div class="comp-title">Copa Davis</div></td>
+                <td class="event-col"><div class="event-title">Chile - España</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span><span class="tv-badge">M+ Vamos(8 y 50)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                <td class="event-col"><div class="event-title">Paderborn 07 - Hoffenheim</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">19:45</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Primera División Argentina</div></td>
+                <td class="event-col"><div class="event-title">San Lorenzo - Boca Juniors</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Liga de Campeones(M60 O115)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">20:45</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">AC Milan - US Lecce</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">20:45</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                <td class="event-col"><div class="event-title">O. Marseille - PSG</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">21:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                <td class="event-col"><div class="event-title">Leganés - Granada CF</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">21:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">LaLiga EA Sports</div></td>
+                <td class="event-col"><div class="event-title">Valencia CF - Real Sociedad</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ LALIGA(M54 O110)</span></div></td>
+            </tr>
+            
+            <tr data-sport="tenis" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">21:00</span></td>
+                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                <td class="comp-col"><div class="comp-title">Copa Davis</div></td>
+                <td class="event-col"><div class="event-title">Chile - España</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span><span class="tv-badge">M+ Vamos(8 y 50)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">21:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                <td class="event-col"><div class="event-title">Corinthians - Fluminense</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Liga de Campeones 2(M61 O117)</span><span class="tv-badge">M+ Vamos 3(53)</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="true">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">21:30</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Liga portuguesa</div></td>
+                <td class="event-col"><div class="event-title">FC Porto - Benfica</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="fútbol" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">22:00</span></td>
+                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                <td class="comp-col"><div class="comp-title">Primera División Argentina</div></td>
+                <td class="event-col"><div class="event-title">Rosario Central - Argentinos Juniors</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Liga de Campeones(M60 O115)</span><span class="tv-badge">M+ Vamos 2(51)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">22:05</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Denver Broncos - Jacksonville Jaguars</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">22:05</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Los Angeles Chargers - Las Vegas Raiders</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">22:25</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Arizona Cardinals - Seattle Seahawks</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 1(M72)</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">22:25</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">Dallas Cowboys - Washington Commanders</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            <tr data-sport="otros" data-filtered="false">
+                <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                <td class="time-col"><span class="time-badge">22:25</span></td>
+                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                <td class="comp-col"><div class="comp-title">NFL</div></td>
+                <td class="event-col"><div class="event-title">San Francisco 49ers - Miami Dolphins</div></td>
+                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
+            </tr>
+            
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+let currentFilter = 'todos';
+function setFilter(filterType) {
+    currentFilter = filterType;
+    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
+    const activeCard = document.getElementById('card-' + filterType);
+    if (activeCard) activeCard.classList.add('active-card');
+    applyFilters();
+}
+function filterTable() { applyFilters(); }
+function applyFilters() {
+    const searchFilter = document.getElementById('searchInput').value.toLowerCase();
+    const table = document.getElementById('agendaTable');
+    const trs = table.getElementsByTagName('tr');
+    let visibleCount = 0;
+    for (let i = 0; i < trs.length; i++) {
+        const tr = trs[i];
+        if (tr.id === 'dynamicEmptyState') continue;
+        const rowSport = (tr.getAttribute('data-sport') || '').toLowerCase();
+        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const text = tr.textContent.toLowerCase();
+        let matchesFilter = currentFilter === 'todos' ? true : (currentFilter === 'filtrados' ? isFiltered : rowSport === currentFilter);
+        const matchesSearch = text.includes(searchFilter);
+        if (matchesFilter && matchesSearch) {
+            tr.style.display = '';
+            visibleCount++;
+        } else {
+            tr.style.display = 'none';
+        }
+    }
+    let emptyRow = document.getElementById('dynamicEmptyState');
+    if (visibleCount === 0) {
+        if (!emptyRow) {
+            emptyRow = document.createElement('tr');
+            emptyRow.id = 'dynamicEmptyState';
+            emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección y búsqueda.</td>';
+            table.appendChild(emptyRow);
+        } else { emptyRow.style.display = ''; }
+    } else { if (emptyRow) emptyRow.style.display = 'none'; }
+}
+</script>
+</body>
+</html>
