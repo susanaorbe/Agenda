@@ -1,0 +1,18 @@
+name: Actualizar Agenda Deportiva
+
+on:
+  schedule:
+    - cron: '05 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  # (el resto de tus pasos del trabajo)
