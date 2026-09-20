@@ -27,7 +27,7 @@ jobs:
 
       - name: Ejecutar script de actualización
         run: |
-          python tu_script.py
+          python generate_agenda.py
 
       - name: Commit y push de cambios
         run: |
