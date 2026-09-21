@@ -22,7 +22,7 @@ EXCLUDED_CHANNELS = (
     "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
     "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
     "liga futve youtube", "ligafutve app", 
-    "m+ #vamos bar(307)", "m+ #vamos bar 2(308)", "m+ laliga hdr(m440 o111)", "mediaset infinuty",
+    "m+ #vamos bar(307)", "m+ #vamos bar 2(308)", "m+ laliga hdr(m440 o111)", "mediaset infinity",
     "motogp videopass", "movistar+ lite", 
     "nba league pass", 
     "onefootball", "orange fútbol 1(107)", 
