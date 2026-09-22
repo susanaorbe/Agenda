@@ -266,6 +266,10 @@ def fetch_and_parse_agenda():
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     results, seen_events = [], set()
 
+    # Añade este print temporal para ver todo lo que encuentra sobre el Real Madrid
+    if "madrid" in event_str.lower():
+        print(f"ENCONTRADO EN WIDGET: Hora: {time_clean} | Evento: {event_str} | Canales: {allowed_tv_list}")
+    
     try:
         response = requests.get(WIDGET_URL, headers=headers, timeout=15)
         if response.status_code == 200:
