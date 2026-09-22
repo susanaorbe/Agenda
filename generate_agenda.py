@@ -8,34 +8,36 @@ from bs4 import BeautifulSoup
 # -------------------------------------------------------------------
 WIDGET_URL = "https://widgets.futbolenlatv.com/partidos/agenda?color=005df8&culture=es-ES"
 
-EXCLUDED_CHANNELS = (
-    "andalucía tv", "antel tv internacional", "apple tv", "aragón deporte", 
-    "aragon deporte", "aragón deportes", "aragon deportes", "aragón tv", 
-    "aragon tv", "asobal tv", "atp tennis tv", 
-    "betevé web", 
-    "cayotv youtube(ver)", "cmmplay(castilla-lm)",
-    "dazn 1 bar(m148)", "dazn 2 bar(m149)", "deportes tvcanaria youtube", 
-    "ehf tv", "esport3(cataluña)", "esport3 web", "eurovision sports tv", 
-    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fiba youtube", 
-    "flamengo tv youtube", 
-    "hbo max", 
-    "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
-    "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
-    "liga futve youtube", "ligafutve app", 
-    "m+ #vamos bar(307)", "m+ #vamos bar 2(308)", "m+ laliga hdr(m440 o111)", "mediaset infinity",
-    "motogp videopass", "movistar+ lite", 
-    "nba league pass", 
-    "onefootball", "orange fútbol 1(107)", 
-    "real sociedad tv youtube", "red bull tv", "rtve play", 
-    "siroko tv", "streaming / web", 
-    "tv canaria", "tv footballclub(acceder)", "tv melilla", "tv galicia",
-    "tvg(galicia)", "tvg2(galicia)", "tvg web", "tv3(cataluña)",
-    "tv5monde", "twitch btvesports", 
-    "uefa tv", 
-    "ver en directo", "ver partido",
-    "win sports tv youtube", "wta tv",  
-    "101 tv(málaga)", "9tv león"
-)
+#EXCLUDED_CHANNELS = (
+#    "andalucía tv", "antel tv internacional", "apple tv", "aragón deporte", 
+#    "aragon deporte", "aragón deportes", "aragon deportes", "aragón tv", 
+#    "aragon tv", "asobal tv", "atp tennis tv", 
+#    "betevé web", 
+#    "cayotv youtube(ver)", "cmmplay(castilla-lm)",
+#    "dazn 1 bar(m148)", "dazn 2 bar(m149)", "deportes tvcanaria youtube", 
+#    "ehf tv", "esport3(cataluña)", "esport3 web", "eurovision sports tv", 
+#    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fiba youtube", 
+#    "flamengo tv youtube", 
+#    "hbo max", 
+#    "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
+#    "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
+#    "liga futve youtube", "ligafutve app", 
+#    "m+ #vamos bar(307)", "m+ #vamos bar 2(308)", "m+ laliga hdr(m440 o111)", "mediaset infinity",
+#    "motogp videopass", "movistar+ lite", 
+#    "nba league pass", 
+#    "onefootball", "orange fútbol 1(107)", 
+#    "real sociedad tv youtube", "red bull tv", "rtve play", 
+#    "siroko tv", "streaming / web", 
+#    "tv canaria", "tv footballclub(acceder)", "tv melilla", "tv galicia",
+#    "tvg(galicia)", "tvg2(galicia)", "tvg web", "tv3(cataluña)",
+#    "tv5monde", "twitch btvesports", 
+#    "uefa tv", 
+#    "ver en directo", "ver partido",
+#    "win sports tv youtube", "wta tv",  
+#    "101 tv(málaga)", "9tv león"
+#)
+
+EXCLUDED_CHANNELS = ()
 
 EXCLUDED_CHANNELS_SET = set(EXCLUDED_CHANNELS)
 EXCLUDED_CHANNELS_RE = re.compile(r'(?:' + r'|'.join(map(re.escape, EXCLUDED_CHANNELS)) + r')', re.IGNORECASE)
