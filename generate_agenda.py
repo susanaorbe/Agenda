@@ -185,10 +185,11 @@ def matches_strict_criteria(blob, tv_channels_list):
     for ch in tv_channels_list:
         if EXCLUDED_CHANNELS_RE.search(ch):
             return False
-            
-    if WOMEN_MATCH.search(blob) and REAL_MADRID.search(blob):
+
+    # PRIORIDAD ABSOLUTA: Si juega el Real Madrid, incluir siempre
+    if REAL_MADRID.search(blob):
         return True
-        
+
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
 
@@ -196,8 +197,7 @@ def matches_strict_criteria(blob, tv_channels_list):
         return False
 
     if WOMEN_MATCH.search(blob):
-        if not REAL_MADRID.search(blob):
-            return False
+        return False
 
     if MOTOR_SERIES.search(blob):
         return True
@@ -209,12 +209,6 @@ def matches_strict_criteria(blob, tv_channels_list):
         if DAVIS_RE.search(blob) and SPAIN_RE.search(blob):
             return True
         return bool(TENNIS_PLAYERS.search(blob))
-
-    if LIGAF_RE.search(blob):
-        return bool(REAL_MADRID.search(blob))
-
-    if PRIMERA_RFEF_RE.search(blob):
-        return bool(CASTILLA_RE.search(blob))
 
     if SPANISH_BIG_THREE.search(blob) or TOP3_FOREIGN.search(blob):
         return True
@@ -266,10 +260,6 @@ def fetch_and_parse_agenda():
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     results, seen_events = [], set()
 
-    # Añade este print temporal para ver todo lo que encuentra sobre el Real Madrid
-    if "madrid" in event_str.lower():
-        print(f"ENCONTRADO EN WIDGET: Hora: {time_clean} | Evento: {event_str} | Canales: {allowed_tv_list}")
-    
     try:
         response = requests.get(WIDGET_URL, headers=headers, timeout=15)
         if response.status_code == 200:
@@ -277,6 +267,11 @@ def fetch_and_parse_agenda():
             for item in soup.find_all(['div', 'tr', 'li']):
                 try:
                     time_clean, event_str, allowed_tv_list, tournament = parse_row_elements(item)
+                    
+                    # LOG DE DEPURACIÓN (Se ejecuta tras obtener event_str)
+                    if "madrid" in event_str.lower():
+                        print(f"ENCONTRADO EN WIDGET: Hora: '{time_clean}' | Evento: '{event_str}' | Canales: {allowed_tv_list}")
+
                     if not time_clean or not allowed_tv_list or event_str in ("", "Evento Deportivo"):
                         continue
 
@@ -522,4 +517,3 @@ if __name__ == "__main__":
         print(f"Archivo index.html generado con éxito. Eventos encontrados: {len(events)}")
     else:
         print("Atención: No se obtuvieron eventos de la fuente. Se conserva la agenda previa sin modificar index.html.")
-        
