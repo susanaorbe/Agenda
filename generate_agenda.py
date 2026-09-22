@@ -270,7 +270,7 @@ def fetch_and_parse_agenda():
                 try:
                     time_clean, event_str, allowed_tv_list, tournament = parse_row_elements(item)
                     
-                    # LOG DE DEPURACIÓN (Se ejecuta tras obtener event_str)
+                    # LOG DE DEPURACIÓN
                     if "madrid" in event_str.lower():
                         print(f"ENCONTRADO EN WIDGET: Hora: '{time_clean}' | Evento: '{event_str}' | Canales: {allowed_tv_list}")
 
@@ -281,16 +281,19 @@ def fetch_and_parse_agenda():
                     tv_blob = " ".join(allowed_tv_list).lower()
                     blob = f"{text_block.lower()} {tv_blob}"
 
-                    if GOLF_RE.search(blob) or "movistar golf" in tv_blob:
-                        continue
-                    if EXCLUDED_BLOB_RE.search(blob):
-                        continue
-                        
-                    if PRIMERA_RFEF_RE.search(blob) and not CASTILLA_RE.search(blob):
-                        continue
-                        
-                    if LIGAF_RE.search(blob) and not REAL_MADRID.search(blob):
-                        continue
+                    # Detectar si el evento es del Real Madrid
+                    is_real_madrid = bool(REAL_MADRID.search(blob))
+
+                    # Si NO es el Real Madrid, aplicamos las exclusiones generales
+                    if not is_real_madrid:
+                        if GOLF_RE.search(blob) or "movistar golf" in tv_blob:
+                            continue
+                        if EXCLUDED_BLOB_RE.search(blob):
+                            continue
+                        if PRIMERA_RFEF_RE.search(blob) and not CASTILLA_RE.search(blob):
+                            continue
+                        if LIGAF_RE.search(blob):
+                            continue
 
                     event_key = (time_clean, event_str.lower())
                     if event_key in seen_events: continue
