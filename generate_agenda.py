@@ -506,7 +506,13 @@ function applyFilters() {{
 
 if __name__ == "__main__":
     events = fetch_and_parse_agenda()
-    html_content = generate_html(events)
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html_content)
-    print("Archivo index.html generado con éxito.")
+    
+    # Validación de seguridad: solo sobrescribir si la lista no está vacía
+    if len(events) > 0:
+        html_content = generate_html(events)
+        with open("index.html", "w", encoding="utf-8") as f:
+            f.write(html_content)
+        print(f"Archivo index.html generado con éxito. Eventos encontrados: {len(events)}")
+    else:
+        print("Atención: No se obtuvieron eventos de la fuente. Se conserva la agenda previa sin modificar index.html.")
+        
