@@ -182,13 +182,13 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
     return "Otros", "🎯", raw_tournament if len(rt_lower) > 2 and rt_lower != "competición" else "Evento Deportivo"
 
 def matches_strict_criteria(blob, tv_channels_list):
-    if WOMEN_MATCH.search(blob) and REAL_MADRID.search(blob):
-        return True
-    
     for ch in tv_channels_list:
         if EXCLUDED_CHANNELS_RE.search(ch):
             return False
-
+            
+    if WOMEN_MATCH.search(blob) and REAL_MADRID.search(blob):
+        return True
+        
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
 
