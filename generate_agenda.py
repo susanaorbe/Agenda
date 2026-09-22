@@ -184,13 +184,13 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
     return "Otros", "🎯", raw_tournament if len(rt_lower) > 2 and rt_lower != "competición" else "Evento Deportivo"
 
 def matches_strict_criteria(blob, tv_channels_list):
+    # Si es del Real Madrid, marcar SIEMPRE como evento filtrado principal
+    if REAL_MADRID.search(blob):
+        return True
+
     for ch in tv_channels_list:
         if EXCLUDED_CHANNELS_RE.search(ch):
             return False
-
-    # PRIORIDAD ABSOLUTA: Si juega el Real Madrid, incluir siempre
-    if REAL_MADRID.search(blob):
-        return True
 
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
@@ -204,19 +204,11 @@ def matches_strict_criteria(blob, tv_channels_list):
     if MOTOR_SERIES.search(blob):
         return True
 
-    if BASKET_COMPS.search(blob):
-        return bool(REAL_MADRID.search(blob))
-
-    if TENNIS_INDICATORS.search(blob) or TENNIS_PLAYERS.search(blob):
-        if DAVIS_RE.search(blob) and SPAIN_RE.search(blob):
-            return True
-        return bool(TENNIS_PLAYERS.search(blob))
-
     if SPANISH_BIG_THREE.search(blob) or TOP3_FOREIGN.search(blob):
         return True
 
     return False
-
+    
 def parse_row_elements(item):
     text_full = item.get_text(" | ", strip=True)
     time_match = TIME_RE.search(text_full)
