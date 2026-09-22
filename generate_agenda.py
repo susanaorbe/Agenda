@@ -183,7 +183,7 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
 
 def matches_strict_criteria(blob, tv_channels_list):
     if WOMEN_MATCH.search(blob) and REAL_MADRID.search(blob):
-    return True
+        return True
     
     for ch in tv_channels_list:
         if EXCLUDED_CHANNELS_RE.search(ch):
