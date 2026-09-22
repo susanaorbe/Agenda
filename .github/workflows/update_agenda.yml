@@ -31,6 +31,10 @@ jobs:
 
       - name: Commit y push de cambios
         run: |
-          git add .
-          git commit -m "Actualización automática de agenda" || echo "No hay cambios"
-          git push
+          git add index.html
+          if git diff --staged --quiet; then
+            echo "No hay cambios en index.html, se omite el commit."
+          else
+            git commit -m "Actualización automática de agenda"
+            git push
+          fi
