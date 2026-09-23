@@ -8,39 +8,37 @@ from bs4 import BeautifulSoup
 # -------------------------------------------------------------------
 WIDGET_URL = "https://widgets.futbolenlatv.com/partidos/agenda?color=005df8&culture=es-ES"
 
-#EXCLUDED_CHANNELS = (
-#    "andalucía tv", "antel tv internacional", "apple tv", "aragón deporte", 
-#    "aragon deporte", "aragón deportes", "aragon deportes", "aragón tv", 
-#    "aragon tv", "asobal tv", "atp tennis tv", 
-#    "betevé web", 
-#    "cayotv youtube(ver)", "cmmplay(castilla-lm)",
-#    "dazn 1 bar(m148)", "dazn 2 bar(m149)", "deportes tvcanaria youtube", 
-#    "ehf tv", "esport3(cataluña)", "esport3 web", "eurovision sports tv", 
-#    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fiba youtube", 
-#    "flamengo tv youtube", 
-#    "hbo max", 
-#    "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
-#    "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
-#    "liga futve youtube", "ligafutve app", 
-#    "m+ #vamos bar(307)", "m+ #vamos bar 2(308)", "m+ laliga hdr(m440 o111)", "mediaset infinity",
-#    "motogp videopass", "movistar+ lite", 
-#    "nba league pass", 
-#    "onefootball", "orange fútbol 1(107)", 
-#    "real sociedad tv youtube", "red bull tv", "rtve play", 
-#    "siroko tv", "streaming / web", 
-#    "tv canaria", "tv footballclub(acceder)", "tv melilla", "tv galicia",
-#    "tvg(galicia)", "tvg2(galicia)", "tvg web", "tv3(cataluña)",
-#    "tv5monde", "twitch btvesports", 
-#    "uefa tv", 
-#    "ver en directo", "ver partido",
-#    "win sports tv youtube", "wta tv",  
-#    "101 tv(málaga)", "9tv león"
-#)
-
-EXCLUDED_CHANNELS = ()
+EXCLUDED_CHANNELS = (
+    "andalucía tv", "antel tv internacional", "apple tv", "aragón deporte", 
+    "aragon deporte", "aragón deportes", "aragon deportes", "aragón tv", 
+    "aragon tv", "asobal tv", "atp tennis tv", 
+    "betevé web", 
+    "cayotv youtube(ver)", "cmmplay(castilla-lm)",
+    "dazn 1 bar(m148)", "dazn 2 bar(m149)", "deportes tvcanaria youtube", 
+    "ehf tv", "esport3(cataluña)", "esport3 web", "eurovision sports tv", 
+    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fiba youtube", 
+    "flamengo tv youtube", 
+    "hbo max", 
+    "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
+    "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
+    "liga futve youtube", "ligafutve app", 
+    "m+ #vamos bar(307)", "m+ #vamos bar 2(308)", "m+ laliga hdr(m440 o111)", "mediaset infinity",
+    "motogp videopass", "movistar+ lite", 
+    "nba league pass", 
+    "onefootball", "orange fútbol 1(107)", 
+    "real sociedad tv youtube", "red bull tv", "rtve play", 
+    "siroko tv", "streaming / web", 
+    "tv canaria", "tv footballclub(acceder)", "tv melilla", "tv galicia",
+    "tvg(galicia)", "tvg2(galicia)", "tvg web", "tv3(cataluña)",
+    "tv5monde", "twitch btvesports", 
+    "uefa tv", 
+    "ver en directo", "ver partido",
+    "win sports tv youtube", "wta tv",  
+    "101 tv(málaga)", "9tv león"
+)
 
 EXCLUDED_CHANNELS_SET = set(EXCLUDED_CHANNELS)
-EXCLUDED_CHANNELS_RE = re.compile(r'(?:' + r'|'.join(map(re.escape, EXCLUDED_CHANNELS)) + r')', re.IGNORECASE)
+EXCLUDED_CHANNELS_RE = re.compile(r'(?:' + r'|'.join(map(re.escape, EXCLUDED_CHANNELS)) + r')', re.IGNORECASE) if EXCLUDED_CHANNELS else None
 
 def build_re(patterns):
     return re.compile(r'(?:' + r'|'.join(patterns) + r')', re.IGNORECASE)
@@ -118,6 +116,9 @@ MOTO3_RE = re.compile(r"moto3", re.IGNORECASE)
 def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
     rt_lower = raw_tournament.lower() if raw_tournament else ""
 
+    if ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob):
+        return "Fútbol", "⚽", raw_tournament if raw_tournament else "UEFA Women's Champions League"
+        
     if BASKET_GENERAL.search(blob):
         if "euroliga" in blob or "euroleague" in blob: comp = "Euroliga"
         elif "nba" in blob: comp = "NBA"
@@ -184,13 +185,14 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
     return "Otros", "🎯", raw_tournament if len(rt_lower) > 2 and rt_lower != "competición" else "Evento Deportivo"
 
 def matches_strict_criteria(blob, tv_channels_list):
-    # Si es del Real Madrid, marcar SIEMPRE como evento filtrado principal
-    if REAL_MADRID.search(blob):
+    is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
+    if REAL_MADRID.search(blob) or is_uwcl:
         return True
 
-    for ch in tv_channels_list:
-        if EXCLUDED_CHANNELS_RE.search(ch):
-            return False
+    if EXCLUDED_CHANNELS_RE:
+        for ch in tv_channels_list:
+            if EXCLUDED_CHANNELS_RE.search(ch):
+                return False
 
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
@@ -262,10 +264,6 @@ def fetch_and_parse_agenda():
                 try:
                     time_clean, event_str, allowed_tv_list, tournament = parse_row_elements(item)
                     
-                    # LOG DE DEPURACIÓN
-                    if "madrid" in event_str.lower():
-                        print(f"ENCONTRADO EN WIDGET: Hora: '{time_clean}' | Evento: '{event_str}' | Canales: {allowed_tv_list}")
-
                     if not time_clean or not allowed_tv_list or event_str in ("", "Evento Deportivo"):
                         continue
 
@@ -273,11 +271,10 @@ def fetch_and_parse_agenda():
                     tv_blob = " ".join(allowed_tv_list).lower()
                     blob = f"{text_block.lower()} {tv_blob}"
 
-                    # Detectar si el evento es del Real Madrid
                     is_real_madrid = bool(REAL_MADRID.search(blob))
+                    is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
 
-                    # Si NO es el Real Madrid, aplicamos las exclusiones generales
-                    if not is_real_madrid:
+                    if not (is_real_madrid or is_uwcl):
                         if GOLF_RE.search(blob) or "movistar golf" in tv_blob:
                             continue
                         if EXCLUDED_BLOB_RE.search(blob):
@@ -506,7 +503,6 @@ function applyFilters() {{
 if __name__ == "__main__":
     events = fetch_and_parse_agenda()
     
-    # Validación de seguridad: solo sobrescribir si la lista no está vacía
     if len(events) > 0:
         html_content = generate_html(events)
         with open("index.html", "w", encoding="utf-8") as f:
