@@ -57,8 +57,6 @@ HOCKEY_RE = build_re([r"\bfih\b", r"\bhockey\b", r"\bhokey\b"])
 FUTSAL_RE = build_re([r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b"])
 HANDBALL_RE = build_re([r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b"])
 TENNIS_INDICATORS = build_re([r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bwimbledon\b", r"\broland garros\b", r"\bus open\b", r"\bopen de australia\b", r"\bmasters\b", r"\bdavis\b", r"\bcopa davis\b"])
-DAVIS_RE = re.compile(r"\bcopa davis\b|\bdavis cup\b|\bdavis\b", re.IGNORECASE)
-SPAIN_RE = re.compile(r"\bespaña\b", re.IGNORECASE)
 
 WOMEN_MATCH = build_re([r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b"])
 REAL_MADRID = re.compile(r"\breal madrid\b", re.IGNORECASE)
@@ -69,7 +67,9 @@ TIME_RE = re.compile(r'\b\d{1,2}:\d{2}\b')
 CLEAN_TV_RE = re.compile(r'\(ver en directo\)|ver partido', re.IGNORECASE)
 PUNCTUATION_RE = re.compile(r'[\|,]+')
 SPACES_RE = re.compile(r'\s+')
-TV_IDENTIFIERS_RE = re.compile(r'(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport)', re.IGNORECASE)
+
+# Se añade 'disney' y 'disney\+' a los identificadores de canales válidos
+TV_IDENTIFIERS_RE = re.compile(r'(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|disney)', re.IGNORECASE)
 
 FOOTBALL_MAP = [
     (re.compile(r"\bchampions league\b|\bchampions\b", re.IGNORECASE), "UEFA Champions League"), 
@@ -197,10 +197,11 @@ def matches_strict_criteria(blob, tv_channels_list):
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
 
-    if EXCLUDED_BLOB_RE.search(blob):
-        return False
+    if EXCLUDED_BLOB_RE and not is_uwcl:
+        if EXCLUDED_BLOB_RE.search(blob):
+            return False
 
-    if WOMEN_MATCH.search(blob):
+    if WOMEN_MATCH.search(blob) and not is_uwcl:
         return False
 
     if MOTOR_SERIES.search(blob):
@@ -253,7 +254,7 @@ def parse_row_elements(item):
     return time_clean, matchup, channels, tournament
 
 def fetch_and_parse_agenda():
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) BeautifulSoup/5.0"}
     results, seen_events = [], set()
 
     try:
@@ -274,6 +275,7 @@ def fetch_and_parse_agenda():
                     is_real_madrid = bool(REAL_MADRID.search(blob))
                     is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
 
+                    # Permite la Champions Femenina explícitamente sin aplicar filtros genéricos de fútbol femenino
                     if not (is_real_madrid or is_uwcl):
                         if GOLF_RE.search(blob) or "movistar golf" in tv_blob:
                             continue
@@ -376,7 +378,6 @@ def generate_html(events):
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }}
         .empty-state {{ text-align: center; padding: 40px; color: var(--text-muted); font-size: 1.1rem; }}
 
-        /* --- VISTA ADAPTADA A MÓVILES --- */
         @media (max-width: 768px) {{
             body {{ padding: 12px 8px; }}
             .table-card {{ background: transparent; border: none; box-shadow: none; overflow: visible; }}
@@ -390,10 +391,7 @@ def generate_html(events):
                 padding: 14px;
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             }}
-            td {{
-                padding: 3px 0;
-                border: none;
-            }}
+            td {{ padding: 3px 0; border: none; }}
             .date-col {{ display: none; }}
             .time-col {{ display: inline-block; width: auto; margin-right: 8px; }}
             .sport-col {{ display: inline-block; width: auto; float: right; }}
