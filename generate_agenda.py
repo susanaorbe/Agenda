@@ -10,15 +10,14 @@ WIDGET_URL = "https://widgets.futbolenlatv.com/partidos/agenda?color=005df8&cult
 
 EXCLUDED_CHANNELS = (
     "andalucía tv", "antel tv internacional", "apple tv", "aragón deporte", 
-    "aragon deporte", "aragón deportes", "aragon deportes", "aragón play"
-    "aragón tv", "aragon tv", "asobal tv", "atp tennis tv", 
+    "aragon deporte", "aragón deportes", "aragon deportes", "aragón tv", 
+    "aragon tv", "asobal tv", "atp tennis tv", 
     "betevé web", 
     "cayotv youtube(ver)", "cmmplay(castilla-lm)",
     "dazn 1 bar(m148)", "dazn 2 bar(m149)", "deportes tvcanaria youtube", 
-    "ehf tv", "esport3(cataluña)", "esport3 web", "etbk(país vasco)",
-    "etb1(país vasco)", "eurovision sports tv", 
-    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fff tv youtube",
-    "fiba youtube", "flamengo tv youtube", 
+    "ehf tv", "esport3(cataluña)", "esport3 web", "eurovision sports tv", 
+    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fiba youtube", 
+    "flamengo tv youtube", 
     "hbo max", 
     "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
     "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
@@ -57,7 +56,9 @@ BASKET_GENERAL = build_re([r"\bbaloncesto\b", r"\bbasket\b", r"\bacb\b", r"\beur
 HOCKEY_RE = build_re([r"\bfih\b", r"\bhockey\b", r"\bhokey\b"])
 FUTSAL_RE = build_re([r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b"])
 HANDBALL_RE = build_re([r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b"])
-TENNIS_INDICATORS = build_re([r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bwimbledon\b", r"\broland garros\b", r"\bus open\b", r"\bopen de australia\b", r"\bmasters\b", r"\bdavis\b", r"\bcopa davis\b"])
+
+# Se añade billie jean king cup a la lista de tenis
+TENNIS_INDICATORS = build_re([r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bwimbledon\b", r"\broland garros\b", r"\bus open\b", r"\bopen de australia\b", r"\bmasters\b", r"\bdavis\b", r"\bcopa davis\b", r"\bbillie jean king cup\b"])
 
 WOMEN_MATCH = build_re([r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b"])
 REAL_MADRID = re.compile(r"\breal madrid\b", re.IGNORECASE)
@@ -68,10 +69,9 @@ TIME_RE = re.compile(r'\b\d{1,2}:\d{2}\b')
 CLEAN_TV_RE = re.compile(r'\(ver en directo\)|ver partido', re.IGNORECASE)
 PUNCTUATION_RE = re.compile(r'[\|,]+')
 SPACES_RE = re.compile(r'\s+')
-
-# Se añade 'disney' y 'disney\+' a los identificadores de canales válidos
 TV_IDENTIFIERS_RE = re.compile(r'(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|disney)', re.IGNORECASE)
 
+# Se añade División de Honor Juvenil al mapa de fútbol
 FOOTBALL_MAP = [
     (re.compile(r"\bchampions league\b|\bchampions\b", re.IGNORECASE), "UEFA Champions League"), 
     (re.compile(r"\beuropa league\b", re.IGNORECASE), "UEFA Europa League"), 
@@ -86,12 +86,15 @@ FOOTBALL_MAP = [
     (re.compile(r"\bcopa del rey\b", re.IGNORECASE), "Copa del Rey"), 
     (re.compile(r"\bcoppa italia\b", re.IGNORECASE), "Coppa Italia"), 
     (re.compile(r"\bliga f\b|\bligaf\b", re.IGNORECASE), "Liga F"),
+    (re.compile(r"\bdivisi[oó]n de honor juvenil\b", re.IGNORECASE), "División de Honor Juvenil"),
     (re.compile(r"\beredivisie\b", re.IGNORECASE), "Eredivisie"),
     (re.compile(r"\bjupiler\b|\bjupiler pro league\b", re.IGNORECASE), "Jupiler Pro League")
 ]
 
+# Se añade Billie Jean King Cup al mapa de tenis
 TENNIS_MAP = [
     (re.compile(r"\bcopa davis\b|\bdavis cup\b|\bdavis\b", re.IGNORECASE), "Copa Davis"),
+    (re.compile(r"\bbillie jean king cup\b", re.IGNORECASE), "Billie Jean King Cup"),
     (re.compile(r"\bus open\b", re.IGNORECASE), "US Open"),
     (re.compile(r"\bwimbledon\b", re.IGNORECASE), "Wimbledon"),
     (re.compile(r"\broland garros\b", re.IGNORECASE), "Roland Garros"),
@@ -143,7 +146,7 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
     if TENNIS_INDICATORS.search(blob) or TENNIS_PLAYERS.search(blob):
         for pat, name in TENNIS_MAP:
             if pat.search(blob):
-                prefix = "" if name == "Copa Davis" else ("WTA " if 'wta' in blob or 'wta' in tv_blob else "ATP ")
+                prefix = "" if name in ["Copa Davis", "Billie Jean King Cup"] else ("WTA " if 'wta' in blob or 'wta' in tv_blob else "ATP ")
                 return "Tenis", "🎾", f"{prefix}{name}".strip()
         return "Tenis", "🎾", raw_tournament if len(rt_lower) > 2 and rt_lower not in ["tenis", "atp", "wta"] else ("WTA Tour" if 'wta' in blob else "ATP Tour")
 
@@ -185,9 +188,13 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
 
     return "Otros", "🎯", raw_tournament if len(rt_lower) > 2 and rt_lower != "competición" else "Evento Deportivo"
 
+
 def matches_strict_criteria(blob, tv_channels_list):
-    # 1. Si es del Real Madrid, marcar SIEMPRE como evento filtrado/destacado (incluye el Real Madrid Femenino)
-    if REAL_MADRID.search(blob):
+    is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
+    is_real_madrid = bool(REAL_MADRID.search(blob))
+    
+    # 1. Si es del Real Madrid (masculino o femenino), SIEMPRE se marca como favorito
+    if is_real_madrid:
         return True
 
     # 2. Exclusiones de canales
@@ -196,21 +203,24 @@ def matches_strict_criteria(blob, tv_channels_list):
             if EXCLUDED_CHANNELS_RE.search(ch):
                 return False
 
-    # 3. Exclusiones por deporte o categoría
+    # 3. Exclusiones por motor u otros eventos no deseados
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
-
-    # Si es Champions Femenina pero NO es el Real Madrid, continúa la evaluación de reglas generales
-    is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
-
-    if EXCLUDED_BLOB_RE and not is_uwcl:
-        if EXCLUDED_BLOB_RE.search(blob):
-            return False
-
-    # Si es fútbol femenino de otros equipos (que no sean Real Madrid ni Champions League), no marcar como filtrado
-    if WOMEN_MATCH.search(blob) and not is_uwcl:
+        
+    if EXCLUDED_BLOB_RE.search(blob):
         return False
 
+    # 4. Filtros para deporte femenino: 
+    # Si es UWCL y NO es el Real Madrid, se descarta de favoritos.
+    # Si es cualquier otro partido femenino y NO es el Real Madrid, se descarta.
+    if is_uwcl or WOMEN_MATCH.search(blob):
+        return False
+
+    # 5. Favoritos específicos: Tenis con España (Billie Jean King Cup o Davis Cup)
+    if ("billie jean king cup" in blob or "copa davis" in blob or "davis cup" in blob) and "españa" in blob:
+        return True
+
+    # 6. Resto de favoritos por defecto
     if MOTOR_SERIES.search(blob):
         return True
 
@@ -261,7 +271,7 @@ def parse_row_elements(item):
     return time_clean, matchup, channels, tournament
 
 def fetch_and_parse_agenda():
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) BeautifulSoup/5.0"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     results, seen_events = [], set()
 
     try:
@@ -282,7 +292,6 @@ def fetch_and_parse_agenda():
                     is_real_madrid = bool(REAL_MADRID.search(blob))
                     is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
 
-                    # Permite la Champions Femenina explícitamente sin aplicar filtros genéricos de fútbol femenino
                     if not (is_real_madrid or is_uwcl):
                         if GOLF_RE.search(blob) or "movistar golf" in tv_blob:
                             continue
