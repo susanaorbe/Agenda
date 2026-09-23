@@ -44,7 +44,7 @@ EXCLUDED_CHANNELS_RE = re.compile(r'(?:' + r'|'.join(map(re.escape, EXCLUDED_CHA
 def build_re(patterns):
     return re.compile(r'(?:' + r'|'.join(patterns) + r')', re.IGNORECASE)
 
-SPANISH_BIG_THREE = build_re([r"\breal madrid\b", r"\bbarcelona\b", r"\bbarça\b", r"\batletico de madrid\b", r"\batlético de madrid\b"])
+SPANISH_BIG_THREE = build_re([r"\breal madrid\b", r"\brm castilla\b", r"\bbarcelona\b", r"\bbarça\b", r"\batletico de madrid\b", r"\batlético de madrid\b"])
 TOP3_FOREIGN = build_re([r"\bmanchester city\b", r"\barsenal\b", r"\bliverpool\b", r"\binter de milán\b", r"\binter milan\b", r"\bnapoles\b", r"\bjuventus\b", r"\bbayern de múnich\b", r"\bbayern munich\b", r"\bbayern\b", r"\bborussia dortmund\b", r"\bdortmund\b", r"\brb leipzig\b", r"\bleipzig\b", r"\bparis saint-germain\b", r"\bpsg\b", r"\bolympique de marsella\b", r"\bmarsella\b", r"\brc lens\b", r"\blens\b", r"\bsporting cp\b", r"\bsporting de portugal\b", r"\bbenfica\b", r"\bporto\b"])
 TENNIS_PLAYERS = build_re([r"\balcaraz\b", r"\bjódar\b", r"\bdavidovich\b", r"\bmunar\b", r"\bmérida\b", r"\blandaluce\b", r"\bcarreño\b", r"\bbucsa\b", r"\bbouzas\b", r"\bbadosa\b", r"\bquevedo\b", r"\bsinner\b", r"\bzverev\b", r"\bsabalenka\b", r"\brybakina\b", r"\bpegula\b"])
 
@@ -61,7 +61,7 @@ HANDBALL_RE = build_re([r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\
 TENNIS_INDICATORS = build_re([r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bwimbledon\b", r"\broland garros\b", r"\bus open\b", r"\bopen de australia\b", r"\bmasters\b", r"\bdavis\b", r"\bcopa davis\b", r"\bbillie jean king cup\b"])
 
 WOMEN_MATCH = build_re([r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b"])
-REAL_MADRID = re.compile(r"\breal madrid\b", re.IGNORECASE)
+REAL_MADRID = re.compile(r"\breal madrid\b|\brm castilla\b|\br\.?\s*madrid\b", re.IGNORECASE)
 
 FOOTBALL_INDICATORS = build_re([r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b", r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b", r"\bprimera\b", r"\bsegunda\b", r"\btercera\b", r"\brfef\b", r"\bliga f\b", r"\beredivisie\b", r"\bjupiler\b", r"\bjuvenil\b", r"\bdivisi[oó]n de honor\b"])
 
@@ -107,7 +107,7 @@ EXCLUDED_BLOB_RE = re.compile(r"preol[ií]mpico\s+femenino|nfl\s+pretemporada|f1
 MOTO_STRICT_EXCLUDE_RE = re.compile(r"\bmoto2\b|\bmoto3\b|rookies\s+cup|rookies|\bnascar\b|\bfórmula 2\b|\bfórmula 3\b|\bf2\b|\bf3\b", re.IGNORECASE)
 LIGAF_RE = re.compile(r"\bliga f\b|\bligaf\b|\bprimera division femenina\b|\bcopa de la reina\b", re.IGNORECASE)
 PRIMERA_RFEF_RE = re.compile(r"\bprimera federaci[oó]n\b|\bprimera rfef\b", re.IGNORECASE)
-CASTILLA_RE = re.compile(r"\breal madrid castilla\b|\bcastilla\b", re.IGNORECASE)
+CASTILLA_RE = re.compile(r"\breal madrid castilla\b|\brm castilla\b|\bcastilla\b", re.IGNORECASE)
 
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 F2_RE = re.compile(r"\bf2\b", re.IGNORECASE)
