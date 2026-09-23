@@ -185,22 +185,28 @@ def get_general_sport_and_comp(blob, raw_tournament, tv_blob):
     return "Otros", "🎯", raw_tournament if len(rt_lower) > 2 and rt_lower != "competición" else "Evento Deportivo"
 
 def matches_strict_criteria(blob, tv_channels_list):
-    is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
-    if REAL_MADRID.search(blob) or is_uwcl:
+    # 1. Si es del Real Madrid, marcar SIEMPRE como evento filtrado/destacado (incluye el Real Madrid Femenino)
+    if REAL_MADRID.search(blob):
         return True
 
+    # 2. Exclusiones de canales
     if EXCLUDED_CHANNELS_RE:
         for ch in tv_channels_list:
             if EXCLUDED_CHANNELS_RE.search(ch):
                 return False
 
+    # 3. Exclusiones por deporte o categoría
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
+
+    # Si es Champions Femenina pero NO es el Real Madrid, continúa la evaluación de reglas generales
+    is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
 
     if EXCLUDED_BLOB_RE and not is_uwcl:
         if EXCLUDED_BLOB_RE.search(blob):
             return False
 
+    # Si es fútbol femenino de otros equipos (que no sean Real Madrid ni Champions League), no marcar como filtrado
     if WOMEN_MATCH.search(blob) and not is_uwcl:
         return False
 
