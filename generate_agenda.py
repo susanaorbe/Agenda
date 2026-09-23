@@ -10,14 +10,15 @@ WIDGET_URL = "https://widgets.futbolenlatv.com/partidos/agenda?color=005df8&cult
 
 EXCLUDED_CHANNELS = (
     "andalucía tv", "antel tv internacional", "apple tv", "aragón deporte", 
-    "aragon deporte", "aragón deportes", "aragon deportes", "aragón tv", 
-    "aragon tv", "asobal tv", "atp tennis tv", 
+    "aragon deporte", "aragón deportes", "aragon deportes", "aragón play"
+    "aragón tv", "aragon tv", "asobal tv", "atp tennis tv", 
     "betevé web", 
     "cayotv youtube(ver)", "cmmplay(castilla-lm)",
     "dazn 1 bar(m148)", "dazn 2 bar(m149)", "deportes tvcanaria youtube", 
-    "ehf tv", "esport3(cataluña)", "esport3 web", "eurovision sports tv", 
-    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fiba youtube", 
-    "flamengo tv youtube", 
+    "ehf tv", "esport3(cataluña)", "esport3 web", "etbk(país vasco)",
+    "etb1(país vasco)", "eurovision sports tv", 
+    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fff tv youtube",
+    "fiba youtube", "flamengo tv youtube", 
     "hbo max", 
     "laliga tv bar", "laliga tv m2", "laliga tv m3", "laliga tv m4", 
     "laliga tv m5", "laliga+ plus", "la 7(castilla y león)", "liga futve", 
