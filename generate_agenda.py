@@ -28,7 +28,7 @@ EXCLUDED_CHANNELS = (
     "nba league pass", 
     "onefootball", "orange fútbol 1(107)", 
     "real sociedad tv youtube", "red bull tv", "rtve play", 
-    "siroko tv", "streaming / web", 
+    "sefutbol youtube", "siroko tv", "streaming / web", 
     "tv canaria", "tv footballclub(acceder)", "tv melilla", "tv galicia",
     "tvg(galicia)", "tvg2(galicia)", "tvg web", "tv3(cataluña)",
     "tv5monde", "twitch btvesports", 
@@ -196,26 +196,38 @@ def matches_strict_criteria(blob, tv_channels_list):
     is_uwcl = ("champions" in blob or "uwcl" in blob) and ("femenina" in blob or "femenino" in blob or "women" in blob)
     is_real_madrid = bool(REAL_MADRID.search(blob))
     
+    # 1. Real Madrid siempre es favorito
     if is_real_madrid:
         return True
 
+    # 2. Exclusiones de canales
     if EXCLUDED_CHANNELS_RE:
         for ch in tv_channels_list:
             if EXCLUDED_CHANNELS_RE.search(ch):
                 return False
 
+    # 3. Exclusiones de motor u otros descartes globales
     if MOTO_STRICT_EXCLUDE_RE.search(blob):
         return False
         
     if EXCLUDED_BLOB_RE.search(blob):
         return False
 
+    # 4. Descarte de fútbol femenino que no sea Real Madrid
     if is_uwcl or WOMEN_MATCH.search(blob):
         return False
 
+    # 5. BALONCESTO: Solo Real Madrid o Selección Española en favoritos
+    if BASKET_GENERAL.search(blob):
+        if "españa" in blob or "spain" in blob:
+            return True
+        return False
+
+    # 6. Favoritos específicos: Tenis con España (Billie Jean King Cup o Davis Cup)
     if ("billie jean king cup" in blob or "copa davis" in blob or "davis cup" in blob) and "españa" in blob:
         return True
 
+    # 7. Resto de favoritos por defecto (Motor, Fútbol de los Grandes)
     if MOTOR_SERIES.search(blob):
         return True
 
