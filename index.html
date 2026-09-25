@@ -3,104 +3,530 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Agenda Deportiva - Hoy</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
     <style>
-        :root { --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 20px 12px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 1150px; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px; }
-        h1 { font-size: 1.6rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header-controls { display: flex; gap: 10px; align-items: center; }
-        .btn-update { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
-        .btn-update:hover { background: #059669; }
-        .last-update { font-size: 0.8rem; color: var(--text-muted); background: var(--card-bg); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
-        .stat-card:hover { border-color: var(--accent-blue); transform: translateY(-2px); }
-        .stat-card.active-card { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 15px rgba(59, 130, 246, 0.2); }
-        .stat-card .val { font-size: 1.2rem; font-weight: 700; color: var(--accent-blue); }
-        .stat-card .lbl { font-size: 0.72rem; color: var(--text-muted); }
-        .filter-container { display: flex; gap: 15px; margin-bottom: 15px; }
-        .search-input { padding: 12px 16px; border-radius: 10px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.95rem; outline: none; width: 100%; }
-        .search-input:focus { border-color: var(--accent-blue); }
-        .table-card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
-        table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-        th { background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; padding: 16px; border-bottom: 1px solid var(--border-color); }
-        td { padding: 14px 16px; border-bottom: 1px solid #283548; font-size: 0.95rem; word-break: break-word; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #243146; }
-        .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 5px 10px; border-radius: 8px; font-size: 0.82rem; white-space: nowrap; border: 1px solid #475569; }
-        .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
-        .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 6px 10px; border-radius: 8px; font-size: 0.9rem; white-space: nowrap; display: inline-block; }
-        .sport-tag { font-weight: 600; }
-        .comp-title { font-weight: 600; color: #38bdf8; }
-        .event-title { font-weight: 700; color: #ffffff; }
-        .tv-container { display: flex; flex-wrap: wrap; gap: 6px; }
-        .tv-badge { display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; }
-        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); font-size: 1.1rem; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px 12px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1150px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(
+                135deg,
+                #60a5fa,
+                #a78bfa
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-update {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-update:hover {
+            background: #059669;
+        }
+
+        .last-update {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            text-align: right;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(100px, 1fr)
+            );
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .stat-card.active-card {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.15);
+            box-shadow:
+                0 0 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .stat-card .val {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .stat-card .lbl {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            width: 100%;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow:
+                0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            table-layout: fixed;
+        }
+
+        th {
+            background: #111827;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #283548;
+            font-size: 0.95rem;
+            word-break: break-word;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #243146;
+        }
+
+        .date-badge {
+            display: inline-block;
+            background: #334155;
+            color: #f8fafc;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            border: 1px solid #475569;
+        }
+
+        .date-badge.today {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .time-badge {
+            background: #0284c7;
+            color: white;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .sport-tag {
+            font-weight: 600;
+        }
+
+        .comp-title {
+            font-weight: 600;
+            color: #38bdf8;
+        }
+
+        .event-title {
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .tv-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tv-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
 
         @media (max-width: 768px) {
-            body { padding: 12px 8px; }
-            .table-card { background: transparent; border: none; box-shadow: none; overflow: visible; }
-            table, thead, tbody, th, td, tr { display: block; width: 100%; }
-            thead { display: none; }
+
+            body {
+                padding: 12px 8px;
+            }
+
+            .table-card {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                overflow: visible;
+            }
+
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+                width: 100%;
+            }
+
+            thead {
+                display: none;
+            }
+
             tr {
                 background: var(--card-bg);
                 border: 1px solid var(--border-color);
                 border-radius: 14px;
                 margin-bottom: 12px;
                 padding: 14px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                box-shadow:
+                    0 4px 12px rgba(0, 0, 0, 0.2);
             }
-            td { padding: 3px 0; border: none; }
-            .date-col { display: none; }
-            .time-col { display: inline-block; width: auto; margin-right: 8px; }
-            .sport-col { display: inline-block; width: auto; float: right; }
-            .comp-col { clear: both; margin-top: 8px; }
-            .comp-title { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
-            .event-col { margin: 6px 0 10px 0; }
-            .event-title { font-size: 1.05rem; line-height: 1.35; }
-            .tv-col { border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 8px; margin-top: 6px; }
+
+            td {
+                padding: 3px 0;
+                border: none;
+            }
+
+            .date-col {
+                display: none;
+            }
+
+            .time-col {
+                display: inline-block;
+                width: auto;
+                margin-right: 8px;
+            }
+
+            .sport-col {
+                display: inline-block;
+                width: auto;
+                float: right;
+            }
+
+            .comp-col {
+                clear: both;
+                margin-top: 8px;
+            }
+
+            .comp-title {
+                font-size: 0.82rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                opacity: 0.9;
+            }
+
+            .event-col {
+                margin: 6px 0 10px 0;
+            }
+
+            .event-title {
+                font-size: 1.05rem;
+                line-height: 1.35;
+            }
+
+            .tv-col {
+                border-top: 1px solid rgba(
+                    255,
+                    255,
+                    255,
+                    0.08
+                );
+                padding-top: 8px;
+                margin-top: 6px;
+            }
         }
     </style>
 </head>
+
 <body>
+
 <div class="container">
+
     <header>
-        <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
-        <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
-        <div class="last-update">Última actualización: <strong>25/09/2026 - 05:25 (UTC)</strong></div>
+
+        <div>
+            <h1>⚡ Agenda Deportiva - Hoy</h1>
+        </div>
+
+        <div class="header-controls">
+            <button
+                class="btn-update"
+                onclick="location.reload()"
+            >
+                🔄 Actualizar
+            </button>
+        </div>
+
+        <div class="last-update">
+            Última actualización:
+            <strong>25/09/2026 - 06:46 (UTC)</strong>
+        </div>
+
     </header>
+
     <div class="stats-grid">
-        <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">36</div></div><div style="font-size:1.3rem">📌</div>
+
+        <div
+            class="stat-card active-card"
+            id="card-todos"
+            onclick="setFilter('todos')"
+        >
+            <div>
+                <div class="lbl">Todos</div>
+                <div class="val">35</div>
+            </div>
+            <div style="font-size:1.3rem">📌</div>
         </div>
-        <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
-            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">5</div></div><div style="font-size:1.3rem">⭐</div>
+
+        <div
+            class="stat-card"
+            id="card-filtrados"
+            onclick="setFilter('filtrados')"
+        >
+            <div>
+                <div class="lbl">Filtrados</div>
+                <div
+                    class="val"
+                    style="color:#a78bfa"
+                >
+                    7
+                </div>
+            </div>
+            <div style="font-size:1.3rem">⭐</div>
         </div>
-        <div class="stat-card" id="card-fútbol" onclick="setFilter('fútbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">9</div></div><div style="font-size:1.3rem">⚽</div>
+
+        <div
+            class="stat-card"
+            id="card-fútbol"
+            onclick="setFilter('fútbol')"
+        >
+            <div>
+                <div class="lbl">Fútbol</div>
+                <div
+                    class="val"
+                    style="color:#10b981"
+                >
+                    9
+                </div>
+            </div>
+            <div style="font-size:1.3rem">⚽</div>
         </div>
-        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">4</div></div><div style="font-size:1.3rem">🏀</div>
+
+        <div
+            class="stat-card"
+            id="card-baloncesto"
+            onclick="setFilter('baloncesto')"
+        >
+            <div>
+                <div class="lbl">Baloncesto</div>
+                <div
+                    class="val"
+                    style="color:#f97316"
+                >
+                    3
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🏀</div>
         </div>
-        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">8</div></div><div style="font-size:1.3rem">🎾</div>
+
+        <div
+            class="stat-card"
+            id="card-tenis"
+            onclick="setFilter('tenis')"
+        >
+            <div>
+                <div class="lbl">Tenis</div>
+                <div
+                    class="val"
+                    style="color:#f59e0b"
+                >
+                    10
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🎾</div>
         </div>
-        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">4</div></div><div style="font-size:1.3rem">🏎️</div>
+
+        <div
+            class="stat-card"
+            id="card-motor"
+            onclick="setFilter('motor')"
+        >
+            <div>
+                <div class="lbl">Motor</div>
+                <div
+                    class="val"
+                    style="color:#ef4444"
+                >
+                    4
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🏎️</div>
         </div>
-        <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
-            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">10</div></div><div style="font-size:1.3rem">🎯</div>
+
+        <div
+            class="stat-card"
+            id="card-otros"
+            onclick="setFilter('otros')"
+        >
+            <div>
+                <div class="lbl">Otros</div>
+                <div
+                    class="val"
+                    style="color:#a8a29e"
+                >
+                    8
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🎯</div>
         </div>
+
     </div>
+
     <div class="filter-container">
-        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar por partido, equipo, tenista o canal TV...">
+
+        <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            onkeyup="filterTable()"
+            placeholder="🔍 Filtrar por partido, equipo, tenista o canal TV..."
+        >
+
     </div>
+
     <div class="table-card">
+
         <table>
+
             <thead>
                 <tr>
                     <th style="width: 110px;">Fecha</th>
@@ -111,381 +537,1615 @@
                     <th style="width: 240px;">Canal de TV</th>
                 </tr>
             </thead>
+
             <tbody id="agendaTable">
                 
-            <tr data-sport="otros" data-filtered="false" data-search="2:15 otros nfl green bay packers - atlanta falcons dazn dazn 2(m73)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">2:15</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">NFL</div></td>
-                <td class="event-col"><div class="event-title">Green Bay Packers - Atlanta Falcons</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 2(M73)</span></div></td>
-            </tr>
-            
-            <tr data-sport="motor" data-filtered="false" data-search="6:15 motor fórmula 1 fia fórmula 2 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">6:15</span></td>
-                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                <td class="event-col"><div class="event-title">FIA Fórmula 2 G.P. Azerbaiyán (Bakú) (Ver en directo)</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="false" data-search="7:00 tenis wta torneo de singapur e. mertens - m. chwalinska tennis channel - orange tv(131)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">7:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">WTA Torneo de Singapur</div></td>
-                <td class="event-col"><div class="event-title">E. Mertens - M. Chwalinska</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="false" data-search="8:30 tenis wta torneo de singapur x. wang - t. prozorova tennis channel - orange tv(131)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">8:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">WTA Torneo de Singapur</div></td>
-                <td class="event-col"><div class="event-title">X. Wang - T. Prozorova</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
-            </tr>
-            
-            <tr data-sport="motor" data-filtered="true" data-search="10:30 motor fórmula 1 fórmula 1 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">10:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                <td class="event-col"><div class="event-title">Fórmula 1 G.P. Azerbaiyán (Bakú) (Ver en directo)</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="true" data-search="11:00 tenis billie jean king cup república checa - españa teledeporte">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">11:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">Billie Jean King Cup</div></td>
-                <td class="event-col"><div class="event-title">República Checa - España</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span></div></td>
-            </tr>
-            
-            <tr data-sport="motor" data-filtered="false" data-search="12:15 motor fórmula 1 fia fórmula 2 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">12:15</span></td>
-                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                <td class="event-col"><div class="event-title">FIA Fórmula 2 G.P. Azerbaiyán (Bakú) (Ver en directo)</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="false" data-search="12:30 tenis wta torneo de singapur m. andreeva - l. fernández tennis channel - orange tv(131)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">12:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">WTA Torneo de Singapur</div></td>
-                <td class="event-col"><div class="event-title">M. Andreeva - L. Fernández</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="true" data-search="12:30 tenis billie jean king cup república checa - españa teledeporte">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">12:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">Billie Jean King Cup</div></td>
-                <td class="event-col"><div class="event-title">República Checa - España</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="false" data-search="14:00 tenis wta torneo de singapur m. sakkari - t. gibson tennis channel - orange tv(131)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">14:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">WTA Torneo de Singapur</div></td>
-                <td class="event-col"><div class="event-title">M. Sakkari - T. Gibson</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
-            </tr>
-            
-            <tr data-sport="motor" data-filtered="true" data-search="14:00 motor fórmula 1 fórmula 1 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">14:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                <td class="event-col"><div class="event-title">Fórmula 1 G.P. Azerbaiyán (Bakú) (Ver en directo)</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="14:00 otros laver cup c. ruud - f. cerúndolo teledeporte eurosport 2 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">14:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Laver Cup</div></td>
-                <td class="event-col"><div class="event-title">C. Ruud - F. Cerúndolo</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 2</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="14:00 otros tour de croacia tour de croacia etapa 4 etbk(país vasco) etb1(país vasco) (ver en directo) hbo max eurosport 1 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">14:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Tour de Croacia</div></td>
-                <td class="event-col"><div class="event-title">Tour de Croacia Etapa 4 ETBK(País Vasco) ETB1(País Vasco) (Ver en directo) HBO MAX</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="14:10 otros sportbike sportbike g.p. italia (cremona) (ver en directo) app gratis(ver gratis) dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">14:10</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Sportbike</div></td>
-                <td class="event-col"><div class="event-title">Sportbike G.P. Italia (Cremona) (Ver en directo) App Gratis(Ver gratis)</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="ciclismo" data-filtered="false" data-search="16:00 ciclismo mundial de ciclismo en ruta mundial de ciclismo en ruta carrera sub-23 masculina (ver en directo) hbo max eurosport 1 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">16:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🚴‍♂️ Ciclismo</span></td>
-                <td class="comp-col"><div class="comp-title">Mundial de Ciclismo en Ruta</div></td>
-                <td class="event-col"><div class="event-title">Mundial de Ciclismo en Ruta Carrera Sub-23 Masculina (Ver en directo) HBO MAX</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="16:00 otros laver cup j. mensik - b. nakashima teledeporte eurosport 2 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">16:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Laver Cup</div></td>
-                <td class="event-col"><div class="event-title">J. Mensik - B. Nakashima</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 2</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="16:00 otros supersport supersport g.p. italia (cremona) (ver en directo) app gratis(ver gratis) dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">16:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Supersport</div></td>
-                <td class="event-col"><div class="event-title">Supersport G.P. Italia (Cremona) (Ver en directo) App Gratis(Ver gratis)</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="17:30 otros europeo sub-21 finlandia - españa teledeporte">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">17:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Europeo Sub-21</div></td>
-                <td class="event-col"><div class="event-title">Finlandia - España</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="18:00 fútbol uefa nations league georgia - irlanda del norte dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">18:00</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Georgia - Irlanda del Norte</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="18:00 fútbol uefa nations league armenia - letonia dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">18:00</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Armenia - Letonia</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="19:00 otros liga asobal ademar león - bm cangas eurosport 2 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">19:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Liga ASOBAL</div></td>
-                <td class="event-col"><div class="event-title">Ademar León - BM Cangas</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Eurosport 2</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="baloncesto" data-filtered="false" data-search="19:00 baloncesto euroliga besiktas jk istanbul - valencia basket m+ baloncesto(m66)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">19:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                <td class="event-col"><div class="event-title">Besiktas JK Istanbul - Valencia Basket</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto(M66)</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="false" data-search="19:30 otros liga prime osasuna magna - palma futsal dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">19:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
-                <td class="event-col"><div class="event-title">Osasuna Magna - Palma Futsal</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="baloncesto" data-filtered="false" data-search="19:45 baloncesto euroliga fenerbahce istanbul - virtus bologna m+ baloncesto 2(m67)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">19:45</span></td>
-                <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                <td class="event-col"><div class="event-title">Fenerbahce Istanbul - Virtus Bologna</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto 2(M67)</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="false" data-search="20:00 tenis laver cup r. jódar - a. bublik teledeporte eurosport 1 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">Laver Cup</div></td>
-                <td class="event-col"><div class="event-title">R. Jódar - A. Bublik</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="baloncesto" data-filtered="false" data-search="20:00 baloncesto primera feb palmer mallorca palma - fibwi palma baloncesto tv baloncesto tv ppv">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                <td class="comp-col"><div class="comp-title">Primera FEB</div></td>
-                <td class="event-col"><div class="event-title">Palmer Mallorca Palma - Fibwi Palma</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">BalONcesto TV</span><span class="tv-badge">BalONcesto TV PPV</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:30 fútbol laliga hypermotion girona - albacete laliga hypermotion dazn laliga tv hypermotion(m56 o120)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:30</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
-                <td class="event-col"><div class="event-title">Girona - Albacete</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:45 fútbol uefa nations league turquía - francia dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Turquía - Francia</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:45 fútbol uefa nations league italia - bélgica dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Italia - Bélgica</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:45 fútbol uefa nations league suecia - rumanía dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Suecia - Rumanía</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:45 fútbol uefa nations league polonia - bosnia dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Polonia - Bosnia</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:45 fútbol uefa nations league hungría - ucrania dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Hungría - Ucrania</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="fútbol" data-filtered="false" data-search="20:45 fútbol uefa nations league montenegro - chipre dazn dazn app gratis(ver gratis)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                <td class="comp-col"><div class="comp-title">UEFA Nations League</div></td>
-                <td class="event-col"><div class="event-title">Montenegro - Chipre</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span></div></td>
-            </tr>
-            
-            <tr data-sport="baloncesto" data-filtered="false" data-search="20:45 baloncesto euroliga bc partizan beograd - ax olimpia milano m+ baloncesto(m66) m+ baloncesto 3(m194)">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">20:45</span></td>
-                <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                <td class="event-col"><div class="event-title">BC Partizan Beograd - AX Olimpia Milano</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto(M66)</span><span class="tv-badge">M+ Baloncesto 3(M194)</span></div></td>
-            </tr>
-            
-            <tr data-sport="otros" data-filtered="true" data-search="21:30 otros liga prime barça fs - jimbee cartagena fs dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">21:30</span></td>
-                <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
-                <td class="event-col"><div class="event-title">Barça FS - Jimbee Cartagena FS</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
-            <tr data-sport="tenis" data-filtered="false" data-search="22:00 tenis laver cup c. alcaraz | j. menšík - a. bublik | t. fritz teledeporte eurosport 1 dazn">
-                <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                <td class="time-col"><span class="time-badge">22:00</span></td>
-                <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                <td class="comp-col"><div class="comp-title">Laver Cup</div></td>
-                <td class="event-col"><div class="event-title">C. Alcaraz | J. Menšík - A. Bublik | T. Fritz</div></td>
-                <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
-            </tr>
-            
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="2:15 otros nfl green bay packers - atlanta falcons dazn dazn 2(m73)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            2:15
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            NFL
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Green Bay Packers - Atlanta Falcons
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN 2(M73)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="motor"
+                    data-filtered="false"
+                    data-search="6:15 motor fórmula 1 fia fórmula 2 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            6:15
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏎️ Motor
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Fórmula 1
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            FIA Fórmula 2 G.P. Azerbaiyán (Bakú) (Ver en directo)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="7:00 tenis wta torneo de singapur e. mertens - m. chwalinska tennis channel - orange tv(131)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            7:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Torneo de Singapur
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            E. Mertens - M. Chwalinska
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Tennis Channel - Orange TV(131)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="8:30 tenis wta torneo de singapur x. wang - t. prozorova tennis channel - orange tv(131)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            8:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Torneo de Singapur
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            X. Wang - T. Prozorova
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Tennis Channel - Orange TV(131)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="motor"
+                    data-filtered="true"
+                    data-search="10:30 motor fórmula 1 fórmula 1 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            10:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏎️ Motor
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Fórmula 1
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Fórmula 1 G.P. Azerbaiyán (Bakú) (Ver en directo)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="11:00 tenis billie jean king cup república checa - españa teledeporte"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            11:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Billie Jean King Cup
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            República Checa - España
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="motor"
+                    data-filtered="false"
+                    data-search="12:15 motor fórmula 1 fia fórmula 2 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            12:15
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏎️ Motor
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Fórmula 1
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            FIA Fórmula 2 G.P. Azerbaiyán (Bakú) (Ver en directo)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="12:30 tenis billie jean king cup república checa - españa teledeporte"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            12:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Billie Jean King Cup
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            República Checa - España
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="12:30 tenis wta torneo de singapur m. andreeva - l. fernández tennis channel - orange tv(131)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            12:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Torneo de Singapur
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            M. Andreeva - L. Fernández
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Tennis Channel - Orange TV(131)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="14:00 tenis wta torneo de singapur m. sakkari - t. gibson tennis channel - orange tv(131)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            14:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Torneo de Singapur
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            M. Sakkari - T. Gibson
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Tennis Channel - Orange TV(131)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="motor"
+                    data-filtered="true"
+                    data-search="14:00 motor fórmula 1 fórmula 1 g.p. azerbaiyán (bakú) (ver en directo) dazn f1(m70 o104) dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            14:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏎️ Motor
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Fórmula 1
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Fórmula 1 G.P. Azerbaiyán (Bakú) (Ver en directo)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN F1(M70 O104)</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="14:00 tenis atp laver cup c. ruud - f. cerúndolo teledeporte eurosport 2 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            14:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Laver Cup
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            C. Ruud - F. Cerúndolo
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 2</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="14:00 otros tour de croacia tour de croacia etapa 4 etbk(país vasco) etb1(país vasco) (ver en directo) hbo max eurosport 1 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            14:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Tour de Croacia
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Tour de Croacia Etapa 4 ETBK(País Vasco) ETB1(País Vasco) (Ver en directo) HBO MAX
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="14:10 otros sportbike sportbike g.p. italia (cremona) (ver en directo) app gratis(ver gratis) dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            14:10
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Sportbike
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Sportbike G.P. Italia (Cremona) (Ver en directo) App Gratis(Ver gratis)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="16:00 tenis atp laver cup j. mensik - b. nakashima teledeporte eurosport 2 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            16:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Laver Cup
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            J. Mensik - B. Nakashima
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 2</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="ciclismo"
+                    data-filtered="false"
+                    data-search="16:00 ciclismo mundial de ciclismo en ruta mundial de ciclismo en ruta carrera sub-23 masculina (ver en directo) hbo max eurosport 1 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            16:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🚴‍♂️ Ciclismo
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Mundial de Ciclismo en Ruta
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Mundial de Ciclismo en Ruta Carrera Sub-23 Masculina (Ver en directo) HBO MAX
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="16:00 otros supersport supersport g.p. italia (cremona) (ver en directo) app gratis(ver gratis) dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            16:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Supersport
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Supersport G.P. Italia (Cremona) (Ver en directo) App Gratis(Ver gratis)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="17:30 otros europeo sub-21 finlandia - españa teledeporte"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            17:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Europeo Sub-21
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Finlandia - España
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="18:00 fútbol uefa nations league georgia - irlanda del norte dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            18:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Georgia - Irlanda del Norte
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="18:00 fútbol uefa nations league armenia - letonia dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            18:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Armenia - Letonia
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="19:00 otros liga asobal ademar león - bm cangas eurosport 2 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            19:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Liga ASOBAL
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Ademar León - BM Cangas
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Eurosport 2</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="false"
+                    data-search="19:00 baloncesto euroliga besiktas jk istanbul - valencia basket m+ baloncesto(m66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            19:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Besiktas JK Istanbul - Valencia Basket
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Baloncesto(M66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="19:30 otros liga prime osasuna magna - palma futsal dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            19:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Liga Prime
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Osasuna Magna - Palma Futsal
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="false"
+                    data-search="19:45 baloncesto euroliga fenerbahce istanbul - virtus bologna m+ baloncesto 2(m67)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            19:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Fenerbahce Istanbul - Virtus Bologna
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Baloncesto 2(M67)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="20:00 tenis atp laver cup r. jódar - a. bublik teledeporte eurosport 1 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Laver Cup
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            R. Jódar - A. Bublik
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:30 fútbol laliga hypermotion girona - albacete laliga hypermotion dazn laliga tv hypermotion(m56 o120)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            LaLiga Hypermotion
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Girona - Albacete
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">LaLiga Hypermotion</span><span class="tv-badge">DAZN</span><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league turquía - francia dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Turquía - Francia
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league italia - bélgica dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Italia - Bélgica
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league suecia - rumanía dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Suecia - Rumanía
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league polonia - bosnia dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Polonia - Bosnia
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league hungría - ucrania dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Hungría - Ucrania
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league montenegro - chipre dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Montenegro - Chipre
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="false"
+                    data-search="20:45 baloncesto euroliga bc partizan beograd - ax olimpia milano m+ baloncesto(m66) m+ baloncesto 3(m194)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            BC Partizan Beograd - AX Olimpia Milano
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Baloncesto(M66)</span><span class="tv-badge">M+ Baloncesto 3(M194)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="true"
+                    data-search="21:30 otros liga prime barça fs - jimbee cartagena fs dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            21:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Liga Prime
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Barça FS - Jimbee Cartagena FS
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="22:00 tenis atp laver cup c. alcaraz | j. menšík - a. bublik | t. fritz teledeporte eurosport 1 dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            22:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Laver Cup
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            C. Alcaraz | J. Menšík - A. Bublik | T. Fritz
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
             </tbody>
+
         </table>
+
     </div>
+
 </div>
+
 <script>
+
 let currentFilter = 'todos';
+
+
 function setFilter(filterType) {
+
     currentFilter = filterType;
-    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
-    const activeCard = document.getElementById('card-' + filterType);
-    if (activeCard) activeCard.classList.add('active-card');
+
+    document
+        .querySelectorAll('.stat-card')
+        .forEach(card =>
+            card.classList.remove('active-card')
+        );
+
+    const activeCard =
+        document.getElementById(
+            'card-' + filterType
+        );
+
+    if (activeCard) {
+        activeCard.classList.add('active-card');
+    }
+
     applyFilters();
 }
-function filterTable() { applyFilters(); }
+
+
+function filterTable() {
+    applyFilters();
+}
+
+
 function applyFilters() {
-    const searchFilter = document.getElementById('searchInput').value.toLowerCase();
-    const table = document.getElementById('agendaTable');
-    const trs = table.getElementsByTagName('tr');
+
+    const searchFilter =
+        document
+            .getElementById('searchInput')
+            .value
+            .toLowerCase();
+
+    const table =
+        document.getElementById('agendaTable');
+
+    const trs =
+        table.getElementsByTagName('tr');
+
     let visibleCount = 0;
+
     for (let i = 0; i < trs.length; i++) {
+
         const tr = trs[i];
-        if (tr.id === 'dynamicEmptyState') continue;
-        const rowSport = (tr.getAttribute('data-sport') || '').toLowerCase();
-        const isFiltered = tr.getAttribute('data-filtered') === 'true';
-        const text = tr.getAttribute('data-search') || '';
+
+        if (tr.id === 'dynamicEmptyState') {
+            continue;
+        }
+
+        const rowSport =
+            (
+                tr.getAttribute('data-sport')
+                || ''
+            ).toLowerCase();
+
+        const isFiltered =
+            tr.getAttribute('data-filtered')
+            === 'true';
+
+        const text =
+            tr.getAttribute('data-search')
+            || '';
+
         const matchesFilter =
             currentFilter === 'todos'
                 ? true
                 : currentFilter === 'filtrados'
                     ? isFiltered
                     : rowSport === currentFilter;
-        const matchesSearch = text.includes(searchFilter);
-        if (matchesFilter && matchesSearch) {
+
+        const matchesSearch =
+            text.includes(searchFilter);
+
+        if (
+            matchesFilter
+            && matchesSearch
+        ) {
             tr.style.display = '';
             visibleCount++;
         } else {
             tr.style.display = 'none';
         }
     }
-    let emptyRow = document.getElementById('dynamicEmptyState');
+
+    let emptyRow =
+        document.getElementById(
+            'dynamicEmptyState'
+        );
+
     if (visibleCount === 0) {
+
         if (!emptyRow) {
-            emptyRow = document.createElement('tr');
-            emptyRow.id = 'dynamicEmptyState';
-            emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección y búsqueda.</td>';
+
+            emptyRow =
+                document.createElement('tr');
+
+            emptyRow.id =
+                'dynamicEmptyState';
+
+            emptyRow.innerHTML =
+                '<td colspan="6" class="empty-state">' +
+                '😴 No hay eventos que coincidan con ' +
+                'la selección y búsqueda.' +
+                '</td>';
+
             table.appendChild(emptyRow);
-        } else { emptyRow.style.display = ''; }
-    } else { if (emptyRow) emptyRow.style.display = 'none'; }
+
+        } else {
+            emptyRow.style.display = '';
+        }
+
+    } else {
+
+        if (emptyRow) {
+            emptyRow.style.display = 'none';
+        }
+    }
 }
+
 </script>
+
 </body>
 </html>
