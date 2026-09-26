@@ -27,18 +27,7 @@ REQUEST_TIMEOUT = 15
 
 
 EXCLUDED_CHANNELS = {
-    "dazn 1 bar(m148)",
-    "dazn 2 bar(m149)",
-    "laliga tv bar",
-    "laliga tv m2",
-    "laliga tv m3",
-    "laliga tv m4",
-    "laliga tv m5",
-    "m+ #vamos bar(307)",
-    "m+ #vamos bar 2(308)",
-    "m+ laliga hdr(m440 o111)"
-    "motogp videopass"
-    "orange fútbol 1(107)"
+    "EXCLUDED_CHANNELS"
 }
 
 
@@ -293,6 +282,20 @@ CLEAN_TV_RE = re.compile(
 PUNCTUATION_RE = re.compile(r"[\|,]+")
 SPACES_RE = re.compile(r"\s+")
 
+
+def normalize_search_text(text: str) -> str:
+    """
+    Normaliza texto procedente del widget para que las exclusiones sean
+    independientes de variantes como ``1.ª``, ``1ª`` o espacios extra.
+    """
+    value = (text or "").lower()
+    value = value.replace("º", "ª")
+    value = re.sub(r"(?<=\d)\s*\.\s*(?=ª)", "", value)
+    value = re.sub(r"(?<=\d)\s*ª", "ª", value)
+    value = re.sub(r"[|,;:/]+", " ", value)
+    value = SPACES_RE.sub(" ", value)
+    return value.strip()
+
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|"
     r"teledeporte|tv|desport|disney\+?|disney)"
@@ -457,8 +460,24 @@ def is_excluded_event(blob: str) -> bool:
     """
     Devuelve True si el evento pertenece a una competición que no debe
     aparecer en ninguna tarjeta de la agenda.
+
+    Se comprueba el texto normalizado para cubrir variantes del widget,
+    especialmente ``1.ª Autonómica Juvenil`` / ``1ª Autonómica Juvenil``.
     """
-    return contains(EXCLUDED_BLOB_RE, blob)
+    normalized = normalize_search_text(blob)
+
+    if EXCLUDED_BLOB_RE.search(normalized):
+        return True
+
+    # Exclusiones críticas con variantes de escritura especialmente comunes.
+    return bool(
+        re.search(r"\bsuperliga\s+infantil\b", normalized, re.IGNORECASE)
+        or re.search(
+            r"\b(?:1\s*ª\.?|primera)\s+auton[oó]mica\s+juvenil\b",
+            normalized,
+            re.IGNORECASE,
+        )
+    )
 
 
 def clean_tournament(raw: str, fallback: str) -> str:
@@ -653,6 +672,14 @@ def get_sport_and_competition(
     El orden es deliberado y mantiene la prioridad del
     clasificador original.
     """
+
+    # Nunca clasificar una competición que esté en la lista negra.
+    if is_excluded_event(blob):
+        return (
+            "__EXCLUDED__",
+            "",
+            "",
+        )
 
     tournament = raw_tournament or ""
 
@@ -1182,6 +1209,16 @@ def should_skip_early(
 # ============================================================================
 
 def parse_event(item):
+    # Filtro de seguridad sobre el texto ORIGINAL del nodo HTML.
+    # Así una competición excluida no puede perderse aunque el parser
+    # separe de forma imperfecta evento, competición y canales.
+    original_blob = normalize_search_text(
+        item.get_text(" ", strip=True)
+    )
+
+    if is_excluded_event(original_blob):
+        return None
+
     (
         time_clean,
         event_str,
@@ -1205,9 +1242,13 @@ def parse_event(item):
 
     tv_blob = " ".join(channels).lower()
 
-    blob = (
-        f"{text_block.lower()} {tv_blob}"
+    blob = normalize_search_text(
+        f"{text_block} {tv_blob}"
     )
+
+    # Segundo filtro, ahora sobre el evento reconstruido.
+    if is_excluded_event(blob):
+        return None
 
     if should_skip_early(
         blob,
@@ -1288,6 +1329,9 @@ def fetch_and_parse_agenda() -> list[dict]:
                         tv_blob,
                     )
                 )
+
+                if sport == "__EXCLUDED__":
+                    continue
 
                 # ----------------------------------------------------------------
                 # Resultado final.
