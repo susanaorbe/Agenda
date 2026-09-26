@@ -27,81 +27,18 @@ REQUEST_TIMEOUT = 15
 
 
 EXCLUDED_CHANNELS = {
-    "andalucía tv",
-    "antel tv internacional",
-    "apple tv",
-    "aragón deporte",
-    "aragon deporte",
-    "aragón deportes",
-    "aragon deportes",
-    "aragón play",
-    "aragón tv",
-    "aragon tv",
-    "asobal tv",
-    "atp tennis tv",
-    "baloncesto tv",
-    "baloncesto tv ppv",
-    "betevé web",
-    "cayotv youtube(ver)",
-    "cmmplay(castilla-lm)",
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
-    "deportes tvcanaria youtube",
-    "ehf tv",
-    "esport3(cataluña)",
-    "esport3 web",
-    "etbk(país vasco)",
-    "etb1(país vasco)",
-    "eurovision sports tv",
-    "fanplay tv",
-    "fanseat",
-    "fc barcelona ppv youtube",
-    "fff tv youtube",
-    "fiba youtube",
-    "flamengo tv youtube",
-    "hbo max",
     "laliga tv bar",
     "laliga tv m2",
     "laliga tv m3",
     "laliga tv m4",
     "laliga tv m5",
-    "laliga+ plus",
-    "la 7(castilla y león)",
-    "liga futve",
-    "liga futve youtube",
-    "ligafutve app",
     "m+ #vamos bar(307)",
     "m+ #vamos bar 2(308)",
-    "m+ laliga hdr(m440 o111)",
-    "mediaset infinity",
-    "motogp videopass",
-    "movistar+ lite",
-    "nba league pass",
-    "onefootball",
-    "orange fútbol 1(107)",
-    "real sociedad tv youtube",
-    "red bull tv",
-    "rtve play",
-    "sefutbol youtube",
-    "siroko tv",
-    "streaming / web",
-    "tv canaria",
-    "tv footballclub(acceder)",
-    "tv melilla",
-    "tv galicia",
-    "tvg(galicia)",
-    "tvg2(galicia)",
-    "tvg web",
-    "tv3(cataluña)",
-    "tv5monde",
-    "twitch btvesports",
-    "uefa tv",
-    "ver en directo",
-    "ver partido",
-    "win sports tv youtube",
-    "wta tv",
-    "101 tv(málaga)",
-    "9tv león",
+    "m+ laliga hdr(m440 o111)"
+    "motogp videopass"
+    "orange fútbol 1(107)"
 }
 
 
@@ -373,6 +310,14 @@ EXCLUDED_BLOB_RE = rx(
     r"europeo\s+femenino\s+sub-?16",
     r"segunda\s+federaci[oó]n",
     r"segunda\s+rfef",
+    r"superliga\s+infantil",
+    r"supercopa\s+lf\s+femenina",
+    r"fifa\s+asean\s+cup",
+    r"tercera\s+federaci[oó]n",
+    r"liga\s+nacional\s+juvenil",
+    r"copa\s+de\s+alemania\s+femenina",
+    r"1\s*[ªa]\s+auton[oó]mica\s+juvenil",
+    r"primera\s+auton[oó]mica\s+juvenil",
 )
 
 LIGAF_RE = rx(
@@ -882,6 +827,7 @@ def get_sport_and_competition(
 def matches_strict_criteria(
     blob: str,
     channels: list[str],
+    sport: str = "",
 ) -> bool:
     """
     Determina si el evento debe aparecer como filtrado/favorito.
@@ -922,7 +868,10 @@ def matches_strict_criteria(
     # El fútbol sala no entra en favoritos.
     # ------------------------------------------------------------------------
 
-    if contains(FUTSAL_RE, blob):
+    if (
+        sport == "Otros"
+        and contains(FUTSAL_RE, blob)
+    ):
         return False
 
     # ------------------------------------------------------------------------
@@ -1060,11 +1009,16 @@ def parse_row_elements(
         # --------------------------------------------------------------------
         # Partido / evento
         # --------------------------------------------------------------------
+        # Algunos nombres de equipos contienen palabras que también aparecen
+        # en los nombres de canales (por ejemplo, "Movistar"). Por eso el
+        # separador " - " tiene prioridad sobre el detector de TV.
+        #
+        # Así, por ejemplo:
+        #     Jaén FS - Movistar Inter
+        # se interpreta como el partido y no como un canal.
+        # --------------------------------------------------------------------
 
-        if (
-            " - " in part
-            and not has_tv_identifier
-        ):
+        if " - " in part:
             if len(part) > 3 and not matchup:
                 matchup = part
 
@@ -1092,7 +1046,7 @@ def parse_row_elements(
 
                 if (
                     channel
-                    and channel_lower not in EXCLUDED_CHANNELS
+                    and not EXCLUDED_CHANNELS_RE.search(channel_lower)
                     and channel not in channels
                 ):
                     channels.append(channel)
@@ -1308,6 +1262,12 @@ def fetch_and_parse_agenda() -> list[dict]:
                 # Resultado final.
                 # ----------------------------------------------------------------
 
+                is_favorite = matches_strict_criteria(
+                    parsed["blob"],
+                    parsed["tv_list"],
+                    sport=sport,
+                )
+
                 results.append({
                     "hora": parsed["hora"],
                     "deporte": sport,
@@ -1315,10 +1275,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "competicion": competition,
                     "evento": parsed["evento"],
                     "tv_list": parsed["tv_list"],
-                    "is_filtered": matches_strict_criteria(
-                        parsed["blob"],
-                        parsed["tv_list"],
-                    ),
+                    "is_filtered": is_favorite,
                 })
 
             except Exception as event_error:
