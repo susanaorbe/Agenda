@@ -299,6 +299,7 @@ TV_IDENTIFIERS_RE = rx(
 )
 
 EXCLUDED_BLOB_RE = rx(
+    # Exclusiones existentes
     r"preol[ií]mpico\s+femenino",
     r"nfl\s+pretemporada",
     r"f1\s+academy",
@@ -318,6 +319,18 @@ EXCLUDED_BLOB_RE = rx(
     r"copa\s+de\s+alemania\s+femenina",
     r"1\s*[ªa]\s+auton[oó]mica\s+juvenil",
     r"primera\s+auton[oó]mica\s+juvenil",
+
+    # Nuevas exclusiones solicitadas
+    r"ehf\s+(?:euro(?:pean)?\s+)?cup\s+women",
+    r"tour\s+de\s+croacia",
+    r"gallagher\s+premiership",
+    r"playa\s+del\s+carmen\s+open",
+    r"gulf\s+cup\s+of\s+nations",
+    r"primera\s+feb",
+    r"copa\s+colombia",
+    r"liga\s+auf\s+uruguaya",
+    r"segunda\s+uruguay",
+    r"liga\s+vasca\s+cadete",
 )
 
 LIGAF_RE = rx(
@@ -438,6 +451,14 @@ EXCLUDED_CHANNELS_RE = rx(
 def contains(pattern: re.Pattern, text: str) -> bool:
     """Devuelve True si el patrón aparece en el texto."""
     return bool(pattern.search(text))
+
+
+def is_excluded_event(blob: str) -> bool:
+    """
+    Devuelve True si el evento pertenece a una competición que no debe
+    aparecer en ninguna tarjeta de la agenda.
+    """
+    return contains(EXCLUDED_BLOB_RE, blob)
 
 
 def clean_tournament(raw: str, fallback: str) -> str:
@@ -834,7 +855,17 @@ def matches_strict_criteria(
     """
 
     # ------------------------------------------------------------------------
-    # Real Madrid: prioridad absoluta.
+    # Competiciones excluidas: nunca entran en favoritos.
+    #
+    # Esta comprobación debe ir ANTES de la prioridad de Real Madrid para
+    # garantizar que una competición excluida no reaparezca en Favoritos.
+    # ------------------------------------------------------------------------
+
+    if is_excluded_event(blob):
+        return False
+
+    # ------------------------------------------------------------------------
+    # Real Madrid: prioridad absoluta dentro de las competiciones permitidas.
     # ------------------------------------------------------------------------
 
     if contains(REAL_MADRID_RE, blob):
@@ -861,7 +892,7 @@ def matches_strict_criteria(
     # Competiciones excluidas.
     # ------------------------------------------------------------------------
 
-    if contains(EXCLUDED_BLOB_RE, blob):
+    if is_excluded_event(blob):
         return False
 
     # ------------------------------------------------------------------------
@@ -1131,7 +1162,7 @@ def should_skip_early(
     ):
         return True
 
-    if contains(EXCLUDED_BLOB_RE, blob):
+    if is_excluded_event(blob):
         return True
 
     if (
