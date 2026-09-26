@@ -27,7 +27,27 @@ REQUEST_TIMEOUT = 15
 
 
 EXCLUDED_CHANNELS = {
-    "EXCLUDED_CHANNELS"
+    "atp tennis tv",
+    "asobal tv",
+    "dazn 1 bar(m148)",
+    "dazn 2 bar(m149)",
+    "laliga tv bar",
+    "laliga tv m2",
+    "laliga tv m3",
+    "laliga tv m4",
+    "laliga tv m5",
+    "m+ #vamos bar(307)",
+    "m+ #vamos bar 2(308)",
+    "m+ laliga hdr(m440 o111)",
+    "motogp videopass",
+    "movistar+ lite",
+    "nba league pass",
+    "onefootball",
+    "orange fútbol 1(107)",
+    "siroko tv",
+    "tv canaria",
+    "uefa tv",
+    "wta tv"
 }
 
 
