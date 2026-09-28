@@ -29,6 +29,15 @@ REQUEST_TIMEOUT = 15
 EXCLUDED_CHANNELS = {
     "atp tennis tv",
     "asobal tv",
+    "tv3(cataluña)",
+    "tvg(galicia)",
+    "aragón tv",
+    "aragón play",
+    "fff tv youtube",
+    "uefa youtube",
+    "sefutbol youtube",
+    "tv footballclub(acceder)",
+    "fanplay",
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
     "laliga tv bar",
@@ -253,6 +262,15 @@ FUTSAL_RE = rx(
     r"\bfutsal\b",
 )
 
+RUGBY_RE = rx(
+    r"\brugby\b",
+    r"\bvrac\b",
+    r"\bcr\s+la\s+vila\b",
+    r"\bel\s+salvador\b",
+    r"\balcobendas\s+rugby\b",
+    r"\bdivisi[oó]n\s+de\s+honor\b",
+)
+
 HANDBALL_RE = rx(
     r"\bbalonmano\b",
     r"\basobal\b",
@@ -320,6 +338,20 @@ TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|"
     r"teledeporte|tv|desport|disney\+?|disney)"
 )
+
+# Deportes / competiciones completamente prohibidos.
+# Estos eventos se eliminan antes de la clasificación y tampoco pueden
+# aparecer accidentalmente en Favoritos.
+EXCLUDED_SPORTS_RE = rx(
+    r"\btorneo\s+betplay\s+dimayor\b",
+    r"\bbetplay\s+dimayor\b",
+    r"\bmls\b",
+    r"\bnfl\b",
+    r"\bncaa\b",
+    r"\bufc\b",
+    r"\bwnba\b",
+)
+
 
 EXCLUDED_BLOB_RE = rx(
     # Exclusiones existentes
@@ -466,6 +498,19 @@ EXCLUDED_CHANNELS_RE = rx(
     *(re.escape(channel) for channel in EXCLUDED_CHANNELS)
 )
 
+# Variantes de canales que pueden llegar con espacios, mayúsculas o texto
+# adicional entre paréntesis.
+EXCLUDED_CHANNEL_PATTERNS_RE = rx(
+    r"\btv3\s*\(?(?:catalu(?:n|ñ)a)\)?\b",
+    r"\btvg\s*\(?(?:galicia)\)?\b",
+    r"\barag[oó]n\s+(?:tv|play)\b",
+    r"\bfff\s+tv\s+youtube\b",
+    r"\buefa\s+youtube\b",
+    r"\bsefutbol\s+youtube\b",
+    r"\btv\s+footballclub\b",
+    r"\bfanplay\b",
+)
+
 
 # ============================================================================
 # UTILIDADES
@@ -485,6 +530,9 @@ def is_excluded_event(blob: str) -> bool:
     especialmente ``1.ª Autonómica Juvenil`` / ``1ª Autonómica Juvenil``.
     """
     normalized = normalize_search_text(blob)
+
+    if EXCLUDED_SPORTS_RE.search(normalized):
+        return True
 
     if EXCLUDED_BLOB_RE.search(normalized):
         return True
@@ -702,6 +750,23 @@ def get_sport_and_competition(
         )
 
     tournament = raw_tournament or ""
+
+    # ------------------------------------------------------------------------
+    # Rugby
+    #
+    # "División de Honor" es ambiguo: también aparece en fútbol juvenil.
+    # Por eso el rugby se comprueba antes del bloque prioritario de fútbol.
+    # ------------------------------------------------------------------------
+
+    if contains(RUGBY_RE, blob):
+        return (
+            "Otros",
+            "🏉",
+            clean_tournament(
+                tournament,
+                "Rugby",
+            ),
+        )
 
     # ------------------------------------------------------------------------
     # Casos prioritarios de fútbol
@@ -924,6 +989,7 @@ def matches_strict_criteria(
 
     if any(
         EXCLUDED_CHANNELS_RE.search(channel)
+        or EXCLUDED_CHANNEL_PATTERNS_RE.search(channel)
         for channel in channels
     ):
         return False
@@ -979,6 +1045,23 @@ def matches_strict_criteria(
     # ------------------------------------------------------------------------
 
     if contains(TENNIS_PLAYERS_RE, blob):
+        return True
+
+    # ------------------------------------------------------------------------
+    # Selección española en UEFA Nations League.
+    # ------------------------------------------------------------------------
+
+    if (
+        (
+            "nations league" in blob
+            or "uefa nations league" in blob
+        )
+        and (
+            "españa" in blob
+            or "spain" in blob
+            or "selección española" in blob
+        )
+    ):
         return True
 
     # ------------------------------------------------------------------------
@@ -1125,6 +1208,7 @@ def parse_row_elements(
                 if (
                     channel
                     and not EXCLUDED_CHANNELS_RE.search(channel_lower)
+                    and not EXCLUDED_CHANNEL_PATTERNS_RE.search(channel_lower)
                     and channel not in channels
                 ):
                     channels.append(channel)
@@ -1201,7 +1285,14 @@ def should_skip_early(
     )
 
     if is_priority_event:
+        # Las exclusiones globales tienen prioridad incluso sobre eventos
+        # considerados prioritarios.
+        if is_excluded_event(blob):
+            return True
         return False
+
+    if is_excluded_event(blob):
+        return True
 
     if (
         contains(GOLF_RE, blob)
