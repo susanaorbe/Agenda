@@ -437,6 +437,16 @@ FOOTBALL_COMPETITIONS = (
 )
 
 
+TENNIS_TOURNAMENT_RE = rx(
+    # Torneos que pueden aparecer sin que el widget escriba
+    # literalmente "tenis", "ATP" o "WTA".
+    r"\btorneo\s+de\s+hangzhou\b",
+    r"\bhangzhou\b",
+    r"\btorneo\s+de\s+chengd[uú]\b",
+    r"\bchengd[uú]\b",
+)
+
+
 TENNIS_COMPETITIONS = (
     (rx(r"\blaver cup\b"), "Laver Cup"),
     (
@@ -857,6 +867,7 @@ def get_sport_and_competition(
     if (
         contains(TENNIS_RE, blob)
         or contains(TENNIS_PLAYERS_RE, blob)
+        or contains(TENNIS_TOURNAMENT_RE, tournament)
     ):
         return (
             "Tenis",
