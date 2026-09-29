@@ -377,6 +377,12 @@ EXCLUDED_BLOB_RE = rx(
 
     # Nuevas exclusiones solicitadas
     r"ehf\s+(?:euro(?:pean)?\s+)?cup\s+women",
+    # EHF European League y U20 Elite League se excluyen globalmente:
+    # no aparecen en Otros, Favoritos ni en ninguna otra tarjeta.
+    r"ehf\s+european\s+league",
+    r"u20\s+elite\s+league",
+    r"u-?20\s+elite\s+league",
+    r"under[-\s]?20\s+elite\s+league",
     r"tour\s+de\s+croacia",
     r"gallagher\s+premiership",
     r"playa\s+del\s+carmen\s+open",
