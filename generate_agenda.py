@@ -393,6 +393,15 @@ EXCLUDED_BLOB_RE = rx(
     r"liga\s+auf\s+uruguaya",
     r"segunda\s+uruguay",
     r"liga\s+vasca\s+cadete",
+
+    # Nuevas exclusiones solicitadas
+    r"\beurocup\b",
+    r"\beuro\s+cup\b",
+    r"\beuroliga\s+femenina\b",
+    r"\beuroliga\s+femenino\b",
+    r"\beuroleague\s+women\b",
+    r"\bwomen(?:'s)?\s+euroleague\b",
+    r"\bcopa\s+rfef\b",
 )
 
 LIGAF_RE = rx(
@@ -451,6 +460,16 @@ TENNIS_TOURNAMENT_RE = rx(
     r"\bhangzhou\b",
     r"\btorneo\s+de\s+chengd[uú]\b",
     r"\bchengd[uú]\b",
+
+    # Torneos de Tokio y Pekín que pueden aparecer sin una etiqueta
+    # explícita de ATP/WTA/Tenis en el widget.
+    r"\btorneo\s+de\s+tokio\b",
+    r"\btokio\b",
+    r"\btokyo\b",
+    r"\btorneo\s+de\s+pekin\b",
+    r"\btorneo\s+de\s+pek[ií]n\b",
+    r"\bpekin\b",
+    r"\bpek[ií]n\b",
 )
 
 
