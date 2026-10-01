@@ -452,8 +452,8 @@ TENNIS_TOURNAMENT_RE = rx(
     r"\bhangzhou\b",
     r"\btorneo\s+de\s+chengd[uú]\b",
     r"\bchengd[uú]\b",
-    r"\btorneo\s+de\s+pe[kí]n\b",
-    r"\bpe[kí]n\b",
+    r"\btorneo\s+de\s+pe(?:k[ií])n\b",
+    r"\bpe(?:k[ií])n\b",
     r"\bbeijing\b",
     r"\bchina\s+open\b",
     r"\btorneo\s+de\s+tokio\b",
@@ -464,7 +464,7 @@ TENNIS_TOURNAMENT_RE = rx(
 
 
 TENNIS_COMPETITIONS = (
-    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe[kí]n\b"), "China Open"),
+    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe(?:k[ií])n\b"), "China Open"),
     (rx(r"\bjapan\s+open\b", r"\btokio\b", r"\btokyo\b"), "Japan Open"),
     (rx(r"\blaver cup\b"), "Laver Cup"),
     (
@@ -665,7 +665,7 @@ def classify_tennis(
     raw_normalized = normalize_search_text(raw)
 
     if re.search(
-        r"(?:torneo\s+de\s+)?pe[kí]n|beijing|china\s+open",
+        r"(?:torneo\s+de\s+)?pe(?:k[ií])n|beijing|china\s+open",
         raw_normalized,
     ):
         return "WTA China Open" if "wta" in tennis_text else "ATP China Open"
