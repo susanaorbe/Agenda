@@ -1,2505 +1,2863 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+    <title>Agenda Deportiva - Hoy</title>
 
-<title>Agenda deportiva</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
-<style>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+        }
 
-:root {
-    --bg: #f4f6f8;
-    --card: #ffffff;
-    --text: #17202a;
-    --muted: #6b7280;
-    --border: #e5e7eb;
-    --accent: #005df8;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-* {
-    box-sizing: border-box;
-}
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px 12px;
+            display: flex;
+            justify-content: center;
+        }
 
-body {
-    margin: 0;
-    padding: 24px;
-    background: var(--bg);
-    color: var(--text);
-    font-family:
-        Arial,
-        Helvetica,
-        sans-serif;
-}
+        .container {
+            width: 100%;
+            max-width: 1150px;
+        }
 
-.container {
-    max-width: 1500px;
-    margin: auto;
-}
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
 
-h1 {
-    margin: 0 0 6px 0;
-}
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: linear-gradient(
+                135deg,
+                #60a5fa,
+                #a78bfa
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-.subtitle {
-    color: var(--muted);
-    margin-bottom: 20px;
-}
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
 
-.stats {
-    display: grid;
-    grid-template-columns:
-        repeat(auto-fit, minmax(130px, 1fr));
-    gap: 12px;
-    margin-bottom: 20px;
-}
+        .btn-update {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-.stat {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px;
-}
+        .btn-update:hover {
+            background: #059669;
+        }
 
-.stat-number {
-    font-size: 28px;
-    font-weight: 700;
-}
+        .last-update {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            text-align: right;
+        }
 
-.stat-label {
-    color: var(--muted);
-    font-size: 13px;
-}
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(100px, 1fr)
+            );
+            gap: 10px;
+            margin-bottom: 20px;
+        }
 
-.search {
-    width: 100%;
-    padding: 13px 15px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    font-size: 15px;
-    margin-bottom: 20px;
-}
+        .stat-card {
+            background: var(--card-bg);
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
 
-.grid {
-    display: grid;
-    grid-template-columns:
-        repeat(auto-fit, minmax(360px, 1fr));
-    gap: 18px;
-}
+        .stat-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
 
-.card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.04);
-}
+        .stat-card.active-card {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.15);
+            box-shadow:
+                0 0 15px rgba(59, 130, 246, 0.2);
+        }
 
-.card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px 17px;
-    border-bottom: 1px solid var(--border);
-}
+        .stat-card .val {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
 
-.card-header h2 {
-    margin: 0;
-    font-size: 18px;
-}
+        .stat-card .lbl {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
 
-.counter {
-    min-width: 28px;
-    height: 28px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--accent);
-    color: white;
-    font-size: 13px;
-    font-weight: 700;
-}
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
 
-.events {
-    padding: 6px;
-}
+        .search-input {
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            width: 100%;
+        }
 
-.event {
-    display: flex;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 10px;
-    border-bottom: 1px solid var(--border);
-}
+        .search-input:focus {
+            border-color: var(--accent-blue);
+        }
 
-.event:last-child {
-    border-bottom: 0;
-}
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow:
+                0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
 
-.event.favorite {
-    background: rgba(255, 193, 7, 0.08);
-}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            table-layout: fixed;
+        }
 
-.event-time {
-    min-width: 48px;
-    font-weight: 700;
-    font-size: 15px;
-}
+        th {
+            background: #111827;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
 
-.event-info {
-    min-width: 0;
-    flex: 1;
-}
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #283548;
+            font-size: 0.95rem;
+            word-break: break-word;
+        }
 
-.event-name {
-    font-weight: 700;
-    line-height: 1.35;
-}
+        tr:last-child td {
+            border-bottom: none;
+        }
 
-.event-competition {
-    margin-top: 3px;
-    color: var(--muted);
-    font-size: 13px;
-}
+        tr:hover {
+            background-color: #243146;
+        }
 
-.channels {
-    margin-top: 6px;
-    color: #374151;
-    font-size: 12px;
-}
+        .date-badge {
+            display: inline-block;
+            background: #334155;
+            color: #f8fafc;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            border: 1px solid #475569;
+        }
 
-.channels.muted {
-    color: #9ca3af;
-    font-style: italic;
-}
+        .date-badge.today {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.5);
+        }
 
-.empty {
-    padding: 20px;
-    color: var(--muted);
-    text-align: center;
-}
+        .time-badge {
+            background: #0284c7;
+            color: white;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            display: inline-block;
+        }
 
-.hidden {
-    display: none !important;
-}
+        .sport-tag {
+            font-weight: 600;
+        }
 
-.footer {
-    margin-top: 25px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 12px;
-}
+        .comp-title {
+            font-weight: 600;
+            color: #38bdf8;
+        }
 
-@media (max-width: 600px) {
-    body {
-        padding: 12px;
-    }
+        .event-title {
+            font-weight: 700;
+            color: #ffffff;
+        }
 
-    .grid {
-        grid-template-columns: 1fr;
-    }
+        .tv-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
 
-    .event {
-        padding: 10px;
-    }
-}
+        .tv-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
 
-</style>
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+
+            body {
+                padding: 12px 8px;
+            }
+
+            .table-card {
+                background: transparent;
+                border: none;
+                box-shadow: none;
+                overflow: visible;
+            }
+
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+                width: 100%;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tr {
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 14px;
+                margin-bottom: 12px;
+                padding: 14px;
+                box-shadow:
+                    0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            td {
+                padding: 3px 0;
+                border: none;
+            }
+
+            .date-col {
+                display: none;
+            }
+
+            .time-col {
+                display: inline-block;
+                width: auto;
+                margin-right: 8px;
+            }
+
+            .sport-col {
+                display: inline-block;
+                width: auto;
+                float: right;
+            }
+
+            .comp-col {
+                clear: both;
+                margin-top: 8px;
+            }
+
+            .comp-title {
+                font-size: 0.82rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                opacity: 0.9;
+            }
+
+            .event-col {
+                margin: 6px 0 10px 0;
+            }
+
+            .event-title {
+                font-size: 1.05rem;
+                line-height: 1.35;
+            }
+
+            .tv-col {
+                border-top: 1px solid rgba(
+                    255,
+                    255,
+                    255,
+                    0.08
+                );
+                padding-top: 8px;
+                margin-top: 6px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <h1>Agenda deportiva</h1>
+    <header>
+
+        <div>
+            <h1>⚡ Agenda Deportiva - Hoy</h1>
+        </div>
+
+        <div class="header-controls">
+            <button
+                class="btn-update"
+                onclick="location.reload()"
+            >
+                🔄 Actualizar
+            </button>
+        </div>
+
+        <div class="last-update">
+            Última actualización:
+            <strong>01/10/2026 - 06:10 (UTC)</strong>
+        </div>
+
+    </header>
+
+    <div class="stats-grid">
+
+        <div
+            class="stat-card active-card"
+            id="card-todos"
+            onclick="setFilter('todos')"
+        >
+            <div>
+                <div class="lbl">Todos</div>
+                <div class="val">52</div>
+            </div>
+            <div style="font-size:1.3rem">📌</div>
+        </div>
+
+        <div
+            class="stat-card"
+            id="card-filtrados"
+            onclick="setFilter('filtrados')"
+        >
+            <div>
+                <div class="lbl">Filtrados</div>
+                <div
+                    class="val"
+                    style="color:#a78bfa"
+                >
+                    8
+                </div>
+            </div>
+            <div style="font-size:1.3rem">⭐</div>
+        </div>
+
+        <div
+            class="stat-card"
+            id="card-fútbol"
+            onclick="setFilter('fútbol')"
+        >
+            <div>
+                <div class="lbl">Fútbol</div>
+                <div
+                    class="val"
+                    style="color:#10b981"
+                >
+                    14
+                </div>
+            </div>
+            <div style="font-size:1.3rem">⚽</div>
+        </div>
+
+        <div
+            class="stat-card"
+            id="card-baloncesto"
+            onclick="setFilter('baloncesto')"
+        >
+            <div>
+                <div class="lbl">Baloncesto</div>
+                <div
+                    class="val"
+                    style="color:#f97316"
+                >
+                    4
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🏀</div>
+        </div>
+
+        <div
+            class="stat-card"
+            id="card-tenis"
+            onclick="setFilter('tenis')"
+        >
+            <div>
+                <div class="lbl">Tenis</div>
+                <div
+                    class="val"
+                    style="color:#f59e0b"
+                >
+                    27
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🎾</div>
+        </div>
+
+        <div
+            class="stat-card"
+            id="card-motor"
+            onclick="setFilter('motor')"
+        >
+            <div>
+                <div class="lbl">Motor</div>
+                <div
+                    class="val"
+                    style="color:#ef4444"
+                >
+                    1
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🏎️</div>
+        </div>
+
+        <div
+            class="stat-card"
+            id="card-otros"
+            onclick="setFilter('otros')"
+        >
+            <div>
+                <div class="lbl">Otros</div>
+                <div
+                    class="val"
+                    style="color:#a8a29e"
+                >
+                    6
+                </div>
+            </div>
+            <div style="font-size:1.3rem">🎯</div>
+        </div>
+
+    </div>
+
+    <div class="filter-container">
+
+        <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            onkeyup="filterTable()"
+            placeholder="🔍 Filtrar por partido, equipo, tenista o canal TV..."
+        >
+
+    </div>
+
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th style="width: 110px;">Fecha</th>
+                    <th style="width: 85px;">Hora</th>
+                    <th style="width: 120px;">Deporte</th>
+                    <th style="width: 180px;">Competición</th>
+                    <th>Evento / Partido</th>
+                    <th style="width: 240px;">Canal de TV</th>
+                </tr>
+            </thead>
+
+            <tbody id="agendaTable">
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="2:00 fútbol amistoso argentina - bolivia m+ liga de campeones(m60 o115) movistar plus+(m7)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            2:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Amistoso
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Argentina - Bolivia
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Liga de Campeones(M60 O115)</span><span class="tv-badge">Movistar Plus+(M7)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="4:00 tenis atp japan open l. darderi - c. ruud m+ deportes 4(66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            4:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            L. Darderi - C. Ruud
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 4(66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="4:00 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            4:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="4:00 tenis atp japan open t. fritz - j. munar m+ deportes 2(64)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            4:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            T. Fritz - J. Munar
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 2(64)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="5:00 otros torneo de pekín a. de miñaur - m. navone m+ deportes 5(192)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            5:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Torneo de Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            A. De Miñaur - M. Navone
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 5(192)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="5:00 tenis wta pekín q. zheng - h. shi"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            5:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Q. Zheng - H. Shi
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="5:00 tenis wta pekín wta pekín"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            5:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="5:30 tenis atp japan open h. rune - k. jacquet m+ deportes 4(66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            5:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            H. Rune - K. Jacquet
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 4(66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="5:30 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            5:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="5:30 tenis atp japan open k. nishikori - f. tiafoe m+ deportes 2(64)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            5:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            K. Nishikori - F. Tiafoe
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 2(64)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="6:30 tenis wta pekín p. badosa - d. kasatkina"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            6:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            P. Badosa - D. Kasatkina
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="6:30 tenis wta pekín wta pekín"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            6:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="6:30 otros torneo de pekín r. safiullin - f. cobolli m+ deportes 3(65)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            6:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Torneo de Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            R. Safiullin - F. Cobolli
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 3(65)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="7:00 tenis atp japan open j. lehecka - z. bergs m+ deportes 4(66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            7:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            J. Lehecka - Z. Bergs
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 4(66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="7:00 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            7:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="8:00 tenis atp japan open d. shapovalov - s. shimabukuro m+ deportes 4(66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            8:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            D. Shapovalov - S. Shimabukuro
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 4(66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="8:00 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            8:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="8:00 tenis wta pekín y. shao - a. zakharova"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            8:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Y. Shao - A. Zakharova
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="8:00 tenis wta pekín wta pekín"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            8:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="9:00 tenis torneo de pekín a. zverev - c. norrie m+ deportes 3(65)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            9:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Torneo de Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            A. Zverev - C. Norrie
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 3(65)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="9:00 tenis atp japan open c. alcaraz - a. michelsen m+ deportes 2(64) movistar plus+(m7)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            9:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            C. Alcaraz - A. Michelsen
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 2(64)</span><span class="tv-badge">Movistar Plus+(M7)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="9:00 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            9:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="motor"
+                    data-filtered="false"
+                    data-search="9:00 motor wrc rally wrc rally rally de cerdeña (ver en directo) dazn"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            9:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏎️ Motor
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WRC Rally
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            WRC Rally Rally de Cerdeña (Ver en directo)
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="9:30 tenis atp japan open a. davidovich - m. berrettini m+ deportes 4(66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            9:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            A. Davidovich - M. Berrettini
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 4(66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="9:30 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            9:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="true"
+                    data-search="10:30 tenis atp japan open a.d. vallejo - r. jódar m+ deportes 2(64)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            10:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            A.D. Vallejo - R. Jódar
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 2(64)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="10:30 tenis atp japan open torneo de tokio"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            10:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            ATP Japan Open
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Torneo de Tokio
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="11:00 tenis wta pekín a. parks - l. zhu"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            11:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            A. Parks - L. Zhu
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="11:00 tenis wta pekín wta pekín"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            11:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="13:00 tenis wta pekín e. lys - x. sun"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            13:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            E. Lys - X. Sun
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="tenis"
+                    data-filtered="false"
+                    data-search="13:00 tenis wta pekín wta pekín"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            13:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎾 Tenis
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            WTA Pekín
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="13:00 otros torneo de pekín l. tien - h. hurkacz m+ deportes 5(192)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            13:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Torneo de Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            L. Tien - H. Hurkacz
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 5(192)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="14:30 otros torneo de pekín a. bublik - j. mensik m+ deportes 3(65)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            14:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Torneo de Pekín
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            A. Bublik - J. Mensik
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Deportes 3(65)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="16:00 otros amistoso sub-17 alemania - israel dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            16:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Amistoso Sub-17
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Alemania - Israel
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="18:00 fútbol uefa nations league azerbaiyán - liechtenstein dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            18:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Azerbaiyán - Liechtenstein
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="true"
+                    data-search="18:00 baloncesto euroliga hapoel tel aviv bc - real madrid baloncesto m+ vamos(8 y 50) m+ baloncesto(m66)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            18:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Hapoel Tel Aviv BC - Real Madrid Baloncesto
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Vamos(8 y 50)</span><span class="tv-badge">M+ Baloncesto(M66)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="18:45 fútbol champions league femenina austria wien frauen - inter milan femenino disney+"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            18:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Champions League Femenina
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Austria Wien Frauen - Inter Milan Femenino
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Disney+</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="18:45 fútbol champions league femenina hb køge kvinder - servette chênois disney+"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            18:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Champions League Femenina
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            HB Køge Kvinder - Servette Chênois
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Disney+</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="19:30 fútbol copa rfef santa marta - salamanca uds rfef tv youtube rfef.es"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            19:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Copa RFEF
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Santa Marta - Salamanca UDS
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">RFEF TV YouTube</span><span class="tv-badge">RFEF.es</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="false"
+                    data-search="20:00 baloncesto euroliga crvena zvezda mts belgrade - anadolu efes istanbul m+ baloncesto 2(m67)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Crvena Zvezda MTS Belgrade - Anadolu Efes Istanbul
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Baloncesto 2(M67)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="otros"
+                    data-filtered="false"
+                    data-search="20:15 otros europeo sub-21 san marino - españa teledeporte rtve play"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:15
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🎯 Otros
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Europeo Sub-21
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            San Marino - España
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Teledeporte</span><span class="tv-badge">RTVE Play</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="false"
+                    data-search="20:30 baloncesto euroliga virtus bologna - olympiacos piraeus m+ baloncesto 3(m194)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:30
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Virtus Bologna - Olympiacos Piraeus
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Baloncesto 3(M194)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league gales - noruega dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Gales - Noruega
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league dinamarca - portugal dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Dinamarca - Portugal
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league grecia - holanda dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Grecia - Holanda
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league alemania - serbia dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Alemania - Serbia
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league república irlanda - austria dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            República Irlanda - Austria
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league israel - kosovo dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Israel - Kosovo
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="20:45 fútbol uefa nations league malta - gibraltar dazn dazn app gratis(ver gratis)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            UEFA Nations League
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Malta - Gibraltar
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">DAZN</span><span class="tv-badge">DAZN App Gratis(Ver gratis)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="baloncesto"
+                    data-filtered="false"
+                    data-search="20:45 baloncesto euroliga paris basketball - zalgiris kaunas m+ baloncesto 4(m195)"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            20:45
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            🏀 Baloncesto
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Euroliga
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Paris Basketball - Zalgiris Kaunas
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">M+ Baloncesto 4(M195)</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="false"
+                    data-search="21:00 fútbol champions league femenina psg femenino - oh leuven women disney+"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            21:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Champions League Femenina
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            PSG Femenino - OH Leuven Women
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Disney+</span>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr
+                    data-sport="fútbol"
+                    data-filtered="true"
+                    data-search="21:00 fútbol champions league femenina man city femenino - real madrid femenino disney+"
+                >
+                    <td class="date-col">
+                        <span class="date-badge today">
+                            Hoy
+                        </span>
+                    </td>
+
+                    <td class="time-col">
+                        <span class="time-badge">
+                            21:00
+                        </span>
+                    </td>
+
+                    <td class="sport-col">
+                        <span class="sport-tag">
+                            ⚽ Fútbol
+                        </span>
+                    </td>
+
+                    <td class="comp-col">
+                        <div class="comp-title">
+                            Champions League Femenina
+                        </div>
+                    </td>
+
+                    <td class="event-col">
+                        <div class="event-title">
+                            Man City Femenino - Real Madrid Femenino
+                        </div>
+                    </td>
+
+                    <td class="tv-col">
+                        <div class="tv-container">
+                            <span class="tv-badge">Disney+</span>
+                        </div>
+                    </td>
+                </tr>
+                
+            </tbody>
+
+        </table>
 
-    <div class="subtitle">
-        Última actualización: 01/10/2026 06:01
-    </div>
-
-    <div class="stats">
-
-        <div class="stat">
-            <div class="stat-number">58</div>
-            <div class="stat-label">Eventos</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-number">8</div>
-            <div class="stat-label">Favoritos</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-number">12</div>
-            <div class="stat-label">Fútbol</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-number">4</div>
-            <div class="stat-label">Baloncesto</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-number">36</div>
-            <div class="stat-label">Tenis</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-number">0</div>
-            <div class="stat-label">Motor</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-number">6</div>
-            <div class="stat-label">Otros</div>
-        </div>
-
-    </div>
-
-    <input
-        id="search"
-        class="search"
-        type="search"
-        placeholder="Buscar evento, torneo o canal..."
-    >
-
-    <div class="grid" id="cards">
-
-        
-    <section class="card">
-        <div class="card-header">
-            <h2>Todos</h2>
-            <span class="counter">58</span>
-        </div>
-
-        <div class="events">
-            
-    <div class="event favorite"
-         data-search="a.d. vallejo - r. jodar atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">10:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A.D. Vallejo - R. Jódar ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">10:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="a. parks - l. zhu - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">11:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Parks - L. Zhu - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">11:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="e. lys - x. sun - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                E. Lys - X. Sun - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="jornada 1 alfred dunhill links championship movistar golf(m68)">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Jornada 1
-            </div>
-
-            <div class="event-competition">
-                Alfred Dunhill Links Championship
-            </div>
-
-            <div class='channels'>Movistar Golf(M68)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="l. tien - h. hurkacz atp china open m+ deportes 5(192) atp tennis tv">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                L. Tien - H. Hurkacz
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 5(192) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="a. bublik - j. mensik atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">14:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Bublik - J. Mensik
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">14:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="alemania - israel - , german football youtube, amistoso sub-17 dazn dazn app gratis(ver gratis)">
-        <div class="event-time">16:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Alemania - Israel - , German Football YouTube,
-            </div>
-
-            <div class="event-competition">
-                Amistoso Sub-17
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="azerbaiyan - liechtenstein - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">18:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Azerbaiyán - Liechtenstein - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="hapoel tel aviv bc - real madrid baloncesto euroliga m+ vamos(8 y 50) m+ #vamos bar(307) m+ baloncesto(m66)">
-        <div class="event-time">18:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Hapoel Tel Aviv BC - Real Madrid Baloncesto ⭐
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Vamos(8 y 50) · M+ #Vamos Bar(307) · M+ Baloncesto(M66)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="austria wien frauen - inter milan femenino champions league femenina disney+">
-        <div class="event-time">18:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Austria Wien Frauen - Inter Milan Femenino
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="hb køge kvinder - servette chênois champions league femenina disney+">
-        <div class="event-time">18:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                HB Køge Kvinder - Servette Chênois
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="crvena zvezda mts belgrade - anadolu efes istanbul euroliga m+ baloncesto 2(m67)">
-        <div class="event-time">20:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Crvena Zvezda MTS Belgrade - Anadolu Efes Istanbul
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Baloncesto 2(M67)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="san marino - españa europeo sub-21 teledeporte rtve play">
-        <div class="event-time">20:15</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                San Marino - España
-            </div>
-
-            <div class="event-competition">
-                Europeo Sub-21
-            </div>
-
-            <div class='channels'>Teledeporte · RTVE Play</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="virtus bologna - olympiacos piraeus euroliga m+ baloncesto 3(m194)">
-        <div class="event-time">20:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Virtus Bologna - Olympiacos Piraeus
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Baloncesto 3(M194)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="alemania - serbia - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Alemania - Serbia - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="dinamarca - portugal - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Dinamarca - Portugal - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="gales - noruega - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Gales - Noruega - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="grecia - holanda - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Grecia - Holanda - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="israel - kosovo - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Israel - Kosovo - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="malta - gibraltar - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Malta - Gibraltar - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="paris basketball - zalgiris kaunas euroliga m+ baloncesto 4(m195)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Paris Basketball - Zalgiris Kaunas
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Baloncesto 4(M195)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="republica irlanda - austria - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                República Irlanda - Austria - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="man city femenino - real madrid femenino champions league femenina disney+">
-        <div class="event-time">21:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Man City Femenino - Real Madrid Femenino ⭐
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="psg femenino - oh leuven women champions league femenina disney+">
-        <div class="event-time">21:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                PSG Femenino - OH Leuven Women
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="jornada 1 bank of utah championship movistar golf(m68)">
-        <div class="event-time">23:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Jornada 1
-            </div>
-
-            <div class="event-competition">
-                Bank of Utah Championship
-            </div>
-
-            <div class='channels'>Movistar Golf(M68)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="argentina - bolivia amistoso m+ liga de campeones(m60 o115) movistar plus+(m7):">
-        <div class="event-time">2:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Argentina - Bolivia
-            </div>
-
-            <div class="event-competition">
-                Amistoso
-            </div>
-
-            <div class='channels'>M+ Liga de Campeones(M60 O115) · Movistar Plus+(M7):</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="l. darderi - c. ruud atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                L. Darderi - C. Ruud
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="t. fritz - j. munar atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                T. Fritz - J. Munar ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="a. de miñaur - m. navone atp china open m+ deportes 5(192) atp tennis tv">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. De Miñaur - M. Navone
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 5(192) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="q. zheng - h. shi - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Q. Zheng - H. Shi - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="h. rune - k. jacquet atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">5:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                H. Rune - K. Jacquet
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="k. nishikori - f. tiafoe atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">5:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                K. Nishikori - F. Tiafoe
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">5:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="p. badosa - d. kasatkina - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                P. Badosa - D. Kasatkina - WTA TV, Tennis Channel - Orange TV(131) ⭐
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="r. safiullin - f. cobolli atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                R. Safiullin - F. Cobolli
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="j. lehecka - z. bergs atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">7:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                J. Lehecka - Z. Bergs
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">7:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="d. shapovalov - s. shimabukuro atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                D. Shapovalov - S. Shimabukuro
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="y. shao - a. zakharova - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Y. Shao - A. Zakharova - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="a. zverev - c. norrie atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Zverev - C. Norrie ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="c. alcaraz - a. michelsen atp japan open m+ deportes 2(64) atp tennis tv movistar plus+(m7):">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                C. Alcaraz - A. Michelsen ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV · Movistar Plus+(M7):</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="rally de cerdeña wrc rally dazn">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Rally de Cerdeña
-            </div>
-
-            <div class="event-competition">
-                WRC Rally
-            </div>
-
-            <div class='channels'>DAZN</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="a. davidovich - m. berrettini atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">9:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Davidovich - M. Berrettini ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">9:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-        </div>
-    </section>
-    
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Favoritos</h2>
-            <span class="counter">8</span>
-        </div>
-
-        <div class="events">
-            
-    <div class="event favorite"
-         data-search="a.d. vallejo - r. jodar atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">10:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A.D. Vallejo - R. Jódar ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="hapoel tel aviv bc - real madrid baloncesto euroliga m+ vamos(8 y 50) m+ #vamos bar(307) m+ baloncesto(m66)">
-        <div class="event-time">18:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Hapoel Tel Aviv BC - Real Madrid Baloncesto ⭐
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Vamos(8 y 50) · M+ #Vamos Bar(307) · M+ Baloncesto(M66)</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="man city femenino - real madrid femenino champions league femenina disney+">
-        <div class="event-time">21:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Man City Femenino - Real Madrid Femenino ⭐
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="t. fritz - j. munar atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                T. Fritz - J. Munar ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="p. badosa - d. kasatkina - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                P. Badosa - D. Kasatkina - WTA TV, Tennis Channel - Orange TV(131) ⭐
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="a. zverev - c. norrie atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Zverev - C. Norrie ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="c. alcaraz - a. michelsen atp japan open m+ deportes 2(64) atp tennis tv movistar plus+(m7):">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                C. Alcaraz - A. Michelsen ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV · Movistar Plus+(M7):</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="a. davidovich - m. berrettini atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">9:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Davidovich - M. Berrettini ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-        </div>
-    </section>
-    
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Fútbol</h2>
-            <span class="counter">12</span>
-        </div>
-
-        <div class="events">
-            
-    <div class="event"
-         data-search="azerbaiyan - liechtenstein - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">18:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Azerbaiyán - Liechtenstein - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="austria wien frauen - inter milan femenino champions league femenina disney+">
-        <div class="event-time">18:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Austria Wien Frauen - Inter Milan Femenino
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="hb køge kvinder - servette chênois champions league femenina disney+">
-        <div class="event-time">18:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                HB Køge Kvinder - Servette Chênois
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="alemania - serbia - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Alemania - Serbia - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="dinamarca - portugal - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Dinamarca - Portugal - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="gales - noruega - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Gales - Noruega - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="grecia - holanda - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Grecia - Holanda - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="israel - kosovo - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Israel - Kosovo - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="malta - gibraltar - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Malta - Gibraltar - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="republica irlanda - austria - , uefa nations league dazn dazn app gratis(ver gratis)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                República Irlanda - Austria - ,
-            </div>
-
-            <div class="event-competition">
-                UEFA Nations League
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="man city femenino - real madrid femenino champions league femenina disney+">
-        <div class="event-time">21:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Man City Femenino - Real Madrid Femenino ⭐
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="psg femenino - oh leuven women champions league femenina disney+">
-        <div class="event-time">21:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                PSG Femenino - OH Leuven Women
-            </div>
-
-            <div class="event-competition">
-                Champions League Femenina
-            </div>
-
-            <div class='channels'>Disney+</div>
-        </div>
-    </div>
-    
-        </div>
-    </section>
-    
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Baloncesto</h2>
-            <span class="counter">4</span>
-        </div>
-
-        <div class="events">
-            
-    <div class="event favorite"
-         data-search="hapoel tel aviv bc - real madrid baloncesto euroliga m+ vamos(8 y 50) m+ #vamos bar(307) m+ baloncesto(m66)">
-        <div class="event-time">18:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Hapoel Tel Aviv BC - Real Madrid Baloncesto ⭐
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Vamos(8 y 50) · M+ #Vamos Bar(307) · M+ Baloncesto(M66)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="crvena zvezda mts belgrade - anadolu efes istanbul euroliga m+ baloncesto 2(m67)">
-        <div class="event-time">20:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Crvena Zvezda MTS Belgrade - Anadolu Efes Istanbul
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Baloncesto 2(M67)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="virtus bologna - olympiacos piraeus euroliga m+ baloncesto 3(m194)">
-        <div class="event-time">20:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Virtus Bologna - Olympiacos Piraeus
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Baloncesto 3(M194)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="paris basketball - zalgiris kaunas euroliga m+ baloncesto 4(m195)">
-        <div class="event-time">20:45</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Paris Basketball - Zalgiris Kaunas
-            </div>
-
-            <div class="event-competition">
-                Euroliga
-            </div>
-
-            <div class='channels'>M+ Baloncesto 4(M195)</div>
-        </div>
-    </div>
-    
-        </div>
-    </section>
-    
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Tenis</h2>
-            <span class="counter">36</span>
-        </div>
-
-        <div class="events">
-            
-    <div class="event favorite"
-         data-search="a.d. vallejo - r. jodar atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">10:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A.D. Vallejo - R. Jódar ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">10:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="a. parks - l. zhu - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">11:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Parks - L. Zhu - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">11:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="e. lys - x. sun - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                E. Lys - X. Sun - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="l. tien - h. hurkacz atp china open m+ deportes 5(192) atp tennis tv">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                L. Tien - H. Hurkacz
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 5(192) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="a. bublik - j. mensik atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">14:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Bublik - J. Mensik
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">14:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="l. darderi - c. ruud atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                L. Darderi - C. Ruud
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="t. fritz - j. munar atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                T. Fritz - J. Munar ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">4:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="a. de miñaur - m. navone atp china open m+ deportes 5(192) atp tennis tv">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. De Miñaur - M. Navone
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 5(192) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="q. zheng - h. shi - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Q. Zheng - H. Shi - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">5:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="h. rune - k. jacquet atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">5:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                H. Rune - K. Jacquet
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="k. nishikori - f. tiafoe atp japan open m+ deportes 2(64) atp tennis tv">
-        <div class="event-time">5:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                K. Nishikori - F. Tiafoe
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">5:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="p. badosa - d. kasatkina - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                P. Badosa - D. Kasatkina - WTA TV, Tennis Channel - Orange TV(131) ⭐
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="r. safiullin - f. cobolli atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                R. Safiullin - F. Cobolli
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">6:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="j. lehecka - z. bergs atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">7:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                J. Lehecka - Z. Bergs
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">7:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="d. shapovalov - s. shimabukuro atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                D. Shapovalov - S. Shimabukuro
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="wta pekin wta china open">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                WTA Pekín
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="y. shao - a. zakharova - wta tv, tennis channel - orange tv(131) wta china open">
-        <div class="event-time">8:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Y. Shao - A. Zakharova - WTA TV, Tennis Channel - Orange TV(131)
-            </div>
-
-            <div class="event-competition">
-                WTA China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="a. zverev - c. norrie atp china open m+ deportes 3(65) atp tennis tv">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Zverev - C. Norrie ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP China Open
-            </div>
-
-            <div class='channels'>M+ Deportes 3(65) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="c. alcaraz - a. michelsen atp japan open m+ deportes 2(64) atp tennis tv movistar plus+(m7):">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                C. Alcaraz - A. Michelsen ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 2(64) · ATP Tennis TV · Movistar Plus+(M7):</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de pekin china open">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Pekín
-            </div>
-
-            <div class="event-competition">
-                China Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-    <div class="event favorite"
-         data-search="a. davidovich - m. berrettini atp japan open m+ deportes 4(66) atp tennis tv">
-        <div class="event-time">9:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                A. Davidovich - M. Berrettini ⭐
-            </div>
-
-            <div class="event-competition">
-                ATP Japan Open
-            </div>
-
-            <div class='channels'>M+ Deportes 4(66) · ATP Tennis TV</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="torneo de tokio japan open">
-        <div class="event-time">9:30</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Torneo de Tokio
-            </div>
-
-            <div class="event-competition">
-                Japan Open
-            </div>
-
-            <div class='channels muted'>Emisión no indicada</div>
-        </div>
-    </div>
-    
-        </div>
-    </section>
-    
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Motor</h2>
-            <span class="counter">0</span>
-        </div>
-
-        <div class="events">
-            <div class='empty'>No hay eventos.</div>
-        </div>
-    </section>
-    
-
-    <section class="card">
-        <div class="card-header">
-            <h2>Otros</h2>
-            <span class="counter">6</span>
-        </div>
-
-        <div class="events">
-            
-    <div class="event"
-         data-search="jornada 1 alfred dunhill links championship movistar golf(m68)">
-        <div class="event-time">13:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Jornada 1
-            </div>
-
-            <div class="event-competition">
-                Alfred Dunhill Links Championship
-            </div>
-
-            <div class='channels'>Movistar Golf(M68)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="alemania - israel - , german football youtube, amistoso sub-17 dazn dazn app gratis(ver gratis)">
-        <div class="event-time">16:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Alemania - Israel - , German Football YouTube,
-            </div>
-
-            <div class="event-competition">
-                Amistoso Sub-17
-            </div>
-
-            <div class='channels'>DAZN · DAZN App Gratis(Ver gratis)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="san marino - españa europeo sub-21 teledeporte rtve play">
-        <div class="event-time">20:15</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                San Marino - España
-            </div>
-
-            <div class="event-competition">
-                Europeo Sub-21
-            </div>
-
-            <div class='channels'>Teledeporte · RTVE Play</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="jornada 1 bank of utah championship movistar golf(m68)">
-        <div class="event-time">23:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Jornada 1
-            </div>
-
-            <div class="event-competition">
-                Bank of Utah Championship
-            </div>
-
-            <div class='channels'>Movistar Golf(M68)</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="argentina - bolivia amistoso m+ liga de campeones(m60 o115) movistar plus+(m7):">
-        <div class="event-time">2:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Argentina - Bolivia
-            </div>
-
-            <div class="event-competition">
-                Amistoso
-            </div>
-
-            <div class='channels'>M+ Liga de Campeones(M60 O115) · Movistar Plus+(M7):</div>
-        </div>
-    </div>
-    
-    <div class="event"
-         data-search="rally de cerdeña wrc rally dazn">
-        <div class="event-time">9:00</div>
-
-        <div class="event-info">
-            <div class="event-name">
-                Rally de Cerdeña
-            </div>
-
-            <div class="event-competition">
-                WRC Rally
-            </div>
-
-            <div class='channels'>DAZN</div>
-        </div>
-    </div>
-    
-        </div>
-    </section>
-    
-
-    </div>
-
-    <div class="footer">
-        Agenda generada automáticamente.
     </div>
 
 </div>
 
-
 <script>
 
-const search = document.getElementById("search");
+let currentFilter = 'todos';
 
-search.addEventListener("input", function() {
 
-    const query = this.value
-        .trim()
-        .toLowerCase();
+function setFilter(filterType) {
+
+    currentFilter = filterType;
 
     document
-        .querySelectorAll(".event")
-        .forEach(function(event) {
+        .querySelectorAll('.stat-card')
+        .forEach(card =>
+            card.classList.remove('active-card')
+        );
 
-            const text =
-                event.dataset.search || "";
+    const activeCard =
+        document.getElementById(
+            'card-' + filterType
+        );
 
-            if (!query || text.includes(query)) {
-                event.classList.remove("hidden");
-            } else {
-                event.classList.add("hidden");
-            }
+    if (activeCard) {
+        activeCard.classList.add('active-card');
+    }
 
-        });
+    applyFilters();
+}
 
-});
+
+function filterTable() {
+    applyFilters();
+}
+
+
+function applyFilters() {
+
+    const searchFilter =
+        document
+            .getElementById('searchInput')
+            .value
+            .toLowerCase();
+
+    const table =
+        document.getElementById('agendaTable');
+
+    const trs =
+        table.getElementsByTagName('tr');
+
+    let visibleCount = 0;
+
+    for (let i = 0; i < trs.length; i++) {
+
+        const tr = trs[i];
+
+        if (tr.id === 'dynamicEmptyState') {
+            continue;
+        }
+
+        const rowSport =
+            (
+                tr.getAttribute('data-sport')
+                || ''
+            ).toLowerCase();
+
+        const isFiltered =
+            tr.getAttribute('data-filtered')
+            === 'true';
+
+        const text =
+            tr.getAttribute('data-search')
+            || '';
+
+        const matchesFilter =
+            currentFilter === 'todos'
+                ? true
+                : currentFilter === 'filtrados'
+                    ? isFiltered
+                    : rowSport === currentFilter;
+
+        const matchesSearch =
+            text.includes(searchFilter);
+
+        if (
+            matchesFilter
+            && matchesSearch
+        ) {
+            tr.style.display = '';
+            visibleCount++;
+        } else {
+            tr.style.display = 'none';
+        }
+    }
+
+    let emptyRow =
+        document.getElementById(
+            'dynamicEmptyState'
+        );
+
+    if (visibleCount === 0) {
+
+        if (!emptyRow) {
+
+            emptyRow =
+                document.createElement('tr');
+
+            emptyRow.id =
+                'dynamicEmptyState';
+
+            emptyRow.innerHTML =
+                '<td colspan="6" class="empty-state">' +
+                '😴 No hay eventos que coincidan con ' +
+                'la selección y búsqueda.' +
+                '</td>';
+
+            table.appendChild(emptyRow);
+
+        } else {
+            emptyRow.style.display = '';
+        }
+
+    } else {
+
+        if (emptyRow) {
+            emptyRow.style.display = 'none';
+        }
+    }
+}
 
 </script>
 
