@@ -151,42 +151,17 @@ TENNIS_PLAYERS_RE = rx(
 
 TENNIS_RE = rx(
     r"\btenis\b",
-    r"\btennis\b",
     r"\batp\b",
     r"\bwta\b",
-    r"\bwta\s+\d{3}\b",
-    r"\batp\s+\d{3}\b",
     r"\bwimbledon\b",
     r"\broland garros\b",
     r"\bus open\b",
     r"\bopen de australia\b",
-    r"\baustralian open\b",
     r"\bmasters\b",
     r"\bdavis\b",
     r"\bcopa davis\b",
     r"\bbillie jean king cup\b",
     r"\blaver cup\b",
-    r"\bchina open\b",
-    r"\bbeijing\b",
-    r"\bpekin\b",
-    r"\bpekin\b",
-    r"\btokyo\b",
-    r"\btokio\b",
-    r"\bjapan open\b",
-)
-
-WTA_RE = rx(
-    r"\bwta\b",
-    r"\bwta\s+\d{3}\b",
-    r"\bwta\s+(?:1000|500|250|125)\b",
-    r"\bwta tour\b",
-)
-
-ATP_RE = rx(
-    r"\batp\b",
-    r"\batp\s+\d{3}\b",
-    r"\batp\s+(?:1000|500|250|challenger)\b",
-    r"\batp tour\b",
 )
 
 WOMEN_RE = rx(
@@ -365,6 +340,15 @@ TV_IDENTIFIERS_RE = rx(
     r"teledeporte|tv|desport|disney\+?|disney)"
 )
 
+# Algunas cadenas llegan en una sola línea con un guion, por ejemplo:
+# "Tennis Channel - Orange TV (131)". Ese guion NO separa jugadores/equipos.
+# Se detectan primero estas líneas para que no terminen erróneamente como partido.
+CHANNEL_LINE_RE = rx(
+    r"\btennis\s+channel\b",
+    r"\borange\s+tv\b",
+    r"\bchannel\s*[-–—]\s*orange\s+tv\b",
+)
+
 # Deportes / competiciones completamente prohibidos.
 # Estos eventos se eliminan antes de la clasificación y tampoco pueden
 # aparecer accidentalmente en Favoritos.
@@ -418,6 +402,7 @@ EXCLUDED_BLOB_RE = rx(
     r"liga\s+auf\s+uruguaya",
     r"segunda\s+uruguay",
     r"liga\s+vasca\s+cadete",
+    r"copa\s+rfef",
 )
 
 LIGAF_RE = rx(
@@ -476,25 +461,26 @@ TENNIS_TOURNAMENT_RE = rx(
     r"\bhangzhou\b",
     r"\btorneo\s+de\s+chengd[uú]\b",
     r"\bchengd[uú]\b",
-    r"\bchina open\b",
+    r"\btorneo\s+de\s+pe[kí]n\b",
+    r"\bpe[kí]n\b",
     r"\bbeijing\b",
-    r"\bpekin\b",
-    r"\bpekin\b",
-    r"\btokyo\b",
+    r"\bchina\s+open\b",
+    r"\btorneo\s+de\s+tokio\b",
     r"\btokio\b",
-    r"\bjapan open\b",
+    r"\btokyo\b",
+    r"\bjapan\s+open\b",
+    r"\bwta\s+pe[kí]n\b",
+    r"\bwta\s+beijing\b",
+    r"\bwta\s+tokio\b",
+    r"\bwta\s+tokyo\b",
+    r"\bwta\s+\d{3}\b",
+    r"\batp\s+\d{3}\b",
 )
 
 
 TENNIS_COMPETITIONS = (
-    (
-        rx(r"\bchina open\b", r"\bbeijing\b", r"\bpekin\b"),
-        "China Open",
-    ),
-    (
-        rx(r"\bjapan open\b", r"\btokyo\b", r"\btokio\b"),
-        "Japan Open",
-    ),
+    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe[kí]n\b"), "China Open"),
+    (rx(r"\btorneo\s+de\s+tokio\b", r"\btokio\b", r"\btokyo\b", r"\bjapan\s+open\b"), "Japan Open"),
     (rx(r"\blaver cup\b"), "Laver Cup"),
     (
         rx(r"\bcopa davis\b", r"\bdavis cup\b", r"\bdavis\b"),
@@ -661,8 +647,15 @@ def classify_tennis(
     Determina la competición de un evento de tenis.
     """
 
+    # La competición puede venir separada del evento en el widget.
+    # Por eso se busca tanto en el texto reconstruido como en el nombre
+    # original de la competición.
+    tennis_text = normalize_search_text(
+        f"{blob} {raw_tournament} {tv_blob}"
+    )
+
     competition = first_match(
-        blob,
+        tennis_text,
         TENNIS_COMPETITIONS,
     )
 
@@ -686,26 +679,23 @@ def classify_tennis(
         return f"{tour} {competition}"
 
     raw = (raw_tournament or "").strip()
-
-    # El widget puede identificar el torneo únicamente como Beijing/Pekín
-    # o China Open, sin incluir explícitamente "WTA" en el nombre.
     raw_normalized = normalize_search_text(raw)
 
-    if re.search(
-        r"\bchina\s+open\b|\bbeijing\b|\bpekin\b",
-        raw_normalized,
-    ):
-        return "WTA China Open" if WTA_RE.search(blob) else "ATP China Open"
+    if re.search(r"\b(?:torneo\s+de\s+)?pe[kí]n\b|\bbeijing\b|\bchina\s+open\b", raw_normalized):
+        return "WTA China Open" if "wta" in tennis_text else "ATP China Open"
 
-    if re.search(
-        r"\bjapan\s+open\b|\btokyo\b|\btokio\b",
-        raw_normalized,
-    ):
-        return "WTA Japan Open" if WTA_RE.search(blob) else "ATP Japan Open"
+    if re.search(r"\b(?:torneo\s+de\s+)?tokio\b|\btokyo\b|\bjapan\s+open\b", raw_normalized):
+        return "WTA Japan Open" if "wta" in tennis_text else "ATP Japan Open"
+
+    if re.search(r"\bwta\b", raw_normalized) or "wta" in tennis_text:
+        return clean_tournament(raw, "WTA Tour")
+
+    if re.search(r"\batp\b", raw_normalized) or "atp" in tennis_text:
+        return clean_tournament(raw, "ATP Tour")
 
     return clean_tournament(
         raw,
-        "WTA Tour" if WTA_RE.search(blob) else "ATP Tour",
+        "WTA Tour" if "wta" in tennis_text else "ATP Tour",
     )
 
 
@@ -1171,44 +1161,21 @@ def parse_row_elements(
     item,
 ) -> tuple[str, str, list[str], str]:
     """
-    Extrae:
+    Extrae hora, evento, canales y competición del nodo HTML.
 
-        hora
-        evento
-        canales
-        competición
-
-    de un nodo HTML.
-
-    Devuelve cadenas/listas vacías si la estructura no es válida.
+    La detección de competiciones de tenis tiene prioridad sobre el fallback
+    para evitar que nombres como "Torneo de Tokio" o "WTA Pekín" terminen
+    accidentalmente en la columna Evento / Partido.
     """
 
-    text_full = item.get_text(
-        " | ",
-        strip=True,
-    )
-
-    # ------------------------------------------------------------------------
-    # Hora
-    # ------------------------------------------------------------------------
+    text_full = item.get_text(" | ", strip=True)
 
     time_match = TIME_RE.search(text_full)
-    time_clean = (
-        time_match.group(0)
-        if time_match
-        else ""
-    )
-
-    # ------------------------------------------------------------------------
-    # Partes del nodo
-    # ------------------------------------------------------------------------
+    time_clean = time_match.group(0) if time_match else ""
 
     raw_parts = [
         part.strip()
-        for part in item.get_text(
-            "\n",
-            strip=True,
-        ).split("\n")
+        for part in item.get_text("\n", strip=True).split("\n")
         if part.strip()
     ]
 
@@ -1218,66 +1185,63 @@ def parse_row_elements(
     matchup = ""
     channels: list[str] = []
     tournament = ""
-
-    # ------------------------------------------------------------------------
-    # Clasificación de cada parte
-    # ------------------------------------------------------------------------
+    non_tournament_parts: list[str] = []
 
     for part in raw_parts:
-        part_lower = part.lower()
+        part_lower = normalize_search_text(part)
 
-        # Elementos que no necesitamos.
         if (
             TIME_RE.match(part)
-            or part_lower in {
-                "ver partido",
-                "directo",
-                "(ver en directo)",
-            }
+            or part_lower in {"ver partido", "directo", "(ver en directo)"}
         ):
             continue
 
-        has_tv_identifier = bool(
-            TV_IDENTIFIERS_RE.search(part)
-        )
+        has_tv_identifier = bool(TV_IDENTIFIERS_RE.search(part))
 
-        # --------------------------------------------------------------------
-        # Partido / evento
-        # --------------------------------------------------------------------
-        # Algunos nombres de equipos contienen palabras que también aparecen
-        # en los nombres de canales (por ejemplo, "Movistar"). Por eso el
-        # separador " - " tiene prioridad sobre el detector de TV.
-        #
-        # Así, por ejemplo:
-        #     Jaén FS - Movistar Inter
-        # se interpreta como el partido y no como un canal.
-        # --------------------------------------------------------------------
+        # Algunas cadenas contienen un guion interno, por ejemplo:
+        # "Tennis Channel - Orange TV (131)". Deben procesarse como canal
+        # antes de la detección genérica de enfrentamientos.
+        is_channel_line = bool(CHANNEL_LINE_RE.search(part_lower))
 
-        if " - " in part:
-            if len(part) > 3 and not matchup:
-                matchup = part
-
+        # ------------------------------------------------------------
+        # COMPETICIÓN DE TENIS
+        # ------------------------------------------------------------
+        # Importante: "Torneo de Tokio", "Torneo de Pekín", "WTA Pekín",
+        # "China Open", etc. son competición, nunca el partido.
+        if (
+            TENNIS_TOURNAMENT_RE.search(part_lower)
+            or WTA_RE.search(part_lower)
+            or ATP_RE.search(part_lower)
+        ):
+            if not tournament:
+                tournament = part
             continue
 
-        # --------------------------------------------------------------------
-        # Canales
-        # --------------------------------------------------------------------
-
+        # ------------------------------------------------------------
+        # CANALES
+        # ------------------------------------------------------------
         if has_tv_identifier:
-            clean_part = CLEAN_TV_RE.sub(
-                "",
-                part,
-            ).strip()
+            # "Tennis Channel - Orange TV (131)" es una línea de canal,
+            # aunque contenga " - ". Para el resto mantenemos la prioridad
+            # del enfrentamiento, evitando romper casos como
+            # "Jaén FS - Movistar Inter".
+            if (
+                not is_channel_line
+                and re.search(
+                    r"\s-\s|\s+vs\.?\s+|\s+v\.\s+",
+                    part,
+                    re.IGNORECASE,
+                )
+            ):
+                if not matchup:
+                    matchup = part
+                continue
+
+            clean_part = CLEAN_TV_RE.sub("", part).strip()
 
             for channel in clean_part.split(","):
-                channel = (
-                    channel
-                    .strip()
-                    .rstrip(":")
-                    .strip()
-                )
-
-                channel_lower = channel.lower()
+                channel = channel.strip().rstrip(":").strip()
+                channel_lower = normalize_search_text(channel)
 
                 if (
                     channel
@@ -1286,52 +1250,75 @@ def parse_row_elements(
                     and channel not in channels
                 ):
                     channels.append(channel)
-
             continue
 
-        # --------------------------------------------------------------------
-        # Competición
-        # --------------------------------------------------------------------
-
-        if (
-            len(part) < 35
-            and not tournament
+        # ------------------------------------------------------------
+        # COMPETICIÓN GENÉRICA
+        # ------------------------------------------------------------
+        # Un partido explícito siempre tiene prioridad sobre el fallback
+        # genérico, salvo las líneas de canal identificadas arriba.
+        if re.search(
+            r"\s-\s|\s+vs\.?\s+|\s+v\.\s+",
+            part,
+            re.IGNORECASE,
         ):
+            if not matchup:
+                matchup = part
+            continue
+
+        if len(part) < 35 and not tournament:
             tournament = part
+            continue
 
-    # ------------------------------------------------------------------------
-    # Fallback para eventos sin matchup detectado.
-    # ------------------------------------------------------------------------
+        non_tournament_parts.append(part)
 
+    # Si el partido no se detectó mediante separador, intentamos encontrar
+    # una línea que no sea competición ni canal.
+    if not matchup:
+        candidates = []
+
+        for part in non_tournament_parts:
+            if part == tournament:
+                continue
+            if TIME_RE.fullmatch(part):
+                continue
+            candidates.append(part)
+
+        if candidates:
+            # Si hay una línea claramente descriptiva, usarla como evento.
+            matchup = max(candidates, key=len)
+
+    # Fallback final: quitar explícitamente hora, torneo y canales.
+    # Así "Torneo de Tokio" nunca acaba como Evento / Partido.
     if not matchup:
         clean_desc = text_full
 
+        clean_desc = TIME_RE.sub("", clean_desc)
+        clean_desc = CLEAN_TV_RE.sub("", clean_desc)
+
         for channel in channels:
-            clean_desc = clean_desc.replace(
-                channel,
+            clean_desc = clean_desc.replace(channel, "")
+
+        if tournament:
+            clean_desc = re.sub(
+                re.escape(tournament),
                 "",
+                clean_desc,
+                flags=re.IGNORECASE,
             )
 
-        clean_desc = TIME_RE.sub(
-            "",
-            clean_desc,
-        )
+        clean_desc = PUNCTUATION_RE.sub(" ", clean_desc)
+        clean_desc = SPACES_RE.sub(" ", clean_desc).strip(" -–—")
 
-        clean_desc = PUNCTUATION_RE.sub(
-            " ",
-            clean_desc,
-        )
-
-        clean_desc = SPACES_RE.sub(
-            " ",
-            clean_desc,
-        ).strip()
-
-        matchup = (
-            clean_desc
-            if len(clean_desc) > 3
-            else "Evento Deportivo"
-        )
+        # No convertir el propio nombre de la competición en partido.
+        if (
+            not clean_desc
+            or normalize_search_text(clean_desc)
+            in normalize_search_text(tournament)
+        ):
+            matchup = ""
+        else:
+            matchup = clean_desc
 
     return (
         time_clean,
@@ -1420,23 +1407,11 @@ def parse_event(item):
     ):
         return None
 
-    # WTA TV está excluido de la lista de canales visibles, pero eso no
-    # significa que el partido de tenis deba desaparecer. Si todos los
-    # canales de un partido WTA/ATP han sido filtrados, conservamos el evento
-    # y simplemente dejamos la lista de canales vacía.
-    preliminary_blob = normalize_search_text(
-        f"{event_str} {tournament} {original_blob}"
-    )
-
-    tennis_without_visible_channel = (
-        contains(TENNIS_RE, preliminary_blob)
-        or contains(TENNIS_PLAYERS_RE, preliminary_blob)
-        or contains(TENNIS_TOURNAMENT_RE, preliminary_blob)
-        or contains(WTA_RE, preliminary_blob)
-        or contains(ATP_RE, preliminary_blob)
-    )
-
-    if not channels and not tennis_without_visible_channel:
+    # Una vez aplicadas las exclusiones de canales, un evento sin ninguna
+    # emisión válida NO se muestra. Esto es especialmente importante para
+    # tenis: WTA TV está excluido, pero si también existe otro canal válido
+    # (por ejemplo Tennis Channel - Orange TV), ese canal debe conservarse.
+    if not channels:
         return None
 
     text_block = (
