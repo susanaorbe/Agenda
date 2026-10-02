@@ -485,7 +485,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML (RESPONSIVE SEPARADO MÓVIL vs PC/TV)
+# GENERACIÓN DE HTML (FILTRADO DINÁMICO CORREGIDO)
 # ============================================================================
 
 def generate_html(events):
@@ -493,6 +493,10 @@ def generate_html(events):
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
     sport_counts = Counter(event["deporte"] for event in events)
+
+    # Normalizador de cadenas para atributos de filtro (elimina tildes para machichar 'fútbol' y 'futbol')
+    def clean_key(s):
+        return s.lower().replace("ú", "u").replace("ó", "o").replace("á", "a").replace("é", "e").replace("í", "i")
 
     rows_list = []
     if not events:
@@ -504,7 +508,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-sport="{ev['deporte'].lower()}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{search_text}">
+                <tr class="event-row" data-sport="{clean_key(ev['deporte'])}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{search_text}">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">{ev['hora']}</span></td>
                     <td class="sport-col"><span class="sport-tag">{ev['icono']} {ev['deporte']}</span></td>
@@ -545,17 +549,15 @@ def generate_html(events):
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
         .search-input:focus {{ border-color: var(--accent-blue); }}
         
-        /* ESTILOS DE TABLA DE PC / SMART TV */
+        /* TABLA MODO ESCRITORIO / FIRE TV */
         .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
         tr.event-row:hover {{ background-color: #243146; }}
         
-        /* Prevenir que se parta el texto en columnas fijas en la TV */
         .sport-col, .time-col, .date-col {{ white-space: nowrap; }}
         .sport-tag {{ font-weight: 600; white-space: nowrap; }}
-        
         .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
         .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
         .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
@@ -565,7 +567,7 @@ def generate_html(events):
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
-        /* MÓVIL REAL ÚNICAMENTE: PANTALLA VERTICAL Y TÁCTIL (NO AFECTA A FIRE TV) */
+        /* MÓVIL REAL ÚNICAMENTE */
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
             body {{ padding: 8px 6px; }}
             h1 {{ font-size: 1.25rem; }}
@@ -577,7 +579,7 @@ def generate_html(events):
             .table-card {{ background: transparent; border: none; box-shadow: none; }}
             
             tr.event-row {{
-                display: flex !important;
+                display: flex;
                 flex-direction: column;
                 background: var(--card-bg);
                 border: 1px solid var(--border-color);
@@ -589,7 +591,6 @@ def generate_html(events):
             
             td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
             .date-col {{ display: none; }}
-            
             .time-col {{ order: 1; display: inline-block; }}
             .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; }}
             .comp-col {{ order: 3; margin-top: 4px; }}
@@ -615,7 +616,7 @@ def generate_html(events):
         <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
             <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">⭐</div>
         </div>
-        <div class="stat-card" id="card-fútbol" onclick="setFilter('fútbol')">
+        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
             <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
         </div>
         <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
@@ -653,36 +654,48 @@ def generate_html(events):
     </div>
 </div>
 <script>
+function cleanStr(str) {{
+    return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').trim();
+}}
+
 let currentFilter = 'todos';
+
 function setFilter(filterType) {{
-    currentFilter = filterType;
+    currentFilter = cleanStr(filterType);
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
-    const activeCard = document.getElementById('card-' + filterType);
+    const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
     applyFilters();
 }}
+
 function filterTable() {{ applyFilters(); }}
+
 function applyFilters() {{
-    const searchFilter = document.getElementById('searchInput').value.toLowerCase();
+    const searchFilter = cleanStr(document.getElementById('searchInput').value);
     const table = document.getElementById('agendaTable');
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
-    const isMobileView = window.matchMedia('(max-width: 768px) and (orientation: portrait) and (pointer: coarse)').matches;
+
     for (let i = 0; i < trs.length; i++) {{
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
-        const rowSport = (tr.getAttribute('data-sport') || '').toLowerCase();
+
+        const rowSport = cleanStr(tr.getAttribute('data-sport'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
-        const text = tr.getAttribute('data-search') || '';
-        const matchesFilter = currentFilter === 'todos' ? true : (currentFilter === 'filtrados' ? isFiltered : rowSport === currentFilter);
+        const text = cleanStr(tr.getAttribute('data-search'));
+
+        const matchesFilter = (currentFilter === 'todos') ? true : 
+                              (currentFilter === 'filtrados' ? isFiltered : rowSport === currentFilter);
         const matchesSearch = text.includes(searchFilter);
+
         if (matchesFilter && matchesSearch) {{
-            tr.style.display = isMobileView ? 'flex' : 'table-row';
+            tr.style.display = ''; // Deja que el CSS determine la forma de mostrarse
             visibleCount++;
         }} else {{
             tr.style.display = 'none';
         }}
     }}
+
     let emptyRow = document.getElementById('dynamicEmptyState');
     if (visibleCount === 0) {{
         if (!emptyRow) {{
