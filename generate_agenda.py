@@ -515,6 +515,8 @@ MOTOR_TIME_SESSIONS = {
 
 
 def get_motor_session(sport: str, competition: str, event_time: str, blob: str = "", event: str = "", tournament: str = "") -> str | None:
+    # La distinción entre sesiones (Libres, Clasificación, Sprint, Carrera)
+    # se limita EXCLUSIVAMENTE a Fórmula 1 y MotoGP.
     if competition not in {"Fórmula 1", "MotoGP"}:
         return None
 
@@ -587,7 +589,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", "Liga Prime" if "prime" in blob else clean_tournament(tournament, "Fútbol Sala"))
     if contains(HANDBALL_RE, blob): return ("Otros", "🎯", "Liga ASOBAL" if "asobal" in blob else clean_tournament(tournament, "Balonmano"))
 
-    # TENIS (Pestaña dedicada 🎾)
     if contains(TENNIS_RE, blob) or contains(TENNIS_PLAYERS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, tournament):
         return ("Tenis", "🎾", classify_tennis(blob, tournament, tv_blob))
 
@@ -675,7 +676,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             tournament = part
             continue
 
-        parts_clean.append(part)
+        # Limpiar fragmentos sueltos de puntuación extra como comas al final
+        cleaned_fragment = re.sub(r"^[\s,.\-–—]+|[\s,.\-–—]+$", "", part).strip()
+        if cleaned_fragment:
+            parts_clean.append(cleaned_fragment)
 
     if not matchup and parts_clean:
         matchup = " - ".join(parts_clean)
@@ -687,7 +691,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if tournament: clean_desc = re.sub(re.escape(tournament), "", clean_desc, flags=re.IGNORECASE)
         clean_desc = PUNCTUATION_RE.sub(" ", clean_desc)
         clean_desc = SPACES_RE.sub(" ", clean_desc).strip(" -–—")
-        matchup = clean_desc if clean_desc and normalize_search_text(clean_desc) not in normalize_search_text(tournament) else (tournament or "Partido de Tenis")
+        matchup = clean_desc if clean_desc and normalize_search_text(clean_desc) not in normalize_search_text(tournament) else (tournament or "Evento Deportivo")
+
+    # Limpieza final de caracteres sobrantes
+    matchup = re.sub(r"\s*-\s*,|\s*,\s*$", "", matchup).strip(" -–—,")
 
     return time_clean, matchup, channels, tournament
 
@@ -709,6 +716,12 @@ def fetch_and_parse_agenda() -> list[dict]:
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
 
+                # DESCARTE DE FILAS DUPLICADAS / SIN CANAL VÁLIDO:
+                # Si una fila no tiene canales asignados (o venían vacíos de la web fuente),
+                # la ignoramos por completo para evitar que se cree un duplicado sintético.
+                if not channels:
+                    continue
+
                 text_block = f"{event_str} {tournament}"
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{text_block} {tv_blob}")
@@ -718,8 +731,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob): continue
                 if contains(LIGAF_RE, blob): continue
 
-                # Evitar duplicados por clave combinada (hora + torneo + partido)
-                event_key = (time_clean, tournament.lower(), event_str.lower())
+                # Evitar duplicados agrupando por hora + competición
+                event_key = (time_clean, tournament.lower() if tournament else event_str.lower())
                 if event_key in seen_events: continue
                 seen_events.add(event_key)
 
