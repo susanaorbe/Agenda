@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import re
 from typing import Iterable
 
@@ -28,7 +29,6 @@ REQUEST_TIMEOUT = 15
 
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *",
-    "m+ #vamos bar(307)",
     "aragón play",
     "aragón tv",
     "asobal tv",
@@ -37,20 +37,19 @@ EXCLUDED_CHANNELS = {
     "dazn 2 bar(m149)",
     "fanplay",
     "fff tv youtube",
-    "hbo max",
     "laliga tv bar",
     "laliga tv m2",
     "laliga tv m3",
     "laliga tv m4",
     "laliga tv m5",
     "m+ #vamos bar 2(308)",
+    "m+ #vamos bar(307)",
     "m+ laliga hdr(m440 o111)",
     "motogp videopass",
     "movistar+ lite",
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
-    "red bull tv",
     "sefutbol youtube",
     "siroko tv",
     "tv footballclub(acceder)",
@@ -165,6 +164,10 @@ TENNIS_RE = rx(
     r"\bbillie jean king cup\b",
     r"\blaver cup\b",
 )
+
+WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
+ATP_RE = re.compile(r"\batp\b", re.IGNORECASE)
+
 
 WOMEN_RE = rx(
     r"\bfemenina\b",
@@ -337,26 +340,19 @@ def normalize_search_text(text: str) -> str:
     value = SPACES_RE.sub(" ", value)
     return value.strip()
 
-
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|"
     r"teledeporte|tv|desport|disney\+?|disney)"
 )
 
-
-# Canal que puede aparecer incrustado dentro del nombre del evento.
-# Ejemplo:
-#     "1/4 de final femenino M+ #Vamos Bar(307)"
-#
-# En ese caso debe convertirse en:
-#     Evento: 1/4 de final femenino
-#     Canal:  M+ #Vamos Bar(307)
-#
-EMBEDDED_CHANNEL_RE = re.compile(
-    r"(m\+\s*#vamos\s*bar\s*\(307\))",
-    re.IGNORECASE,
+# Algunas cadenas llegan en una sola línea con un guion, por ejemplo:
+# "Tennis Channel - Orange TV (131)". Ese guion NO separa jugadores/equipos.
+# Se detectan primero estas líneas para que no terminen erróneamente como partido.
+CHANNEL_LINE_RE = rx(
+    r"\btennis\s+channel\b",
+    r"\borange\s+tv\b",
+    r"\bchannel\s*[-–—]\s*orange\s+tv\b",
 )
-
 
 # Deportes / competiciones completamente prohibidos.
 # Estos eventos se eliminan antes de la clasificación y tampoco pueden
@@ -412,15 +408,7 @@ EXCLUDED_BLOB_RE = rx(
     r"segunda\s+uruguay",
     r"liga\s+vasca\s+cadete",
     r"copa\s+rfef",
-
-    # NUEVAS EXCLUSIONES
-    # LaLiga Futures no debe aparecer en ninguna tarjeta.
-    r"\blaliga\s+futures\b",
-
-    # Liga U no debe aparecer en ninguna tarjeta.
-    r"\bliga\s+u\b",
 )
-
 
 LIGAF_RE = rx(
     r"\bliga f\b",
@@ -478,20 +466,26 @@ TENNIS_TOURNAMENT_RE = rx(
     r"\bhangzhou\b",
     r"\btorneo\s+de\s+chengd[uú]\b",
     r"\bchengd[uú]\b",
-    r"\btorneo\s+de\s+pe(?:k[ií])n\b",
-    r"\bpe(?:k[ií])n\b",
+    r"\btorneo\s+de\s+pe[kí]n\b",
+    r"\bpe[kí]n\b",
     r"\bbeijing\b",
     r"\bchina\s+open\b",
     r"\btorneo\s+de\s+tokio\b",
     r"\btokio\b",
     r"\btokyo\b",
     r"\bjapan\s+open\b",
+    r"\bwta\s+pe[kí]n\b",
+    r"\bwta\s+beijing\b",
+    r"\bwta\s+tokio\b",
+    r"\bwta\s+tokyo\b",
+    r"\bwta\s+\d{3}\b",
+    r"\batp\s+\d{3}\b",
 )
 
 
 TENNIS_COMPETITIONS = (
-    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe(?:k[ií])n\b"), "China Open"),
-    (rx(r"\bjapan\s+open\b", r"\btokio\b", r"\btokyo\b"), "Japan Open"),
+    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe[kí]n\b"), "China Open"),
+    (rx(r"\btorneo\s+de\s+tokio\b", r"\btokio\b", r"\btokyo\b", r"\bjapan\s+open\b"), "Japan Open"),
     (rx(r"\blaver cup\b"), "Laver Cup"),
     (
         rx(r"\bcopa davis\b", r"\bdavis cup\b", r"\bdavis\b"),
@@ -506,10 +500,7 @@ TENNIS_COMPETITIONS = (
     (rx(r"\broland garros\b"), "Roland Garros"),
     (rx(r"\bopen de australia\b"), "Open de Australia"),
     (
-        rx(
-            r"\bmadrid open\b",
-            r"\bmutua madrid open\b",
-        ),
+        rx(r"\bmadrid open\b", r"\bmutua madrid open\b"),
         "Madrid Open",
     ),
     (
@@ -596,11 +587,7 @@ def is_excluded_event(blob: str) -> bool:
 
     # Exclusiones críticas con variantes de escritura especialmente comunes.
     return bool(
-        re.search(
-            r"\bsuperliga\s+infantil\b",
-            normalized,
-            re.IGNORECASE,
-        )
+        re.search(r"\bsuperliga\s+infantil\b", normalized, re.IGNORECASE)
         or re.search(
             r"\b(?:1\s*ª\.?|primera)\s+auton[oó]mica\s+juvenil\b",
             normalized,
@@ -633,11 +620,7 @@ def is_womens_champions(blob: str) -> bool:
         ("champions" in blob or "uwcl" in blob)
         and any(
             word in blob
-            for word in (
-                "femenina",
-                "femenino",
-                "women",
-            )
+            for word in ("femenina", "femenino", "women")
         )
     )
 
@@ -669,6 +652,9 @@ def classify_tennis(
     Determina la competición de un evento de tenis.
     """
 
+    # La competición puede venir separada del evento en el widget.
+    # Por eso se busca tanto en el texto reconstruido como en el nombre
+    # original de la competición.
     tennis_text = normalize_search_text(
         f"{blob} {raw_tournament} {tv_blob}"
     )
@@ -698,28 +684,19 @@ def classify_tennis(
         return f"{tour} {competition}"
 
     raw = (raw_tournament or "").strip()
-
     raw_normalized = normalize_search_text(raw)
 
-    if re.search(
-        r"(?:torneo\s+de\s+)?pe(?:k[ií])n|beijing|china\s+open",
-        raw_normalized,
-    ):
-        return (
-            "WTA China Open"
-            if "wta" in tennis_text
-            else "ATP China Open"
-        )
+    if re.search(r"\b(?:torneo\s+de\s+)?pe[kí]n\b|\bbeijing\b|\bchina\s+open\b", raw_normalized):
+        return "WTA China Open" if "wta" in tennis_text else "ATP China Open"
 
-    if re.search(
-        r"(?:torneo\s+de\s+)?tokio|tokyo|japan\s+open",
-        raw_normalized,
-    ):
-        return (
-            "WTA Japan Open"
-            if "wta" in tennis_text
-            else "ATP Japan Open"
-        )
+    if re.search(r"\b(?:torneo\s+de\s+)?tokio\b|\btokyo\b|\bjapan\s+open\b", raw_normalized):
+        return "WTA Japan Open" if "wta" in tennis_text else "ATP Japan Open"
+
+    if re.search(r"\bwta\b", raw_normalized) or "wta" in tennis_text:
+        return clean_tournament(raw, "WTA Tour")
+
+    if re.search(r"\batp\b", raw_normalized) or "atp" in tennis_text:
+        return clean_tournament(raw, "ATP Tour")
 
     return clean_tournament(
         raw,
@@ -754,6 +731,541 @@ def classify_basketball(
     return clean_tournament(
         raw_tournament,
         "Baloncesto",
+    )
+
+
+# ============================================================================
+# CALENDARIOS OFICIALES DE MOTOR
+# ============================================================================
+
+MOTOGP_OFFICIAL_CALENDAR_URL = "https://www.motogp.com/es/calendar"
+F1_OFFICIAL_CALENDAR_URL = "https://www.formula1.com/en/racing/2026"
+
+# F1 mantiene una URL por Gran Premio. Las fechas y sesiones se comprueban
+# contra la web oficial en cada ejecución; este mapa solo sirve para localizar
+# la página oficial del GP correspondiente al día actual.
+F1_ROUND_SLUGS_2026 = {
+    "australia": "australia",
+    "china": "china",
+    "japan": "japan",
+    "bahrain": "bahrain",
+    "saudi arabia": "saudiarabia",
+    "miami": "miami",
+    "canada": "canada",
+    "monaco": "monaco",
+    "barcelona-catalunya": "spain",
+    "spain": "spain",
+    "austria": "austria",
+    "great britain": "great-britain",
+    "belgium": "belgium",
+    "hungary": "hungary",
+    "netherlands": "netherlands",
+    "italy": "italy",
+    "azerbaijan": "azerbaijan",
+    "singapore": "singapore",
+    "united states": "united-states",
+    "mexico": "mexico",
+    "brazil": "brazil",
+    "las vegas": "las-vegas",
+    "qatar": "qatar",
+    "abu dhabi": "abu-dhabi",
+}
+
+# Zonas horarias de los circuitos. La web oficial publica los horarios en
+# hora local del circuito; se convierten a la hora local del equipo/agenda.
+F1_TRACK_TIMEZONES = {
+    "australia": "Australia/Melbourne",
+    "china": "Asia/Shanghai",
+    "japan": "Asia/Tokyo",
+    "bahrain": "Asia/Bahrain",
+    "saudi arabia": "Asia/Riyadh",
+    "miami": "America/New_York",
+    "canada": "America/Toronto",
+    "monaco": "Europe/Monaco",
+    "barcelona-catalunya": "Europe/Madrid",
+    "spain": "Europe/Madrid",
+    "austria": "Europe/Vienna",
+    "great britain": "Europe/London",
+    "belgium": "Europe/Brussels",
+    "hungary": "Europe/Budapest",
+    "netherlands": "Europe/Amsterdam",
+    "italy": "Europe/Rome",
+    "azerbaijan": "Asia/Baku",
+    "singapore": "Asia/Singapore",
+    "united states": "America/Chicago",
+    "mexico": "America/Mexico_City",
+    "brazil": "America/Sao_Paulo",
+    "las vegas": "America/Los_Angeles",
+    "qatar": "Asia/Qatar",
+    "abu dhabi": "Asia/Dubai",
+}
+
+MOTOGP_COUNTRY_TIMEZONES = {
+    "thailand": "Asia/Bangkok",
+    "brazil": "America/Sao_Paulo",
+    "usa": "America/Chicago",
+    "united states": "America/Chicago",
+    "spain": "Europe/Madrid",
+    "catalonia": "Europe/Madrid",
+    "france": "Europe/Paris",
+    "italy": "Europe/Rome",
+    "hungary": "Europe/Budapest",
+    "czechia": "Europe/Prague",
+    "netherlands": "Europe/Amsterdam",
+    "germany": "Europe/Berlin",
+    "great britain": "Europe/London",
+    "aragon": "Europe/Madrid",
+    "san marino": "Europe/Rome",
+    "austria": "Europe/Vienna",
+    "japan": "Asia/Tokyo",
+    "indonesia": "Asia/Jakarta",
+    "australia": "Australia/Melbourne",
+    "malaysia": "Asia/Kuala_Lumpur",
+    "qatar": "Asia/Qatar",
+    "portugal": "Europe/Lisbon",
+}
+
+MOTOR_SESSION_LABELS = {
+    "practice 1": "Libres",
+    "practice 2": "Libres",
+    "practice 3": "Libres",
+    "free practice 1": "Libres",
+    "free practice 2": "Libres",
+    "free practice 3": "Libres",
+    "free practice nr. 1": "Libres",
+    "free practice nr. 2": "Libres",
+    "practice": "Libres",
+    "fp1": "Libres",
+    "fp2": "Libres",
+    "fp3": "Libres",
+    "sprint qualifying": "Clasificación Sprint",
+    "qualifying": "Clasificación",
+    "qualifying nr. 1": "Clasificación",
+    "qualifying nr. 2": "Clasificación",
+    "qualifying session": "Clasificación",
+    "sprint": "Carrera al Sprint",
+    "tissot sprint": "Carrera al Sprint",
+    "grand prix": "Carrera",
+    "race": "Carrera",
+    "warm up": "Warm Up",
+}
+
+OFFICIAL_MOTOR_SESSIONS = None
+
+
+def _parse_hhmm(value: str) -> tuple[int, int] | None:
+    match = re.search(r"\b(\d{1,2}):(\d{2})\b", value or "")
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def _localize_official_time(
+    date_value: datetime,
+    hour: int,
+    minute: int,
+    source_timezone: str,
+) -> tuple[datetime.date, int, int]:
+    source = ZoneInfo(source_timezone)
+    target = ZoneInfo("Europe/Madrid")
+    local_dt = datetime(
+        date_value.year,
+        date_value.month,
+        date_value.day,
+        hour,
+        minute,
+        tzinfo=source,
+    ).astimezone(target)
+    return local_dt.date(), local_dt.hour, local_dt.minute
+
+
+def _official_session_from_time(
+    sessions: list[dict],
+    event_time: str,
+) -> str | None:
+    """
+    Busca la sesión cuyo horario oficial coincide con la hora del widget.
+    Se permite una pequeña tolerancia porque las fuentes pueden redondear
+    los horarios o presentar la emisión unos minutos antes/después.
+    """
+    parsed = _parse_hhmm(event_time)
+    if parsed is None:
+        return None
+
+    event_minutes = parsed[0] * 60 + parsed[1]
+    best = None
+    best_delta = 999
+
+    for session in sessions:
+        if session.get("date") != datetime.now().date():
+            continue
+
+        session_minutes = (
+            session["hour"] * 60 + session["minute"]
+        )
+        delta = abs(event_minutes - session_minutes)
+
+        if delta <= 20 and delta < best_delta:
+            best = session["label"]
+            best_delta = delta
+
+    return best
+
+
+def _find_f1_round_for_today(today: datetime.date) -> tuple[str, str] | None:
+    """
+    Determina el GP de F1 que contiene la fecha actual.
+    """
+    # Fechas oficiales de los fines de semana de 2026. La sesión concreta
+    # siempre se obtiene después desde la página oficial del GP.
+    rounds = (
+        ("australia", "2026-03-06", "2026-03-08"),
+        ("china", "2026-03-13", "2026-03-15"),
+        ("japan", "2026-03-27", "2026-03-29"),
+        ("bahrain", "2026-04-10", "2026-04-12"),
+        ("saudi arabia", "2026-04-17", "2026-04-19"),
+        ("miami", "2026-05-01", "2026-05-03"),
+        ("canada", "2026-05-22", "2026-05-24"),
+        ("monaco", "2026-06-05", "2026-06-07"),
+        ("barcelona-catalunya", "2026-06-12", "2026-06-14"),
+        ("austria", "2026-06-26", "2026-06-28"),
+        ("great britain", "2026-07-03", "2026-07-05"),
+        ("belgium", "2026-07-17", "2026-07-19"),
+        ("hungary", "2026-07-24", "2026-07-26"),
+        ("netherlands", "2026-08-21", "2026-08-23"),
+        ("italy", "2026-09-04", "2026-09-06"),
+        ("spain", "2026-09-11", "2026-09-13"),
+        ("azerbaijan", "2026-09-24", "2026-09-26"),
+        ("bahrain", "2026-10-02", "2026-10-04"),
+        ("singapore", "2026-10-09", "2026-10-11"),
+        ("united states", "2026-10-23", "2026-10-25"),
+        ("mexico", "2026-10-30", "2026-11-01"),
+        ("brazil", "2026-11-06", "2026-11-08"),
+        ("las vegas", "2026-11-19", "2026-11-21"),
+        ("qatar", "2026-11-27", "2026-11-29"),
+        ("abu dhabi", "2026-12-04", "2026-12-06"),
+    )
+
+    for name, start, end in rounds:
+        start_date = datetime.strptime(start, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end, "%Y-%m-%d").date()
+        if start_date <= today <= end_date:
+            slug = F1_ROUND_SLUGS_2026.get(name)
+            timezone = F1_TRACK_TIMEZONES.get(name)
+            if slug and timezone:
+                return slug, timezone
+
+    return None
+
+
+def _fetch_f1_official_sessions() -> list[dict]:
+    today = datetime.now().date()
+    round_info = _find_f1_round_for_today(today)
+
+    if not round_info:
+        return []
+
+    slug, timezone = round_info
+    url = f"https://www.formula1.com/en/racing/2026/{slug}"
+
+    try:
+        response = requests.get(
+            url,
+            headers=REQUEST_HEADERS,
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+
+        text = BeautifulSoup(
+            response.text,
+            "html.parser",
+        ).get_text(" ", strip=True)
+
+        # En 2026 el contenido oficial del GP de Bahréin puede referirse al
+        # trazado de Sepang (Malasia); en ese caso la zona horaria correcta es
+        # la de Kuala Lumpur.
+        if "sepang" in text.lower():
+            timezone = "Asia/Kuala_Lumpur"
+
+        pattern = re.compile(
+            r"\b(\d{1,2})\s+([A-Za-z]{3})\s+"
+            r"(Practice 1|Practice 2|Practice 3|Sprint Qualifying|"
+            r"Sprint|Qualifying|Race)\s+"
+            r"(\d{1,2}:\d{2})",
+            re.IGNORECASE,
+        )
+
+        month_map = {
+            "jan": 1, "feb": 2, "mar": 3, "apr": 4,
+            "may": 5, "jun": 6, "jul": 7, "aug": 8,
+            "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+        }
+
+        sessions = []
+
+        for match in pattern.finditer(text):
+            day = int(match.group(1))
+            month = month_map.get(match.group(2).lower())
+            if month is None:
+                continue
+
+            hhmm = _parse_hhmm(match.group(4))
+            if hhmm is None:
+                continue
+
+            date_value = datetime(
+                today.year,
+                month,
+                day,
+            )
+
+            local_date, hour, minute = _localize_official_time(
+                date_value,
+                hhmm[0],
+                hhmm[1],
+                timezone,
+            )
+
+            if local_date != today:
+                continue
+
+            raw_label = match.group(3).lower()
+            label = MOTOR_SESSION_LABELS.get(raw_label)
+
+            if label:
+                sessions.append({
+                    "date": local_date,
+                    "hour": hour,
+                    "minute": minute,
+                    "label": label,
+                })
+
+                # Algunas vistas oficiales entregan la columna "My time"
+                # en UTC cuando se consultan sin navegador. Añadimos también
+                # esa interpretación para que el cruce siga funcionando.
+                utc_date, utc_hour, utc_minute = _localize_official_time(
+                    date_value,
+                    hhmm[0],
+                    hhmm[1],
+                    "UTC",
+                )
+
+                if (utc_date, utc_hour, utc_minute) != (
+                    local_date, hour, minute
+                ):
+                    sessions.append({
+                        "date": utc_date,
+                        "hour": utc_hour,
+                        "minute": utc_minute,
+                        "label": label,
+                    })
+
+        return sessions
+
+    except requests.RequestException as error:
+        print(
+            "Advertencia: no se pudo consultar el calendario oficial de F1: "
+            f"{error}"
+        )
+
+    except Exception as error:
+        print(
+            "Advertencia: error leyendo el calendario oficial de F1: "
+            f"{error}"
+        )
+
+    return []
+
+
+def _fetch_motogp_official_sessions() -> list[dict]:
+    try:
+        response = requests.get(
+            MOTOGP_OFFICIAL_CALENDAR_URL,
+            headers=REQUEST_HEADERS,
+            timeout=REQUEST_TIMEOUT,
+        )
+        response.raise_for_status()
+
+        text = BeautifulSoup(
+            response.text,
+            "html.parser",
+        ).get_text(" ", strip=True)
+
+        # La página oficial muestra el programa del GP actual con entradas
+        # como "FRI/ 01:45 Free Practice Nr. 1" y "SUN/ 05:00 Grand Prix".
+        weekday_map = {
+            "fri": 0,
+            "sat": 1,
+            "sun": 2,
+        }
+
+        today = datetime.now().date()
+        weekday_today = today.weekday()
+
+        current_week_start = today - __import__("datetime").timedelta(
+            days=max(0, weekday_today - 4)
+        )
+
+        # Identificar la zona horaria del GP actual por el nombre del país.
+        timezone = "Europe/Madrid"
+        country_timezone_candidates = (
+            ("japan", "Asia/Tokyo"),
+            ("japón", "Asia/Tokyo"),
+            ("indonesia", "Asia/Jakarta"),
+            ("australia", "Australia/Melbourne"),
+            ("malaysia", "Asia/Kuala_Lumpur"),
+            ("qatar", "Asia/Qatar"),
+            ("thailand", "Asia/Bangkok"),
+            ("brazil", "America/Sao_Paulo"),
+            ("france", "Europe/Paris"),
+            ("italy", "Europe/Rome"),
+            ("hungary", "Europe/Budapest"),
+            ("czechia", "Europe/Prague"),
+            ("netherlands", "Europe/Amsterdam"),
+            ("germany", "Europe/Berlin"),
+            ("great britain", "Europe/London"),
+            ("austria", "Europe/Vienna"),
+            ("portugal", "Europe/Lisbon"),
+            ("spain", "Europe/Madrid"),
+            ("aragon", "Europe/Madrid"),
+            ("catalonia", "Europe/Madrid"),
+            ("san marino", "Europe/Rome"),
+            ("usa", "America/Chicago"),
+        )
+
+        text_lower = text.lower()
+        for country, tz_name in country_timezone_candidates:
+            if country in text_lower:
+                timezone = tz_name
+                break
+
+        pattern = re.compile(
+            r"(?:fri|sat|sun)\/\s*(\d{1,2}:\d{2})\s+"
+            r"(Free Practice Nr\.\s*[12]|Free Practice|Practice|"
+            r"Qualifying Nr\.\s*[12]|Qualifying|Tissot Sprint|"
+            r"Sprint|Warm Up|Grand Prix)",
+            re.IGNORECASE,
+        )
+
+        # También se acepta el formato español/alternativo que aparece en
+        # algunas versiones de la página oficial.
+        pattern_alt = re.compile(
+            r"(?:FRI|SAT|SUN)[^0-9]{0,8}(\d{1,2}:\d{2})[^A-Za-z]{1,8}"
+            r"(Free Practice[^|]+?|Practice|Qualifying[^|]+?|"
+            r"Tissot Sprint|Sprint|Warm Up|Grand Prix)",
+            re.IGNORECASE,
+        )
+
+        sessions = []
+
+        def add_session(weekday_text, hhmm_text, raw_name):
+            weekday = weekday_map.get(weekday_text.lower())
+            if weekday is None:
+                return
+
+            target_date = current_week_start + __import__("datetime").timedelta(
+                days=weekday
+            )
+            if target_date != today:
+                return
+
+            hhmm = _parse_hhmm(hhmm_text)
+            if hhmm is None:
+                return
+
+            local_date, hour, minute = _localize_official_time(
+                datetime(
+                    target_date.year,
+                    target_date.month,
+                    target_date.day,
+                ),
+                hhmm[0],
+                hhmm[1],
+                timezone,
+            )
+
+            raw = normalize_search_text(raw_name)
+            raw = raw.replace("n.º", "nr.")
+            raw = raw.replace("nº", "nr.")
+
+            if "tissot sprint" in raw or raw == "sprint":
+                label = "Carrera al Sprint"
+            elif "grand prix" in raw:
+                label = "Carrera"
+            elif "qualifying" in raw:
+                label = "Clasificación"
+            elif "warm up" in raw:
+                label = "Warm Up"
+            elif "practice" in raw or "free practice" in raw:
+                label = "Libres"
+            else:
+                return
+
+            sessions.append({
+                "date": local_date,
+                "hour": hour,
+                "minute": minute,
+                "label": label,
+            })
+
+        for match in pattern.finditer(text):
+            prefix = text[max(0, match.start() - 8):match.start()].lower()
+            weekday_match = re.search(r"(fri|sat|sun)\/", prefix)
+            if weekday_match:
+                add_session(
+                    weekday_match.group(1),
+                    match.group(1),
+                    match.group(2),
+                )
+
+        return sessions
+
+    except requests.RequestException as error:
+        print(
+            "Advertencia: no se pudo consultar el calendario oficial de MotoGP: "
+            f"{error}"
+        )
+
+    except Exception as error:
+        print(
+            "Advertencia: error leyendo el calendario oficial de MotoGP: "
+            f"{error}"
+        )
+
+    return []
+
+
+def load_official_motor_sessions() -> list[dict]:
+    """
+    Consulta las páginas oficiales una sola vez por ejecución.
+    """
+    global OFFICIAL_MOTOR_SESSIONS
+
+    if OFFICIAL_MOTOR_SESSIONS is not None:
+        return OFFICIAL_MOTOR_SESSIONS
+
+    sessions = []
+    sessions.extend(_fetch_f1_official_sessions())
+    sessions.extend(_fetch_motogp_official_sessions())
+
+    OFFICIAL_MOTOR_SESSIONS = sessions
+    return sessions
+
+
+def get_motor_session(
+    sport: str,
+    competition: str,
+    event_time: str,
+) -> str | None:
+    """
+    Devuelve la sesión oficial para F1/MotoGP.
+    """
+    if competition not in {"Fórmula 1", "MotoGP"}:
+        return None
+
+    return _official_session_from_time(
+        load_official_motor_sessions(),
+        event_time,
     )
 
 
@@ -1053,6 +1565,8 @@ def matches_strict_criteria(
     blob: str,
     channels: list[str],
     sport: str = "",
+    competition: str = "",
+    event_time: str = "",
 ) -> bool:
     """
     Determina si el evento debe aparecer como filtrado/favorito.
@@ -1087,8 +1601,26 @@ def matches_strict_criteria(
         return False
 
     # ------------------------------------------------------------------------
-    # Categorías de motor excluidas de favoritos.
+    # Motor.
+    #
+    # Para F1 y MotoGP se utiliza el calendario oficial. Solo pasan a
+    # Favoritos Clasificación, Sprint y Carrera. Los entrenamientos y Warm Up
+    # siguen visibles en Motor, pero no en Favoritos.
     # ------------------------------------------------------------------------
+
+    if competition in {"Fórmula 1", "MotoGP"}:
+        session = get_motor_session(
+            sport,
+            competition,
+            event_time,
+        )
+
+        if session not in {
+            "Clasificación",
+            "Carrera al Sprint",
+            "Carrera",
+        }:
+            return False
 
     if contains(MOTO_STRICT_EXCLUDE_RE, blob):
         return False
@@ -1189,44 +1721,21 @@ def parse_row_elements(
     item,
 ) -> tuple[str, str, list[str], str]:
     """
-    Extrae:
+    Extrae hora, evento, canales y competición del nodo HTML.
 
-        hora
-        evento
-        canales
-        competición
-
-    de un nodo HTML.
-
-    Devuelve cadenas/listas vacías si la estructura no es válida.
+    La detección de competiciones de tenis tiene prioridad sobre el fallback
+    para evitar que nombres como "Torneo de Tokio" o "WTA Pekín" terminen
+    accidentalmente en la columna Evento / Partido.
     """
 
-    text_full = item.get_text(
-        " | ",
-        strip=True,
-    )
-
-    # ------------------------------------------------------------------------
-    # Hora
-    # ------------------------------------------------------------------------
+    text_full = item.get_text(" | ", strip=True)
 
     time_match = TIME_RE.search(text_full)
-    time_clean = (
-        time_match.group(0)
-        if time_match
-        else ""
-    )
-
-    # ------------------------------------------------------------------------
-    # Partes del nodo
-    # ------------------------------------------------------------------------
+    time_clean = time_match.group(0) if time_match else ""
 
     raw_parts = [
         part.strip()
-        for part in item.get_text(
-            "\n",
-            strip=True,
-        ).split("\n")
+        for part in item.get_text("\n", strip=True).split("\n")
         if part.strip()
     ]
 
@@ -1236,166 +1745,120 @@ def parse_row_elements(
     matchup = ""
     channels: list[str] = []
     tournament = ""
-
-    # ------------------------------------------------------------------------
-    # Clasificación de cada parte
-    # ------------------------------------------------------------------------
+    non_tournament_parts: list[str] = []
 
     for part in raw_parts:
-        part_lower = part.lower()
+        part_lower = normalize_search_text(part)
 
-        # Elementos que no necesitamos.
         if (
             TIME_RE.match(part)
-            or part_lower in {
-                "ver partido",
-                "directo",
-                "(ver en directo)",
-            }
+            or part_lower in {"ver partido", "directo", "(ver en directo)"}
         ):
             continue
 
-        # --------------------------------------------------------------------
-        # Canal incrustado dentro del nombre del evento.
-        #
-        # Algunos eventos llegan así:
-        #
-        #     "1/4 de final femenino M+ #Vamos Bar(307)"
-        #
-        # El canal debe separarse antes de intentar detectar el partido.
-        # --------------------------------------------------------------------
+        has_tv_identifier = bool(TV_IDENTIFIERS_RE.search(part))
 
-        embedded_channel_match = (
-            EMBEDDED_CHANNEL_RE.search(part)
-        )
+        # Algunas cadenas contienen un guion interno, por ejemplo:
+        # "Tennis Channel - Orange TV (131)". Deben procesarse como canal
+        # antes de la detección genérica de enfrentamientos.
+        is_channel_line = bool(CHANNEL_LINE_RE.search(part_lower))
 
-        if embedded_channel_match:
-            embedded_channel = (
-                embedded_channel_match.group(1)
-                .strip()
-            )
-
-            embedded_channel_lower = normalize_search_text(
-                embedded_channel
-            )
-
-            if (
-                embedded_channel
-                and not EXCLUDED_CHANNELS_RE.search(
-                    embedded_channel_lower
-                )
-                and not EXCLUDED_CHANNEL_PATTERNS_RE.search(
-                    embedded_channel_lower
-                )
-                and embedded_channel not in channels
-            ):
-                channels.append(
-                    embedded_channel
-                )
-
-            part = (
-                part[:embedded_channel_match.start()]
-                + part[embedded_channel_match.end():]
-            ).strip()
-
-            if not part:
-                continue
-
-            part_lower = part.lower()
-
-        has_tv_identifier = bool(
-            TV_IDENTIFIERS_RE.search(part)
-        )
-
-        # Algunos canales contienen " - ", por ejemplo:
-        # "Tennis Channel - Orange TV (131)".
-        # Debe tratarse como canal, no como enfrentamiento.
-        is_tennis_channel_line = bool(
-            re.search(
-                r"\btennis\s+channel\b",
-                part_lower,
-            )
-        )
-
-        # --------------------------------------------------------------------
-        # Partido / evento
-        # --------------------------------------------------------------------
-        # Algunos nombres de equipos contienen palabras que también aparecen
-        # en los nombres de canales (por ejemplo, "Movistar"). Por eso el
-        # separador " - " tiene prioridad sobre el detector de TV.
-        #
-        # Así, por ejemplo:
-        #     Jaén FS - Movistar Inter
-        # se interpreta como el partido y no como un canal.
-        # --------------------------------------------------------------------
-
-        if " - " in part and not is_tennis_channel_line:
-            if len(part) > 3 and not matchup:
-                matchup = part
-
+        # ------------------------------------------------------------
+        # COMPETICIÓN DE TENIS
+        # ------------------------------------------------------------
+        # Importante: "Torneo de Tokio", "Torneo de Pekín", "WTA Pekín",
+        # "China Open", etc. son competición, nunca el partido.
+        if (
+            TENNIS_TOURNAMENT_RE.search(part_lower)
+            or WTA_RE.search(part_lower)
+            or ATP_RE.search(part_lower)
+        ):
+            if not tournament:
+                tournament = part
             continue
 
-        # --------------------------------------------------------------------
-        # Canales
-        # --------------------------------------------------------------------
-
+        # ------------------------------------------------------------
+        # CANALES
+        # ------------------------------------------------------------
         if has_tv_identifier:
-            clean_part = CLEAN_TV_RE.sub(
-                "",
-                part,
-            ).strip()
+            # "Tennis Channel - Orange TV (131)" es una línea de canal,
+            # aunque contenga " - ". Para el resto mantenemos la prioridad
+            # del enfrentamiento, evitando romper casos como
+            # "Jaén FS - Movistar Inter".
+            if (
+                not is_channel_line
+                and re.search(
+                    r"\s-\s|\s+vs\.?\s+|\s+v\.\s+",
+                    part,
+                    re.IGNORECASE,
+                )
+            ):
+                if not matchup:
+                    matchup = part
+                continue
+
+            clean_part = CLEAN_TV_RE.sub("", part).strip()
 
             for channel in clean_part.split(","):
-                channel = (
-                    channel
-                    .strip()
-                    .rstrip(":")
-                    .strip()
-                )
-
-                channel_lower = normalize_search_text(
-                    channel
-                )
+                channel = channel.strip().rstrip(":").strip()
+                channel_lower = normalize_search_text(channel)
 
                 if (
                     channel
-                    and not EXCLUDED_CHANNELS_RE.search(
-                        channel_lower
-                    )
-                    and not EXCLUDED_CHANNEL_PATTERNS_RE.search(
-                        channel_lower
-                    )
+                    and not EXCLUDED_CHANNELS_RE.search(channel_lower)
+                    and not EXCLUDED_CHANNEL_PATTERNS_RE.search(channel_lower)
                     and channel not in channels
                 ):
                     channels.append(channel)
-
             continue
 
-        # --------------------------------------------------------------------
-        # Competición
-        # --------------------------------------------------------------------
-
-        if (
-            len(part) < 35
-            and not tournament
+        # ------------------------------------------------------------
+        # COMPETICIÓN GENÉRICA
+        # ------------------------------------------------------------
+        # Un partido explícito siempre tiene prioridad sobre el fallback
+        # genérico, salvo las líneas de canal identificadas arriba.
+        if re.search(
+            r"\s-\s|\s+vs\.?\s+|\s+v\.\s+",
+            part,
+            re.IGNORECASE,
         ):
+            if not matchup:
+                matchup = part
+            continue
+
+        if len(part) < 35 and not tournament:
             tournament = part
+            continue
 
-    # ------------------------------------------------------------------------
-    # Fallback para eventos sin matchup detectado.
-    # ------------------------------------------------------------------------
+        non_tournament_parts.append(part)
 
+    # Si el partido no se detectó mediante separador, intentamos encontrar
+    # una línea que no sea competición ni canal.
+    if not matchup:
+        candidates = []
+
+        for part in non_tournament_parts:
+            if part == tournament:
+                continue
+            if TIME_RE.fullmatch(part):
+                continue
+            candidates.append(part)
+
+        if candidates:
+            # Si hay una línea claramente descriptiva, usarla como evento.
+            matchup = max(candidates, key=len)
+
+    # Fallback final: quitar explícitamente hora, torneo y canales.
+    # Así "Torneo de Tokio" nunca acaba como Evento / Partido.
     if not matchup:
         clean_desc = text_full
 
-        for channel in channels:
-            clean_desc = clean_desc.replace(
-                channel,
-                "",
-            )
+        clean_desc = TIME_RE.sub("", clean_desc)
+        clean_desc = CLEAN_TV_RE.sub("", clean_desc)
 
-        # Si no se ha encontrado un enfrentamiento, no convertir el nombre
-        # del torneo (por ejemplo "Torneo de Tokio") en el evento.
+        for channel in channels:
+            clean_desc = clean_desc.replace(channel, "")
+
         if tournament:
             clean_desc = re.sub(
                 re.escape(tournament),
@@ -1404,26 +1867,18 @@ def parse_row_elements(
                 flags=re.IGNORECASE,
             )
 
-        clean_desc = TIME_RE.sub(
-            "",
-            clean_desc,
-        )
+        clean_desc = PUNCTUATION_RE.sub(" ", clean_desc)
+        clean_desc = SPACES_RE.sub(" ", clean_desc).strip(" -–—")
 
-        clean_desc = PUNCTUATION_RE.sub(
-            " ",
-            clean_desc,
-        )
-
-        clean_desc = SPACES_RE.sub(
-            " ",
-            clean_desc,
-        ).strip()
-
-        matchup = (
-            clean_desc
-            if len(clean_desc) > 3
-            else "Evento Deportivo"
-        )
+        # No convertir el propio nombre de la competición en partido.
+        if (
+            not clean_desc
+            or normalize_search_text(clean_desc)
+            in normalize_search_text(tournament)
+        ):
+            matchup = ""
+        else:
+            matchup = clean_desc
 
     return (
         time_clean,
@@ -1490,10 +1945,7 @@ def parse_event(item):
     # Así una competición excluida no puede perderse aunque el parser
     # separe de forma imperfecta evento, competición y canales.
     original_blob = normalize_search_text(
-        item.get_text(
-            " ",
-            strip=True,
-        )
+        item.get_text(" ", strip=True)
     )
 
     if is_excluded_event(original_blob):
@@ -1508,7 +1960,6 @@ def parse_event(item):
 
     if (
         not time_clean
-        or not channels
         or event_str in {
             "",
             "Evento Deportivo",
@@ -1516,13 +1967,18 @@ def parse_event(item):
     ):
         return None
 
+    # Una vez aplicadas las exclusiones de canales, un evento sin ninguna
+    # emisión válida NO se muestra. Esto es especialmente importante para
+    # tenis: WTA TV está excluido, pero si también existe otro canal válido
+    # (por ejemplo Tennis Channel - Orange TV), ese canal debe conservarse.
+    if not channels:
+        return None
+
     text_block = (
         f"{event_str} {tournament}"
     )
 
-    tv_blob = " ".join(
-        channels
-    ).lower()
+    tv_blob = " ".join(channels).lower()
 
     blob = normalize_search_text(
         f"{text_block} {tv_blob}"
@@ -1616,6 +2072,23 @@ def fetch_and_parse_agenda() -> list[dict]:
                     continue
 
                 # ----------------------------------------------------------------
+                # Sesión oficial de F1 / MotoGP.
+                # ----------------------------------------------------------------
+
+                motor_session = get_motor_session(
+                    sport,
+                    competition,
+                    parsed["hora"],
+                )
+
+                display_event = parsed["evento"]
+
+                if motor_session:
+                    display_event = (
+                        f"{display_event} — {motor_session}"
+                    )
+
+                # ----------------------------------------------------------------
                 # Resultado final.
                 # ----------------------------------------------------------------
 
@@ -1623,6 +2096,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                     parsed["blob"],
                     parsed["tv_list"],
                     sport=sport,
+                    competition=competition,
+                    event_time=parsed["hora"],
                 )
 
                 results.append({
@@ -1630,7 +2105,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "deporte": sport,
                     "icono": icon,
                     "competicion": competition,
-                    "evento": parsed["evento"],
+                    "evento": display_event,
                     "tv_list": parsed["tv_list"],
                     "is_filtered": is_favorite,
                 })
