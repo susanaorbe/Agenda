@@ -485,7 +485,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML (RESPONSIVE: TABLA EN PC / TARJETAS EN MÓVIL)
+# GENERACIÓN DE HTML (RESPONSIVE SEPARADO MÓVIL vs PC/TV)
 # ============================================================================
 
 def generate_html(events):
@@ -545,38 +545,39 @@ def generate_html(events):
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
         .search-input:focus {{ border-color: var(--accent-blue); }}
         
+        /* ESTILOS DE TABLA DE PC / SMART TV */
         .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
         tr.event-row:hover {{ background-color: #243146; }}
         
+        /* Prevenir que se parta el texto en columnas fijas en la TV */
+        .sport-col, .time-col, .date-col {{ white-space: nowrap; }}
+        .sport-tag {{ font-weight: 600; white-space: nowrap; }}
+        
         .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
         .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
         .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
-        .sport-tag {{ font-weight: 600; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-wrap: wrap; gap: 4px; }}
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
-        /* DISEÑO ESPECÍFICO DE FICHA/TARJETA PARA MÓVILES */
-        @media (max-width: 768px) {{
+        /* MÓVIL REAL ÚNICAMENTE: PANTALLA VERTICAL Y TÁCTIL (NO AFECTA A FIRE TV) */
+        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
             body {{ padding: 8px 6px; }}
             h1 {{ font-size: 1.25rem; }}
             .stats-grid {{ grid-template-columns: repeat(3, 1fr); gap: 6px; }}
             .stat-card {{ padding: 6px 8px; }}
             
-            /* Ocultar la cabecera clásica de la tabla */
             thead {{ display: none; }}
-            
-            /* Convertir la tabla y sus filas en tarjetas flex */
             table, tbody {{ display: block; width: 100%; }}
             .table-card {{ background: transparent; border: none; box-shadow: none; }}
             
             tr.event-row {{
-                display: flex;
+                display: flex !important;
                 flex-direction: column;
                 background: var(--card-bg);
                 border: 1px solid var(--border-color);
@@ -586,28 +587,15 @@ def generate_html(events):
                 gap: 6px;
             }}
             
-            td {{ padding: 0; border: none; width: auto !important; }}
+            td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
             .date-col {{ display: none; }}
             
-            /* Línea superior: Hora + Deporte */
             .time-col {{ order: 1; display: inline-block; }}
             .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; }}
-            
-            /* Agrupar hora y deporte arriba */
-            tr.event-row::before {{
-                content: "";
-                display: table;
-            }}
-            
-            /* Línea intermedia: Competición */
             .comp-col {{ order: 3; margin-top: 4px; }}
             .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
-            
-            /* Línea principal: Evento */
             .event-col {{ order: 4; margin: 2px 0 4px 0; }}
             .event-title {{ font-size: 1rem; line-height: 1.35; }}
-            
-            /* Línea inferior: Canales TV */
             .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }}
             .tv-badge {{ font-size: 0.72rem; padding: 4px 8px; }}
         }}
@@ -679,6 +667,7 @@ function applyFilters() {{
     const table = document.getElementById('agendaTable');
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
+    const isMobileView = window.matchMedia('(max-width: 768px) and (orientation: portrait) and (pointer: coarse)').matches;
     for (let i = 0; i < trs.length; i++) {{
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
@@ -688,7 +677,7 @@ function applyFilters() {{
         const matchesFilter = currentFilter === 'todos' ? true : (currentFilter === 'filtrados' ? isFiltered : rowSport === currentFilter);
         const matchesSearch = text.includes(searchFilter);
         if (matchesFilter && matchesSearch) {{
-            tr.style.display = 'flex';
+            tr.style.display = isMobileView ? 'flex' : 'table-row';
             visibleCount++;
         }} else {{
             tr.style.display = 'none';
