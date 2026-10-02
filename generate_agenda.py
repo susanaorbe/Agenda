@@ -28,6 +28,7 @@ REQUEST_TIMEOUT = 15
 
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *",
+    "m+ #vamos bar(307)",
     "aragón play",
     "aragón tv",
     "asobal tv",
@@ -36,6 +37,7 @@ EXCLUDED_CHANNELS = {
     "dazn 2 bar(m149)",
     "fanplay",
     "fff tv youtube",
+    "hbo max",
     "laliga tv bar",
     "laliga tv m2",
     "laliga tv m3",
@@ -48,6 +50,7 @@ EXCLUDED_CHANNELS = {
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
+    "red bull tv",
     "sefutbol youtube",
     "siroko tv",
     "tv footballclub(acceder)",
