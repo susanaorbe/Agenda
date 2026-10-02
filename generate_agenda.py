@@ -1275,7 +1275,20 @@ def parse_row_elements(
                 .strip()
             )
 
-            if embedded_channel not in channels:
+            embedded_channel_lower = normalize_search_text(
+                embedded_channel
+            )
+
+            if (
+                embedded_channel
+                and not EXCLUDED_CHANNELS_RE.search(
+                    embedded_channel_lower
+                )
+                and not EXCLUDED_CHANNEL_PATTERNS_RE.search(
+                    embedded_channel_lower
+                )
+                and embedded_channel not in channels
+            ):
                 channels.append(
                     embedded_channel
                 )
