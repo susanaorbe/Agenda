@@ -42,7 +42,6 @@ EXCLUDED_CHANNELS = {
     "laliga tv m4",
     "laliga tv m5",
     "m+ #vamos bar 2(308)",
-    "m+ #vamos bar(307)",
     "m+ laliga hdr(m440 o111)",
     "motogp videopass",
     "movistar+ lite",
@@ -335,10 +334,26 @@ def normalize_search_text(text: str) -> str:
     value = SPACES_RE.sub(" ", value)
     return value.strip()
 
+
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|"
     r"teledeporte|tv|desport|disney\+?|disney)"
 )
+
+
+# Canal que puede aparecer incrustado dentro del nombre del evento.
+# Ejemplo:
+#     "1/4 de final femenino M+ #Vamos Bar(307)"
+#
+# En ese caso debe convertirse en:
+#     Evento: 1/4 de final femenino
+#     Canal:  M+ #Vamos Bar(307)
+#
+EMBEDDED_CHANNEL_RE = re.compile(
+    r"(m\+\s*#vamos\s*bar\s*\(307\))",
+    re.IGNORECASE,
+)
+
 
 # Deportes / competiciones completamente prohibidos.
 # Estos eventos se eliminan antes de la clasificación y tampoco pueden
@@ -394,7 +409,15 @@ EXCLUDED_BLOB_RE = rx(
     r"segunda\s+uruguay",
     r"liga\s+vasca\s+cadete",
     r"copa\s+rfef",
+
+    # NUEVAS EXCLUSIONES
+    # LaLiga Futures no debe aparecer en ninguna tarjeta.
+    r"\blaliga\s+futures\b",
+
+    # Liga U no debe aparecer en ninguna tarjeta.
+    r"\bliga\s+u\b",
 )
+
 
 LIGAF_RE = rx(
     r"\bliga f\b",
@@ -480,7 +503,10 @@ TENNIS_COMPETITIONS = (
     (rx(r"\broland garros\b"), "Roland Garros"),
     (rx(r"\bopen de australia\b"), "Open de Australia"),
     (
-        rx(r"\bmadrid open\b", r"\bmutua madrid open\b"),
+        rx(
+            r"\bmadrid open\b",
+            r"\bmutua madrid open\b",
+        ),
         "Madrid Open",
     ),
     (
@@ -567,7 +593,11 @@ def is_excluded_event(blob: str) -> bool:
 
     # Exclusiones críticas con variantes de escritura especialmente comunes.
     return bool(
-        re.search(r"\bsuperliga\s+infantil\b", normalized, re.IGNORECASE)
+        re.search(
+            r"\bsuperliga\s+infantil\b",
+            normalized,
+            re.IGNORECASE,
+        )
         or re.search(
             r"\b(?:1\s*ª\.?|primera)\s+auton[oó]mica\s+juvenil\b",
             normalized,
@@ -600,7 +630,11 @@ def is_womens_champions(blob: str) -> bool:
         ("champions" in blob or "uwcl" in blob)
         and any(
             word in blob
-            for word in ("femenina", "femenino", "women")
+            for word in (
+                "femenina",
+                "femenino",
+                "women",
+            )
         )
     )
 
@@ -668,13 +702,21 @@ def classify_tennis(
         r"(?:torneo\s+de\s+)?pe(?:k[ií])n|beijing|china\s+open",
         raw_normalized,
     ):
-        return "WTA China Open" if "wta" in tennis_text else "ATP China Open"
+        return (
+            "WTA China Open"
+            if "wta" in tennis_text
+            else "ATP China Open"
+        )
 
     if re.search(
         r"(?:torneo\s+de\s+)?tokio|tokyo|japan\s+open",
         raw_normalized,
     ):
-        return "WTA Japan Open" if "wta" in tennis_text else "ATP Japan Open"
+        return (
+            "WTA Japan Open"
+            if "wta" in tennis_text
+            else "ATP Japan Open"
+        )
 
     return clean_tournament(
         raw,
@@ -1210,6 +1252,41 @@ def parse_row_elements(
         ):
             continue
 
+        # --------------------------------------------------------------------
+        # Canal incrustado dentro del nombre del evento.
+        #
+        # Algunos eventos llegan así:
+        #
+        #     "1/4 de final femenino M+ #Vamos Bar(307)"
+        #
+        # El canal debe separarse antes de intentar detectar el partido.
+        # --------------------------------------------------------------------
+
+        embedded_channel_match = (
+            EMBEDDED_CHANNEL_RE.search(part)
+        )
+
+        if embedded_channel_match:
+            embedded_channel = (
+                embedded_channel_match.group(1)
+                .strip()
+            )
+
+            if embedded_channel not in channels:
+                channels.append(
+                    embedded_channel
+                )
+
+            part = (
+                part[:embedded_channel_match.start()]
+                + part[embedded_channel_match.end():]
+            ).strip()
+
+            if not part:
+                continue
+
+            part_lower = part.lower()
+
         has_tv_identifier = bool(
             TV_IDENTIFIERS_RE.search(part)
         )
@@ -1218,7 +1295,10 @@ def parse_row_elements(
         # "Tennis Channel - Orange TV (131)".
         # Debe tratarse como canal, no como enfrentamiento.
         is_tennis_channel_line = bool(
-            re.search(r"\btennis\s+channel\b", part_lower)
+            re.search(
+                r"\btennis\s+channel\b",
+                part_lower,
+            )
         )
 
         # --------------------------------------------------------------------
@@ -1257,12 +1337,18 @@ def parse_row_elements(
                     .strip()
                 )
 
-                channel_lower = normalize_search_text(channel)
+                channel_lower = normalize_search_text(
+                    channel
+                )
 
                 if (
                     channel
-                    and not EXCLUDED_CHANNELS_RE.search(channel_lower)
-                    and not EXCLUDED_CHANNEL_PATTERNS_RE.search(channel_lower)
+                    and not EXCLUDED_CHANNELS_RE.search(
+                        channel_lower
+                    )
+                    and not EXCLUDED_CHANNEL_PATTERNS_RE.search(
+                        channel_lower
+                    )
                     and channel not in channels
                 ):
                     channels.append(channel)
@@ -1388,7 +1474,10 @@ def parse_event(item):
     # Así una competición excluida no puede perderse aunque el parser
     # separe de forma imperfecta evento, competición y canales.
     original_blob = normalize_search_text(
-        item.get_text(" ", strip=True)
+        item.get_text(
+            " ",
+            strip=True,
+        )
     )
 
     if is_excluded_event(original_blob):
@@ -1415,7 +1504,9 @@ def parse_event(item):
         f"{event_str} {tournament}"
     )
 
-    tv_blob = " ".join(channels).lower()
+    tv_blob = " ".join(
+        channels
+    ).lower()
 
     blob = normalize_search_text(
         f"{text_block} {tv_blob}"
