@@ -31,6 +31,7 @@ EXCLUDED_CHANNELS = {
     "aragón play",
     "aragón tv",
     "asobal tv",
+    "atp tennis tv",
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
     "fanplay",
@@ -62,6 +63,7 @@ EXCLUDED_CHANNELS = {
     "tvg(galicia)",
     "uefa tv",
     "uefa youtube",
+    "wta tv",
 }
 
 
@@ -106,7 +108,7 @@ TENNIS_RE = rx(
     r"\bcopa davis\b", r"\bbillie jean king cup\b", r"\blaver cup\b",
     r"\bpek[í]n\b", r"\bbeijing\b", r"\bchina open\b", r"\btorneo de pek[í]n\b",
     r"\bhangzhou\b", r"\bchengd[uú]\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b",
-    r"\btennis\s+channel\b", r"\btennis\s+tv\b", r"\bwta\s+tv\b"
+    r"\btennis\s+channel\b", r"\btennis\s+tv\b"
 )
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
@@ -172,20 +174,22 @@ def normalize_search_text(text: str) -> str:
 
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|atp\s+tennis|wta\s+tv)"
+    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b",
-    r"\batp\s+tennis\s+tv\b", r"\bwta\s+tv\b"
+    r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b"
 )
 
+# Exclusión explicita de WNBA, Primera FEB y LigaU
 EXCLUDED_SPORTS_RE = rx(
     r"\btorneo\s+betplay\s+dimayor\b",
     r"\bbetplay\s+dimayor\b",
     r"\bmls\b",
     r"\bnfl\b",
-    r"\bwnba\b"
+    r"\bwnba\b",
+    r"\bprimera\s+feb\b",
+    r"\bliga\s*u\b"
 )
 
 EXCLUDED_BLOB_RE = rx(
@@ -198,7 +202,9 @@ EXCLUDED_BLOB_RE = rx(
     r"liga\s+nacional\s+juvenil",
     r"laliga\s+futures",
     r"academy\b",
-    r"\breplay\b"
+    r"\breplay\b",
+    r"\bprimera\s+feb\b",
+    r"\bliga\s*u\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -282,7 +288,12 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
-    # Si es de Primera Federación pero NO es el Castilla, se descarta
+    # Regla: De fútbol femenino solo se permiten los partidos del Real Madrid Femenino
+    if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob):
+        if not contains(REAL_MADRID_RE, blob):
+            return ("__EXCLUDED__", "", "")
+
+    # Primera Federación: solo el Castilla
     if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
         return ("__EXCLUDED__", "", "")
 
@@ -299,7 +310,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
-    if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
+    if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️️", clean_tournament(raw_tournament, "Ciclismo"))
     if contains(MOTOR_GENERAL_RE, blob): return ("Motor", "🏎️", classify_motor(blob, raw_tournament))
 
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
@@ -383,7 +394,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
-        if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower or "tennis" in part_lower:
+        if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
@@ -439,7 +450,11 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if is_excluded_event(blob): continue
                 if contains(GOLF_RE, blob): continue
 
-                # Filtro específico para Primera RFEF / Federación: descartar si no es el Castilla
+                # Filtro fútbol femenino: descartar si no es Real Madrid
+                if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob) and not contains(REAL_MADRID_RE, blob):
+                    continue
+
+                # Filtro Primera RFEF / Federación: descartar si no es el Castilla
                 if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
                     continue
 
