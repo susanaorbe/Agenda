@@ -1,12 +1,10 @@
 from collections import Counter
 from datetime import datetime
-from zoneinfo import ZoneInfo
 import re
 from typing import Iterable
 
 import requests
 from bs4 import BeautifulSoup
-
 
 # ============================================================================
 # CONFIGURACIÓN
@@ -25,7 +23,6 @@ REQUEST_HEADERS = {
 }
 
 REQUEST_TIMEOUT = 15
-
 
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *",
@@ -61,7 +58,6 @@ EXCLUDED_CHANNELS = {
     "uefa youtube",
 }
 
-
 # ============================================================================
 # UTILIDADES DE REGEX
 # ============================================================================
@@ -71,7 +67,6 @@ def rx(*patterns: str) -> re.Pattern:
         r"(?:%s)" % "|".join(patterns),
         re.IGNORECASE,
     )
-
 
 # ============================================================================
 # REGEX PRINCIPALES
@@ -119,8 +114,19 @@ TOP3_FOREIGN_RE = rx(
     r"\bporto\b",
 )
 
-TENNIS_PLAYERS_RE = rx(
+# TOP 3 ATP & WTA + TODOS LOS JUGADORES Y JUGADORAS ESPAÑOLES (PARA FILTRADO EN FAVORITOS)
+TENNIS_FAVORITES_RE = rx(
+    # Top 3 ATP
+    r"\bsinner\b",
+    r"\bzverev\b",
     r"\balcaraz\b",
+    # Top 3 WTA
+    r"\bsabalenka\b",
+    r"\bswiatek\b",
+    r"\bgauff\b",
+    r"\brybakina\b",
+    r"\bpegula\b",
+    # Españoles y Españolas (ATP / WTA)
     r"\bjódar\b",
     r"\bdavidovich\b",
     r"\bmunar\b",
@@ -131,13 +137,16 @@ TENNIS_PLAYERS_RE = rx(
     r"\bbouzas\b",
     r"\bbadosa\b",
     r"\bquevedo\b",
-    r"\bsinner\b",
-    r"\bzverev\b",
-    r"\bsabalenka\b",
-    r"\brybakina\b",
-    r"\bpegula\b",
+    r"\bselekhmeteva\b",
+    r"\bramos\b",
+    r"\btabener\b",
+    r"\bmachado\b",
+    r"\bmasarova\b",
+    r"\bparrizas\b",
+    r"\bosorio\b",
 )
 
+# DETECCIÓN GENERAL DE TENIS (Cualquier partido de tenis se clasificará como Tenis)
 TENNIS_RE = rx(
     r"\btenis\b",
     r"\batp\b",
@@ -151,6 +160,16 @@ TENNIS_RE = rx(
     r"\bcopa davis\b",
     r"\bbillie jean king cup\b",
     r"\blaver cup\b",
+    r"\bpek[í]n\b",
+    r"\bbeijing\b",
+    r"\bchina open\b",
+    r"\btorneo de pek[í]n\b",
+    r"\bhangzhou\b",
+    r"\bchengd[uú]\b",
+    r"\btokio\b",
+    r"\btokyo\b",
+    r"\bjapan open\b",
+    r"\btennis\s+channel\b",
 )
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
@@ -163,11 +182,7 @@ WOMEN_RE = rx(
     r"\bwomen\b",
 )
 
-F1_RE = re.compile(
-    r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b",
-    re.IGNORECASE,
-)
-
+F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 F2_RE = re.compile(r"\bf2\b", re.IGNORECASE)
 F3_RE = re.compile(r"\bf3\b")
 
@@ -233,18 +248,8 @@ BASKET_RE = rx(
     r"\bjjoo\b",
 )
 
-HOCKEY_RE = rx(
-    r"\bfih\b",
-    r"\bhockey\b",
-    r"\bhokey\b",
-)
-
-FUTSAL_RE = rx(
-    r"\bf[uú]tbol sala\b",
-    r"\bliga prime\b",
-    r"\bfutsal\b",
-)
-
+HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
+FUTSAL_RE = rx(r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b")
 RUGBY_RE = rx(
     r"\brugby\b",
     r"\bvrac\b",
@@ -253,13 +258,7 @@ RUGBY_RE = rx(
     r"\balcobendas\s+rugby\b",
     r"\bdivisi[oó]n\s+de\s+honor\b",
 )
-
-HANDBALL_RE = rx(
-    r"\bbalonmano\b",
-    r"\basobal\b",
-    r"\bliga asobal\b",
-    r"\bhandball\b",
-)
+HANDBALL_RE = rx(r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b")
 
 FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b",
@@ -282,7 +281,6 @@ FOOTBALL_RE = rx(
     r"\beredivisie\b",
     r"\bjupiler\b",
     r"\bjuvenil\b",
-    r"\bdivisi[oó]n de honor\b",
 )
 
 CYCLING_RE = rx(r"\bciclismo\b")
@@ -302,6 +300,7 @@ def normalize_search_text(text: str) -> str:
     value = re.sub(r"[|,;:/]+", " ", value)
     value = SPACES_RE.sub(" ", value)
     return value.strip()
+
 
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|"
@@ -425,7 +424,7 @@ TENNIS_TOURNAMENT_RE = rx(
 )
 
 TENNIS_COMPETITIONS = (
-    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe[kí]n\b"), "China Open"),
+    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe[kí]n\b", r"\btorneo\s+de\s+pe[kí]n\b"), "China Open"),
     (rx(r"\btorneo\s+de\s+tokio\b", r"\btokio\b", r"\btokyo\b", r"\bjapan\s+open\b"), "Japan Open"),
     (rx(r"\blaver cup\b"), "Laver Cup"),
     (rx(r"\bcopa davis\b", r"\bdavis cup\b", r"\bdavis\b"), "Copa Davis"),
@@ -494,10 +493,6 @@ def first_match(text: str, rules: Iterable[tuple[re.Pattern, str]]) -> str | Non
     return None
 
 
-# ============================================================================
-# CLASIFICACIÓN Y MANEJO DE MOTOR Y TENIS
-# ============================================================================
-
 MOTOR_TIME_SESSIONS = {
     "01:45": "Libres",
     "03:45": "Libres",
@@ -515,8 +510,6 @@ MOTOR_TIME_SESSIONS = {
 
 
 def get_motor_session(sport: str, competition: str, event_time: str, blob: str = "", event: str = "", tournament: str = "") -> str | None:
-    # La distinción entre sesiones (Libres, Clasificación, Sprint, Carrera)
-    # se limita EXCLUSIVAMENTE a Fórmula 1 y MotoGP.
     if competition not in {"Fórmula 1", "MotoGP"}:
         return None
 
@@ -579,6 +572,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
     tournament = raw_tournament or ""
 
+    # EVALUACIÓN DE TENIS ANTES QUE OTROS DEPORTES
+    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, tournament):
+        return ("Tenis", "🎾", classify_tennis(blob, tournament, tv_blob))
+
     if contains(RUGBY_RE, blob): return ("Otros", "🏉", clean_tournament(tournament, "Rugby"))
     if is_womens_champions(blob): return ("Fútbol", "⚽", tournament or "UEFA Women's Champions League")
     if "juvenil" in blob or "división de honor" in blob or "division de honor" in blob:
@@ -588,9 +585,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(tournament, "Hockey (FIH)"))
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", "Liga Prime" if "prime" in blob else clean_tournament(tournament, "Fútbol Sala"))
     if contains(HANDBALL_RE, blob): return ("Otros", "🎯", "Liga ASOBAL" if "asobal" in blob else clean_tournament(tournament, "Balonmano"))
-
-    if contains(TENNIS_RE, blob) or contains(TENNIS_PLAYERS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, tournament):
-        return ("Tenis", "🎾", classify_tennis(blob, tournament, tv_blob))
 
     football_competition = first_match(blob, FOOTBALL_COMPETITIONS)
     if football_competition: return ("Fútbol", "⚽", football_competition)
@@ -622,16 +616,17 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if is_womens_champions(blob) or contains(WOMEN_RE, blob): return False
 
     if contains(BASKET_RE, blob): return "españa" in blob or "spain" in blob
-    if contains(TENNIS_PLAYERS_RE, blob): return True
+    
+    # EN TENIS: SOLO SERÁ FAVORITO SI TIENE A UN ESPAÑOL/A O AL TOP 3 DE WTA/ATP
+    if sport == "Tenis":
+        if contains(TENNIS_FAVORITES_RE, blob): return True
+        if ("billie jean king cup" in blob or "copa davis" in blob or "davis cup" in blob) and "españa" in blob: return True
+        return False
+
     if ("nations league" in blob or "uefa nations league" in blob) and ("españa" in blob or "spain" in blob or "selección española" in blob): return True
-    if ("billie jean king cup" in blob or "copa davis" in blob or "davis cup" in blob) and "españa" in blob: return True
 
     return contains(MOTOR_SERIES_RE, blob) or contains(SPANISH_BIG_THREE_RE, blob) or contains(TOP3_FOREIGN_RE, blob)
 
-
-# ============================================================================
-# PARSING Y FETCH DE EVENTOS
-# ============================================================================
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     text_full = item.get_text(" | ", strip=True)
@@ -676,7 +671,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             tournament = part
             continue
 
-        # Limpiar fragmentos sueltos de puntuación extra como comas al final
         cleaned_fragment = re.sub(r"^[\s,.\-–—]+|[\s,.\-–—]+$", "", part).strip()
         if cleaned_fragment:
             parts_clean.append(cleaned_fragment)
@@ -693,7 +687,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         clean_desc = SPACES_RE.sub(" ", clean_desc).strip(" -–—")
         matchup = clean_desc if clean_desc and normalize_search_text(clean_desc) not in normalize_search_text(tournament) else (tournament or "Evento Deportivo")
 
-    # Limpieza final de caracteres sobrantes
     matchup = re.sub(r"\s*-\s*,|\s*,\s*$", "", matchup).strip(" -–—,")
 
     return time_clean, matchup, channels, tournament
@@ -715,12 +708,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
-
-                # DESCARTE DE FILAS DUPLICADAS / SIN CANAL VÁLIDO:
-                # Si una fila no tiene canales asignados (o venían vacíos de la web fuente),
-                # la ignoramos por completo para evitar que se cree un duplicado sintético.
-                if not channels:
-                    continue
+                if not channels: continue
 
                 text_block = f"{event_str} {tournament}"
                 tv_blob = " ".join(channels).lower()
@@ -731,7 +719,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob): continue
                 if contains(LIGAF_RE, blob): continue
 
-                # Evitar duplicados agrupando por hora + competición
                 event_key = (time_clean, tournament.lower() if tournament else event_str.lower())
                 if event_key in seen_events: continue
                 seen_events.add(event_key)
@@ -760,10 +747,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
     return results
 
-
-# ============================================================================
-# GENERACIÓN DE HTML Y SCRIPT JS
-# ============================================================================
 
 def generate_html(events):
     fecha_act = datetime.now().strftime("%d/%m/%Y - %H:%M")
