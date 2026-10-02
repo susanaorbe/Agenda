@@ -53,6 +53,8 @@ EXCLUDED_CHANNELS = {
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
+    "rcdeportivo tv youtube",
+    "rcd deportivo tv youtube",
     "red bull tv",
     "rtve play",
     "sefutbol youtube",
@@ -483,7 +485,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML OPTIMIZADO PARA MÓVILES (CSS RESPONSIVE)
+# GENERACIÓN DE HTML (RESPONSIVE: TABLA EN PC / TARJETAS EN MÓVIL)
 # ============================================================================
 
 def generate_html(events):
@@ -502,7 +504,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr data-sport="{ev['deporte'].lower()}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{search_text}">
+                <tr class="event-row" data-sport="{ev['deporte'].lower()}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{search_text}">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">{ev['hora']}</span></td>
                     <td class="sport-col"><span class="sport-tag">{ev['icono']} {ev['deporte']}</span></td>
@@ -525,53 +527,89 @@ def generate_html(events):
     <style>
         :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 12px 8px; display: flex; justify-content: center; }}
+        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }}
         .container {{ width: 100%; max-width: 1150px; }}
-        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
-        h1 {{ font-size: 1.4rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
+        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
         .header-controls {{ display: flex; gap: 10px; align-items: center; }}
-        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
+        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
         .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
         
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-bottom: 15px; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
         .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
         .stat-card.active-card {{ border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
         .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
-        .stat-card .lbl {{ font-size: 0.7rem; color: var(--text-muted); }}
+        .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
         
-        .filter-container {{ display: flex; gap: 10px; margin-bottom: 12px; }}
+        .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
         .search-input:focus {{ border-color: var(--accent-blue); }}
         
-        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }}
-        table {{ width: 100%; border-collapse: collapse; text-align: left; min-width: 600px; }}
+        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }}
+        table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
-        td {{ padding: 10px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
-        tr:hover {{ background-color: #243146; }}
+        td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
+        tr.event-row:hover {{ background-color: #243146; }}
         
         .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
         .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
-        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.82rem; white-space: nowrap; display: inline-block; }}
+        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
         .sport-tag {{ font-weight: 600; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-wrap: wrap; gap: 4px; }}
-        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }}
+        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
-        /* OPTIMIZACIÓN RESPONSIVE PARA MÓVILES */
+        /* DISEÑO ESPECÍFICO DE FICHA/TARJETA PARA MÓVILES */
         @media (max-width: 768px) {{
-            body {{ padding: 6px 4px; }}
-            h1 {{ font-size: 1.2rem; }}
-            .date-col {{ display: none; }} /* Oculta la columna "Hoy" en móviles */
-            table {{ min-width: 100%; }}
-            th, td {{ padding: 8px 6px; }}
-            .time-col {{ width: 65px; }}
-            .sport-col {{ width: 85px; }}
-            .comp-col {{ width: 110px; }}
+            body {{ padding: 8px 6px; }}
+            h1 {{ font-size: 1.25rem; }}
             .stats-grid {{ grid-template-columns: repeat(3, 1fr); gap: 6px; }}
             .stat-card {{ padding: 6px 8px; }}
-            .stat-card .val {{ font-size: 1rem; }}
+            
+            /* Ocultar la cabecera clásica de la tabla */
+            thead {{ display: none; }}
+            
+            /* Convertir la tabla y sus filas en tarjetas flex */
+            table, tbody {{ display: block; width: 100%; }}
+            .table-card {{ background: transparent; border: none; box-shadow: none; }}
+            
+            tr.event-row {{
+                display: flex;
+                flex-direction: column;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 10px;
+                gap: 6px;
+            }}
+            
+            td {{ padding: 0; border: none; width: auto !important; }}
+            .date-col {{ display: none; }}
+            
+            /* Línea superior: Hora + Deporte */
+            .time-col {{ order: 1; display: inline-block; }}
+            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; }}
+            
+            /* Agrupar hora y deporte arriba */
+            tr.event-row::before {{
+                content: "";
+                display: table;
+            }}
+            
+            /* Línea intermedia: Competición */
+            .comp-col {{ order: 3; margin-top: 4px; }}
+            .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
+            
+            /* Línea principal: Evento */
+            .event-col {{ order: 4; margin: 2px 0 4px 0; }}
+            .event-title {{ font-size: 1rem; line-height: 1.35; }}
+            
+            /* Línea inferior: Canales TV */
+            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }}
+            .tv-badge {{ font-size: 0.72rem; padding: 4px 8px; }}
         }}
     </style>
 </head>
@@ -639,7 +677,7 @@ function filterTable() {{ applyFilters(); }}
 function applyFilters() {{
     const searchFilter = document.getElementById('searchInput').value.toLowerCase();
     const table = document.getElementById('agendaTable');
-    const trs = table.getElementsByTagName('tr');
+    const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
     for (let i = 0; i < trs.length; i++) {{
         const tr = trs[i];
@@ -650,7 +688,7 @@ function applyFilters() {{
         const matchesFilter = currentFilter === 'todos' ? true : (currentFilter === 'filtrados' ? isFiltered : rowSport === currentFilter);
         const matchesSearch = text.includes(searchFilter);
         if (matchesFilter && matchesSearch) {{
-            tr.style.display = '';
+            tr.style.display = 'flex';
             visibleCount++;
         }} else {{
             tr.style.display = 'none';
