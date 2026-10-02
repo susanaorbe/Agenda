@@ -92,14 +92,17 @@ TOP3_FOREIGN_RE = rx(
     r"\bsporting cp\b", r"\bsporting de portugal\b", r"\bbenfica\b", r"\bporto\b"
 )
 
+# FAVORITOS TENIS: ÚNICAMENTE TOP 3 ATP/WTA Y JUGADORES/AS ESPAÑOLES
 TENNIS_FAVORITES_RE = rx(
-    r"\bsinner\b", r"\bzverev\b", r"\balcaraz\b", r"\bdjokovic\b",
+    # Top 3 ATP
+    r"\bsinner\b", r"\bzverev\b", r"\balcaraz\b",
+    # Top 3 WTA
     r"\bsabalenka\b", r"\bswiatek\b", r"\bgauff\b", r"\brybakina\b", r"\bpegula\b",
-    r"\bmunar\b", r"\bjódar\b", r"\bdavidovich\b", r"\bmérida\b", r"\blandaluce\b",
-    r"\bcarreño\b", r"\bbucsa\b", r"\bbouzas\b", r"\bbadosa\b", r"\bquevedo\b",
-    r"\bselekhmeteva\b", r"\bramos\b", r"\btabener\b", r"\bmachado\b",
-    r"\bmasarova\b", r"\bparrizas\b", r"\bosorio\b", r"\bfaria\b", r"\btsitsipas\b",
-    r"\bkhachanov\b", r"\bandreeva\b", r"\bvacherot\b", r"\byuan\b"
+    # Españoles y Españolas
+    r"\bnadal\b", r"\bmunar\b", r"\bjódar\b", r"\bdavidovich\b", r"\bmérida\b",
+    r"\blandaluce\b", r"\bcarreño\b", r"\bbucsa\b", r"\bbouzas\b", r"\bbadosa\b",
+    r"\bquevedo\b", r"\bselekhmeteva\b", r"\bramos\b", r"\btabener\b", r"\bmachado\b",
+    r"\bmasarova\b", r"\bparrizas\b", r"\bosorio\b"
 )
 
 TENNIS_RE = rx(
@@ -181,7 +184,6 @@ CHANNEL_LINE_RE = rx(
     r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b"
 )
 
-# Exclusión explicita de WNBA, Primera FEB y LigaU
 EXCLUDED_SPORTS_RE = rx(
     r"\btorneo\s+betplay\s+dimayor\b",
     r"\bbetplay\s+dimayor\b",
@@ -192,6 +194,7 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bliga\s*u\b"
 )
 
+# Exclusión explícita de FIFA ASEAN Cup, LaLiga Futures, Replays y Academy
 EXCLUDED_BLOB_RE = rx(
     r"preol[ií]mpico\s+femenino",
     r"nfl\s+pretemporada",
@@ -200,6 +203,7 @@ EXCLUDED_BLOB_RE = rx(
     r"segunda\s+rfef",
     r"tercera\s+federaci[oó]n",
     r"liga\s+nacional\s+juvenil",
+    r"fifa\s+asean\s+cup",
     r"laliga\s+futures",
     r"academy\b",
     r"\breplay\b",
@@ -288,12 +292,12 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
-    # Regla: De fútbol femenino solo se permiten los partidos del Real Madrid Femenino
+    # Fútbol femenino: solo Real Madrid
     if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob):
         if not contains(REAL_MADRID_RE, blob):
             return ("__EXCLUDED__", "", "")
 
-    # Primera Federación: solo el Castilla
+    # Primera Federación: solo Castilla
     if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
         return ("__EXCLUDED__", "", "")
 
@@ -454,7 +458,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob) and not contains(REAL_MADRID_RE, blob):
                     continue
 
-                # Filtro Primera RFEF / Federación: descartar si no es el Castilla
+                # Filtro Primera RFEF: descartar si no es Castilla
                 if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
                     continue
 
