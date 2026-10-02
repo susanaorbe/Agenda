@@ -74,6 +74,7 @@ def rx(*patterns: str) -> re.Pattern:
 
 
 REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
+CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
 
 SPANISH_BIG_THREE_RE = rx(
     r"\breal madrid\b", r"\brm castilla\b", r"\bbarcelona\b",
@@ -152,6 +153,12 @@ FOOTBALL_RE = rx(
     r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b"
 )
 
+PRIMERA_RFEF_RE = rx(
+    r"\bprimera federaci[oó]n\b",
+    r"\bprimera rfef\b",
+    r"\b1[ªa]\s*federaci[oó]n\b",
+)
+
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
 SPACES_RE = re.compile(r"\s+")
@@ -173,7 +180,6 @@ CHANNEL_LINE_RE = rx(
     r"\batp\s+tennis\s+tv\b", r"\bwta\s+tv\b"
 )
 
-# WNBA explícitamente descartada
 EXCLUDED_SPORTS_RE = rx(
     r"\btorneo\s+betplay\s+dimayor\b",
     r"\bbetplay\s+dimayor\b",
@@ -182,7 +188,6 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bwnba\b"
 )
 
-# Descarte de LaLiga Futures, Replay y partidos base "Academy"
 EXCLUDED_BLOB_RE = rx(
     r"preol[ií]mpico\s+femenino",
     r"nfl\s+pretemporada",
@@ -202,6 +207,7 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bconference league\b"), "UEFA Conference League"),
     (rx(r"\blaliga hypermotion\b"), "LaLiga Hypermotion"),
     (rx(r"\blaliga ea sports\b", r"\blaliga ea\b"), "LaLiga EA Sports"),
+    (PRIMERA_RFEF_RE, "Primera Federación"),
     (rx(r"\bpremier league\b"), "Premier League"),
     (rx(r"\bserie a\b"), "Serie A"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
@@ -275,6 +281,10 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
+
+    # Si es de Primera Federación pero NO es el Castilla, se descarta
+    if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
+        return ("__EXCLUDED__", "", "")
 
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
@@ -382,7 +392,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
                     channels.append(channel)
             continue
 
-        if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower):
+        if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
             if not tournament:
                 tournament = part
             continue
@@ -428,6 +438,10 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 if is_excluded_event(blob): continue
                 if contains(GOLF_RE, blob): continue
+
+                # Filtro específico para Primera RFEF / Federación: descartar si no es el Castilla
+                if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
+                    continue
 
                 event_key = (time_clean, tournament.lower() if tournament else event_str.lower(), event_str.lower())
                 if event_key in seen_events: continue
