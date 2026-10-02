@@ -50,6 +50,8 @@ EXCLUDED_CHANNELS = {
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
+    "hbo max",
+    "red bull tv",
     "sefutbol youtube",
     "siroko tv",
     "tv footballclub(acceder)",
@@ -365,6 +367,7 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bncaa\b",
     r"\bufc\b",
     r"\bwnba\b",
+    r"\bliga\s+u\b",
 )
 
 
@@ -408,6 +411,8 @@ EXCLUDED_BLOB_RE = rx(
     r"segunda\s+uruguay",
     r"liga\s+vasca\s+cadete",
     r"copa\s+rfef",
+    r"laliga\s+futures",
+    r"liga\s+u\b",
 )
 
 LIGAF_RE = rx(
@@ -557,6 +562,8 @@ EXCLUDED_CHANNEL_PATTERNS_RE = rx(
     r"\bsefutbol\s+youtube\b",
     r"\btv\s+footballclub\b",
     r"\bfanplay\b",
+    r"\bred\s+bull\s+tv\b",
+    r"\bhbo\s+max\b",
 )
 
 
@@ -851,6 +858,33 @@ MOTOR_SESSION_LABELS = {
 }
 
 OFFICIAL_MOTOR_SESSIONS = None
+
+# Horarios oficiales del fin de semana actual (02-04/10/2026), expresados
+# en hora de España. Se usan únicamente como respaldo si la web oficial no
+# puede ser consultada o si su vista de horarios no coincide con la del widget.
+CURRENT_MOTOR_FALLBACK_SESSIONS = {
+    "2026-10-02": {
+        # F1: Sepang 12:30/16:00 local = 06:30/10:00 España.
+        "06:30": "Libres",
+        "10:00": "Libres",
+        # MotoGP Motegi (horarios mostrados por MotoGP en la zona del usuario).
+        "01:45": "Libres",
+        "06:00": "Libres",
+    },
+    "2026-10-03": {
+        "01:10": "Libres",
+        "01:50": "Clasificación",
+        "02:15": "Clasificación",
+        "06:00": "Carrera al Sprint",
+        "06:30": "Libres",
+        "10:00": "Clasificación",
+    },
+    "2026-10-04": {
+        "00:40": "Warm Up",
+        "05:00": "Carrera",
+        "09:00": "Carrera",
+    },
+}
 
 
 def _parse_hhmm(value: str) -> tuple[int, int] | None:
@@ -1252,16 +1286,55 @@ def load_official_motor_sessions() -> list[dict]:
     return sessions
 
 
+def infer_motor_session_from_text(
+    blob: str,
+    event: str = "",
+    tournament: str = "",
+) -> str | None:
+    """Detecta la sesión cuando el widget la incluye en cualquiera de sus campos."""
+    text = normalize_search_text(f"{blob} {event} {tournament}")
+
+    # El orden evita que "sprint qualifying" se clasifique como sprint.
+    if re.search(r"\bsprint\s+qualifying\b|\bqualifying\s+sprint\b", text):
+        return "Clasificación Sprint"
+    if re.search(r"\btissot\s+sprint\b|\bsprint\b|\bcarrera\s+al\s+sprint\b", text):
+        return "Carrera al Sprint"
+    if re.search(r"\bgrand\s+prix\b|\brace\b|\bcarrera\b", text):
+        return "Carrera"
+    if re.search(r"\bqualifying\b|\bclasificaci[oó]n\b", text):
+        return "Clasificación"
+    if re.search(r"\bfree\s+practice\b|\bpractice\b|\blibres\b|\bfp[123]\b|\bentrenamientos?\b", text):
+        return "Libres"
+    if re.search(r"\bwarm\s*up\b|\bwarmup\b", text):
+        return "Warm Up"
+    return None
+
+
 def get_motor_session(
     sport: str,
     competition: str,
     event_time: str,
+    blob: str = "",
+    event: str = "",
+    tournament: str = "",
 ) -> str | None:
     """
-    Devuelve la sesión oficial para F1/MotoGP.
+    Devuelve la sesión del evento. Primero usa el texto real del widget y,
+    si este no contiene la sesión, cruza la hora con el calendario oficial.
     """
     if competition not in {"Fórmula 1", "MotoGP"}:
         return None
+
+    direct = infer_motor_session_from_text(blob, event, tournament)
+    if direct:
+        return direct
+
+    # Respaldo del fin de semana actual para evitar que una diferencia de
+    # formato/huso horario de la web oficial deje sesiones sin etiqueta.
+    today_key = datetime.now().strftime("%Y-%m-%d")
+    fallback = CURRENT_MOTOR_FALLBACK_SESSIONS.get(today_key, {})
+    if event_time in fallback:
+        return fallback[event_time]
 
     return _official_session_from_time(
         load_official_motor_sessions(),
@@ -1613,6 +1686,7 @@ def matches_strict_criteria(
             sport,
             competition,
             event_time,
+            blob=blob,
         )
 
         if session not in {
@@ -1951,6 +2025,19 @@ def parse_event(item):
     if is_excluded_event(original_blob):
         return None
 
+    # LaLiga Futures puede llegar desde el widget con la competición
+    # erróneamente identificada como "LaLiga EA Sports". La señal fiable
+    # está en el propio evento/canal: "LaLiga Futures" y los equipos
+    # terminados en "Academy".
+    if (
+        re.search(r"\blaliga\s+futures\b", original_blob, re.IGNORECASE)
+        or (
+            len(re.findall(r"\bacademy\b", original_blob, re.IGNORECASE)) >= 2
+            and "laliga" in original_blob
+        )
+    ):
+        return None
+
     (
         time_clean,
         event_str,
@@ -2079,6 +2166,9 @@ def fetch_and_parse_agenda() -> list[dict]:
                     sport,
                     competition,
                     parsed["hora"],
+                    blob=parsed["blob"],
+                    event=parsed["evento"],
+                    tournament=parsed["competicion_raw"],
                 )
 
                 display_event = parsed["evento"]
