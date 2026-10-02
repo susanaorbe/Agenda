@@ -173,10 +173,27 @@ CHANNEL_LINE_RE = rx(
     r"\batp\s+tennis\s+tv\b", r"\bwta\s+tv\b"
 )
 
-EXCLUDED_SPORTS_RE = rx(r"\btorneo\s+betplay\s+dimayor\b", r"\bbetplay\s+dimayor\b", r"\bmls\b", r"\bnfl\b")
+# WNBA explícitamente descartada
+EXCLUDED_SPORTS_RE = rx(
+    r"\btorneo\s+betplay\s+dimayor\b",
+    r"\bbetplay\s+dimayor\b",
+    r"\bmls\b",
+    r"\bnfl\b",
+    r"\bwnba\b"
+)
+
+# Descarte de LaLiga Futures, Replay y partidos base "Academy"
 EXCLUDED_BLOB_RE = rx(
-    r"preol[ií]mpico\s+femenino", r"nfl\s+pretemporada", r"f1\s+academy", r"segunda\s+federaci[oó]n",
-    r"segunda\s+rfef", r"tercera\s+federaci[oó]n", r"liga\s+nacional\s+juvenil"
+    r"preol[ií]mpico\s+femenino",
+    r"nfl\s+pretemporada",
+    r"f1\s+academy",
+    r"segunda\s+federaci[oó]n",
+    r"segunda\s+rfef",
+    r"tercera\s+federaci[oó]n",
+    r"liga\s+nacional\s+juvenil",
+    r"laliga\s+futures",
+    r"academy\b",
+    r"\breplay\b"
 )
 
 FOOTBALL_COMPETITIONS = (
