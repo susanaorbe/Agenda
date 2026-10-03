@@ -39,8 +39,8 @@
         .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
         .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
         .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; }
-        .tv-container { display: flex; flex-wrap: wrap; gap: 4px; }
-        .tv-badge { display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+        .tv-container { display: flex; flex-direction: column; gap: 4px; }
+        .tv-badge { display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; }
         .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
 
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {
@@ -82,7 +82,7 @@
     <header>
         <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
-        <div class="last-update">Última actualización: <strong>03/10/2026 - 11:59 (UTC)</strong></div>
+        <div class="last-update">Última actualización: <strong>03/10/2026 - 12:09 (UTC)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
@@ -119,7 +119,7 @@
                     <th class="sport-col" style="width: 100px;">Deporte</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
                     <th>Evento / Partido</th>
-                    <th style="width: 180px;">Canal TV</th>
+                    <th style="width: 210px;">Canal TV</th>
                 </tr>
             </thead>
             <tbody id="agendaTable">
