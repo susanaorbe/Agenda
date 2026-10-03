@@ -290,7 +290,6 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
 
 
 def time_to_minutes(time_str: str) -> int:
-    """Convierte una hora en formato 'HH:MM' a minutos totales para ordenar correctamente."""
     try:
         parts = time_str.strip().split(":")
         return int(parts[0]) * 60 + int(parts[1])
@@ -300,8 +299,8 @@ def time_to_minutes(time_str: str) -> int:
 
 def classify_motor_sessions(events_list: list[dict]):
     """
-    Agrupa los eventos de motor por competición base y Gran Premio, 
-    ordenándolos cronológicamente por minutos reales para asignar sus sesiones con precisión.
+    Agrupa los eventos de motor, asigna sus sesiones de forma cronológica 
+    y ajusta estrictamente los favoritos según las reglas de MotoGP y F1.
     """
     groups = {}
     for ev in events_list:
@@ -324,10 +323,9 @@ def classify_motor_sessions(events_list: list[dict]):
 
     for key, group in groups.items():
         comp_base, _ = key
-        # Ordenación cronológica real basada en minutos desde medianoche (evita problemas con "10:00" vs "6:30")
         group.sort(key=lambda x: time_to_minutes(x["hora"]))
         total_sessions = len(group)
-        current_weekday = datetime.now().weekday()  # 0: Lunes ... 4: Viernes, 5: Sábado, 6: Domingo
+        current_weekday = datetime.now().weekday()  # 0: Lunes ... 5: Sábado, 6: Domingo
 
         for idx, ev in enumerate(group):
             session_name = ""
@@ -388,6 +386,15 @@ def classify_motor_sessions(events_list: list[dict]):
                 clean_base_event = re.sub(r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
+            # REGLAS ESTRICTAS DE FAVORITOS PARA MOTOR:
+            ev_lower = ev["evento"].lower()
+            if comp_base == "MotoGP":
+                # MotoGP: Solo Carreras Sprint y Carreras Principales
+                ev["is_filtered"] = any(term in ev_lower for term in ["sprint", "carrera principal", "carrera"])
+            elif comp_base == "Fórmula 1":
+                # F1: Carreras Sprint, Carreras Principales y Clasificaciones (incluyendo shootout)
+                ev["is_filtered"] = any(term in ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
+
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
@@ -441,8 +448,9 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    if any(m in competition for m in {"Fórmula 1", "MotoGP"}):
-        return True
+    # El motor se filtra con precisión milimétrica después en 'classify_motor_sessions'
+    if competition in {"Fórmula 1", "MotoGP"}:
+        return False
 
     if contains(REAL_MADRID_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
@@ -715,7 +723,7 @@ def generate_html(events):
             <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎️</div>
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎️️</div>
         </div>
         <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
             <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">{sport_counts['Otros']}</div></div><div style="font-size:1.1rem">🎯</div>
