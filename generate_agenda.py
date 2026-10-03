@@ -289,53 +289,87 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
     return clean_tournament(raw_tournament, f"{tour} Tour")
 
 
-def classify_motor(blob: str, raw_tournament: str) -> tuple[str, str]:
-    """Clasifica la categoría de motor y normaliza el nombre exacto de la sesión."""
-    is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
-    is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-    is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
-    is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
-    is_moto2 = MOTO2_RE.search(blob)
-    is_moto3 = MOTO3_RE.search(blob)
+def classify_motor_sessions(events_list: list[dict]):
+    """
+    Agrupa los eventos de motor por Gran Premio / Categoría y los ordena cronológicamente 
+    para asignarles la sesión exacta según su posición en el día y el tipo de campeonato.
+    """
+    # Agrupar por categoría base detectada (F1, MotoGP, Moto2, Moto3, etc.)
+    groups = {}
+    for ev in events_list:
+        if ev["deporte"] != "Motor":
+            continue
+        # Clave de agrupación basada en el nombre base del GP (quitando palabras de sesión si las hubiera)
+        base_comp = ev["competicion"]
+        for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3"]:
+            if base_comp.startswith(key_prefix):
+                base_comp = key_prefix
+                break
+        
+        # Como no tenemos el día exacto de la semana en la estructura simple, 
+        # agrupamos por el título del evento (ej: G.P. Japón) y la hora ya ordenada
+        key = (base_comp, ev["evento"])
+        if key not in groups:
+            groups[key] = []
+        groups[key].append(ev)
 
-    session_name = ""
-    if "libres 1" in blob or "fp1" in blob:
-        session_name = "Libres 1 (FP1)"
-    elif "libres 2" in blob or "fp2" in blob:
-        session_name = "Libres 2 (FP2)"
-    elif "libres 3" in blob or "fp3" in blob:
-        session_name = "Libres 3 (FP3)"
-    elif "sprint shootout" in blob or "shootout" in blob:
-        session_name = "Sprint Shootout"
-    elif "carrera sprint" in blob or "sprint" in blob:
-        session_name = "Carrera Sprint"
-    elif "práctica" in blob or "practica" in blob:
-        session_name = "Práctica"
-    elif "clasificación" in blob or "clasificacion" in blob or "qualy" in blob or "q1" in blob or "q2" in blob or "q3" in blob:
-        session_name = "Clasificación"
-    elif "warm up" in blob:
-        session_name = "Warm Up"
-    elif "carrera" in blob:
-        session_name = "Carrera Principal"
+    for key, group in groups.items():
+        comp_base, _ = key
+        # Ordenar cronológicamente por hora
+        group.sort(key=lambda x: x["hora"])
+        total_sessions = len(group)
 
-    if is_f1:
-        comp = "Fórmula 1"
-    elif is_motogp:
-        comp = "MotoGP"
-    elif is_f2:
-        comp = "Fórmula 2"
-    elif is_f3:
-        comp = "Fórmula 3"
-    elif is_moto2:
-        comp = "Moto2"
-    elif is_moto3:
-        comp = "Moto3"
-    else:
-        comp = clean_tournament(raw_tournament, "Motor")
+        for idx, ev in enumerate(group):
+            session_name = ""
+            
+            if comp_base == "MotoGP":
+                if total_sessions == 2:
+                    # Suposición típica si hay 2 sesiones (ej: Domingo -> Warm Up y Carrera)
+                    session_name = "Warm Up" if idx == 0 else "Carrera Principal"
+                elif total_sessions == 3:
+                    # Viernes o Sábado típico
+                    if idx == 0: session_name = "Libres 1 (FP1)"
+                    elif idx == 1: session_name = "Práctica / Libres 2"
+                    else: session_name = "Carrera Sprint / Clasificación"
+                else:
+                    if idx == 0: session_name = "Libres 1 (FP1)"
+                    elif idx == 1: session_name = "Práctica"
+                    elif idx == 2: session_name = "Libres 2 (FP2)"
+                    elif idx == 3: session_name = "Clasificación (Q1/Q2)"
+                    elif idx == 4: session_name = "Carrera Sprint"
+                    elif idx == 5: session_name = "Warm Up"
+                    elif idx == 6: session_name = "Carrera Principal"
+                    else: session_name = f"Sesión {idx + 1}"
+            
+            elif comp_base == "Fórmula 1":
+                if total_sessions == 1:
+                    session_name = "Carrera Principal"
+                elif total_sessions == 2:
+                    if idx == 0: session_name = "Libres 1 (FP1) / Sprint Shootout"
+                    else: session_name = "Clasificación / Carrera Sprint"
+                elif total_sessions == 3:
+                    if idx == 0: session_name = "Libres 1 (FP1)"
+                    elif idx == 1: session_name = "Libres 2 (FP2) / Sprint Shootout"
+                    else: session_name = "Libres 3 (FP3) / Clasificación"
+                else:
+                    if idx == 0: session_name = "Libres 1 (FP1)"
+                    elif idx == 1: session_name = "Libres 2 (FP2)"
+                    elif idx == 2: session_name = "Sprint Shootout"
+                    elif idx == 3: session_name = "Libres 3 (FP3)"
+                    elif idx == 4: session_name = "Carrera Sprint"
+                    elif idx == 5: session_name = "Clasificación"
+                    elif idx == 6: session_name = "Carrera Principal"
+                    else: session_name = f"Sesión {idx + 1}"
+            else:
+                # Para Moto2, Moto3, F2, F3 u otros
+                if total_sessions == 1:
+                    session_name = "Carrera"
+                elif idx == 0: session_name = "Entrenamientos / Práctica"
+                elif idx == 1: session_name = "Clasificación"
+                else: session_name = "Carrera"
 
-    if session_name:
-        return comp, f"{comp} - {session_name}"
-    return comp, clean_tournament(raw_tournament, "Motor")
+            if session_name:
+                ev["competicion"] = f"{comp_base} - {session_name}"
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -362,9 +396,24 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
+    
     if contains(MOTOR_GENERAL_RE, blob):
-        comp, detailed_comp = classify_motor(blob, raw_tournament)
-        return ("Motor", "🏎️", detailed_comp)
+        is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
+        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
+        is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
+        is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
+        is_moto2 = MOTO2_RE.search(blob)
+        is_moto3 = MOTO3_RE.search(blob)
+
+        if is_f1: comp = "Fórmula 1"
+        elif is_motogp: comp = "MotoGP"
+        elif is_f2: comp = "Fórmula 2"
+        elif is_f3: comp = "Fórmula 3"
+        elif is_moto2: comp = "Moto2"
+        elif is_moto3: comp = "Moto3"
+        else: comp = clean_tournament(raw_tournament, "Motor")
+
+        return ("Motor", "🏎️", comp)
 
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
 
@@ -501,6 +550,10 @@ def fetch_and_parse_agenda() -> list[dict]:
                 })
             except Exception:
                 continue
+        
+        # Aplicar la asignación secuencial inteligente para las sesiones de motor
+        classify_motor_sessions(results)
+
     except Exception as e:
         print(f"Error cargando la agenda: {e}")
 
@@ -724,7 +777,7 @@ function applyFilters() {{
             emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección y búsqueda.</td>';
             table.appendChild(emptyRow);
         }} else {{ emptyRow.style.display = ''; }}
-    }} else {{ if (emptyRow) emptyRow.style.display = 'none'; }}
+    }} else {{ if (emptyRow) emptyRow.emptyRow.style.display = 'none'; }}
 }}
 </script>
 </body>
