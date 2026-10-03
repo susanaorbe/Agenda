@@ -53,6 +53,7 @@ EXCLUDED_CHANNELS = {
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
+    "orange fútbol 2(108)",
     "rcdeportivo tv youtube",
     "rcd deportivo tv youtube",
     "red bull tv",
