@@ -304,7 +304,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament) or WTA_RE.search(blob):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
-    # Filtro general de deportes femeninos no deseados (excepto Real Madrid Femenino o Tenis)
+    # Filtro general de deportes femeninos no deseados (excepto Real Madrid Femenino)
     if contains(WOMEN_RE, blob):
         if not contains(REAL_MADRID_RE, blob):
             return ("__EXCLUDED__", "", "")
@@ -385,9 +385,6 @@ def get_motor_session(sport: str, competition: str, event_time: str, blob: str =
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
-    if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
-        return False
-
     if competition in {"Fórmula 1", "MotoGP"}:
         session = get_motor_session(sport, competition, event_time, blob=blob)
         if session and session not in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}:
@@ -419,7 +416,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         return "", "", [], ""
 
     matchup = ""
-    channels: list[str] = []
+    raw_channels: list[str] = []
     tournament = ""
 
     for part in raw_parts:
@@ -434,9 +431,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
-                channel_lower = normalize_search_text(channel)
-                if channel and not EXCLUDED_CHANNELS_RE.search(channel_lower) and channel not in channels:
-                    channels.append(channel)
+                if channel and channel not in raw_channels:
+                    raw_channels.append(channel)
             continue
 
         if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
@@ -454,13 +450,20 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         elif not matchup:
             matchup = part
 
+    # FILTRADO DE CANALES PERMITIDOS
+    allowed_channels = []
+    for ch in raw_channels:
+        ch_lower = normalize_search_text(ch)
+        if not EXCLUDED_CHANNELS_RE.search(ch_lower):
+            allowed_channels.append(ch)
+
     matchup = re.sub(r"^['\"\s]+|['\"\s]+$", "", matchup).strip()
     tournament = re.sub(r"^['\"\s]+|['\"\s]+$", "", tournament).strip()
 
     if not matchup and tournament:
         matchup = tournament
 
-    return time_clean, matchup, channels, tournament
+    return time_clean, matchup, allowed_channels, tournament
 
 
 def fetch_and_parse_agenda() -> list[dict]:
@@ -480,6 +483,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
 
+                # Si tras filtrar la lista de canales no queda ninguno válido, omitimos el evento
                 if not channels:
                     continue
 
