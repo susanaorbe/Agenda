@@ -327,7 +327,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
 
 # ============================================================================
-# DETECTOR MEJORADO DE SESIONES DE MOTOR (F1 Y MOTOGP)
+# DETECTOR PRECISO DE SESIONES DE MOTOR (SEGÚN TEXTO Y HORARIO ESTRUCTURADO)
 # ============================================================================
 
 def get_motor_session(sport: str, competition: str, event_time: str, blob: str = "", event: str = "", tournament: str = "") -> str | None:
@@ -336,38 +336,64 @@ def get_motor_session(sport: str, competition: str, event_time: str, blob: str =
 
     text = normalize_search_text(f"{blob} {event} {tournament}")
 
-    # 1. Búsqueda explícita por palabras clave en la descripción
+    # 1. Si el texto indica la sesión explícitamente, usarla directamente
     if re.search(r"\bsprint\s+qualifying\b|\bqualifying\s+sprint\b|\bclasificaci[oó]n\s+sprint\b", text): 
         return "Clasificación Sprint"
-    if re.search(r"\btissot\s+sprint\b|\bcarrera\s+al\s+sprint\b|\bsprint\s+race\b|\bsprint\b", text): 
+    if re.search(r"\btissot\s+sprint\b|\bcarrera\s+al\s+sprint\b|\bsprint\b", text): 
         return "Carrera al Sprint"
-    if re.search(r"\bgrand\s+prix\b|\brace\b|\bcarrera\b|\bgp\b", text) and not re.search(r"\bpractice\b|\blibres\b|\bqualifying\b|\bclasificaci[oó]n\b", text): 
-        return "Carrera"
     if re.search(r"\bqualifying\b|\bclasificaci[oó]n\b|\bq[123]\b", text): 
         return "Clasificación"
     if re.search(r"\bfree\s+practice\b|\bpractice\b|\blibres\b|\bfp[123]\b|\bentrenamientos?\b", text): 
         return "Libres"
     if re.search(r"\bwarm\s*up\b|\bwarmup\b", text): 
         return "Warm Up"
+    if re.search(r"\bcarrera\b|\brace\b|\bgrand\s+prix\b", text) and not re.search(r"\blibres|practice|qualifying|clasificacio", text): 
+        return "Carrera"
 
-    # 2. Si el texto no especifica sesión, inferir según día de la semana y rango horario aproximado
-    weekday = datetime.now().weekday()  # 5 = Sábado, 6 = Domingo
+    # 2. Búsqueda estructurada basada en día de la semana y horas (GPs de Asia/Oriente Medio y Europa)
+    weekday = datetime.now().weekday()  # 4 = Viernes, 5 = Sábado, 6 = Domingo
     try:
         hour = int(event_time.split(":")[0])
+        minute = int(event_time.split(":")[1])
+        time_num = hour * 100 + minute
     except Exception:
-        hour = 12
+        time_num = 1200
 
-    if weekday == 5: # Sábado
-        if 8 <= hour < 12:
+    if competition == "MotoGP":
+        if weekday == 4: # Viernes
             return "Libres"
-        elif 12 <= hour < 15:
-            return "Clasificación"
-        elif 15 <= hour <= 21:
-            return "Carrera al Sprint"
-    elif weekday == 6: # Domingo
-        if hour < 10:
-            return "Warm Up"
-        else:
+        elif weekday == 5: # Sábado
+            if 230 <= time_num <= 430:
+                return "Clasificación"
+            elif 730 <= time_num <= 930:
+                return "Carrera al Sprint"
+            elif time_num < 230 or 430 < time_num < 730:
+                return "Libres"
+        elif weekday == 6: # Domingo
+            if time_num <= 400:
+                return "Warm Up"
+            else:
+                return "Carrera"
+
+    elif competition == "Fórmula 1":
+        if weekday == 4: # Viernes
+            return "Libres"
+        elif weekday == 5: # Sábado
+            # Horarios Asia/Pacífico (GPs como Japón, Australia, Singapur, China)
+            if 400 <= time_num <= 830:
+                return "Libres"
+            elif 900 <= time_num <= 1130:
+                return "Clasificación"
+            elif 1130 < time_num <= 1500:
+                return "Carrera al Sprint"
+            # Horarios Europa
+            elif 1200 <= time_num <= 1330:
+                return "Libres"
+            elif 1500 <= time_num <= 1700:
+                return "Clasificación"
+            elif 1700 < time_num <= 2000:
+                return "Carrera al Sprint"
+        elif weekday == 6: # Domingo
             return "Carrera"
 
     return None
@@ -381,7 +407,6 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
 
     if competition in {"Fórmula 1", "MotoGP"}:
         session = get_motor_session(sport, competition, event_time, blob=blob)
-        # En la pestaña "Filtrados" incluir Clasificación, Sprint y Carrera
         if session and session not in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}:
             return False
 
@@ -496,7 +521,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 motor_session = get_motor_session(sport, competition, time_clean, blob=blob, event=event_str, tournament=tournament)
                 
-                # Construir el nombre del evento
+                # Construir el nombre completo del evento deportivo
                 if motor_session and motor_session not in event_str:
                     display_event = f"{event_str} — {motor_session}"
                 else:
