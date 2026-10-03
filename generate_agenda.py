@@ -326,36 +326,51 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
 
 
-MOTOR_TIME_SESSIONS = {
-    "01:45": "Libres",
-    "03:45": "Libres",
-    "06:00": "Libres",
-    "06:30": "Libres",
-    "08:00": "Libres",
-    "10:00": "Libres",
-    "01:10": "Libres",
-    "01:50": "Clasificación",
-    "02:15": "Clasificación",
-    "00:40": "Warm Up",
-    "05:00": "Carrera",
-    "09:00": "Carrera",
-}
-
+# ============================================================================
+# DETECTOR MEJORADO DE SESIONES DE MOTOR (F1 Y MOTOGP)
+# ============================================================================
 
 def get_motor_session(sport: str, competition: str, event_time: str, blob: str = "", event: str = "", tournament: str = "") -> str | None:
     if competition not in {"Fórmula 1", "MotoGP"}:
         return None
 
     text = normalize_search_text(f"{blob} {event} {tournament}")
-    if re.search(r"\bsprint\s+qualifying\b|\bqualifying\s+sprint\b", text): return "Clasificación Sprint"
-    if re.search(r"\btissot\s+sprint\b|\bsprint\b|\bcarrera\s+al\s+sprint\b", text): return "Carrera al Sprint"
-    if re.search(r"\bgrand\s+prix\b|\brace\b|\bcarrera\b", text): return "Carrera"
-    if re.search(r"\bqualifying\b|\bclasificaci[oó]n\b", text): return "Clasificación"
-    if re.search(r"\bfree\s+practice\b|\bpractice\b|\blibres\b|\bfp[123]\b|\bentrenamientos?\b", text): return "Libres"
-    if re.search(r"\bwarm\s*up\b|\bwarmup\b", text): return "Warm Up"
 
-    clean_time = event_time.zfill(5)
-    return MOTOR_TIME_SESSIONS.get(clean_time, "Libres")
+    # 1. Búsqueda explícita por palabras clave en la descripción
+    if re.search(r"\bsprint\s+qualifying\b|\bqualifying\s+sprint\b|\bclasificaci[oó]n\s+sprint\b", text): 
+        return "Clasificación Sprint"
+    if re.search(r"\btissot\s+sprint\b|\bcarrera\s+al\s+sprint\b|\bsprint\s+race\b|\bsprint\b", text): 
+        return "Carrera al Sprint"
+    if re.search(r"\bgrand\s+prix\b|\brace\b|\bcarrera\b|\bgp\b", text) and not re.search(r"\bpractice\b|\blibres\b|\bqualifying\b|\bclasificaci[oó]n\b", text): 
+        return "Carrera"
+    if re.search(r"\bqualifying\b|\bclasificaci[oó]n\b|\bq[123]\b", text): 
+        return "Clasificación"
+    if re.search(r"\bfree\s+practice\b|\bpractice\b|\blibres\b|\bfp[123]\b|\bentrenamientos?\b", text): 
+        return "Libres"
+    if re.search(r"\bwarm\s*up\b|\bwarmup\b", text): 
+        return "Warm Up"
+
+    # 2. Si el texto no especifica sesión, inferir según día de la semana y rango horario aproximado
+    weekday = datetime.now().weekday()  # 5 = Sábado, 6 = Domingo
+    try:
+        hour = int(event_time.split(":")[0])
+    except Exception:
+        hour = 12
+
+    if weekday == 5: # Sábado
+        if 8 <= hour < 12:
+            return "Libres"
+        elif 12 <= hour < 15:
+            return "Clasificación"
+        elif 15 <= hour <= 21:
+            return "Carrera al Sprint"
+    elif weekday == 6: # Domingo
+        if hour < 10:
+            return "Warm Up"
+        else:
+            return "Carrera"
+
+    return None
 
 
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
@@ -366,7 +381,8 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
 
     if competition in {"Fórmula 1", "MotoGP"}:
         session = get_motor_session(sport, competition, event_time, blob=blob)
-        if session not in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}:
+        # En la pestaña "Filtrados" incluir Clasificación, Sprint y Carrera
+        if session and session not in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}:
             return False
 
     if contains(REAL_MADRID_RE, blob): return True
@@ -382,7 +398,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
 
 
 # ============================================================================
-# PARSER CORREGIDO
+# PARSER
 # ============================================================================
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str]:
@@ -404,7 +420,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
-        # Si tiene guión de partido (ej. Movistar Inter - ElPozo Murcia), ES UN EVENTO Y NO UN CANAL TV
         has_vs = bool(VS_SPLIT_RE.search(part))
 
         if not has_vs and (TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower):
@@ -431,7 +446,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         elif not matchup:
             matchup = part
 
-    # Limpiar comillas o caracteres sueltos residuales en el nombre del partido
     matchup = re.sub(r"^['\"\s]+|['\"\s]+$", "", matchup).strip()
     tournament = re.sub(r"^['\"\s]+|['\"\s]+$", "", tournament).strip()
 
@@ -481,7 +495,12 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if sport == "__EXCLUDED__": continue
 
                 motor_session = get_motor_session(sport, competition, time_clean, blob=blob, event=event_str, tournament=tournament)
-                display_event = f"{event_str} — {motor_session}" if motor_session else event_str
+                
+                # Construir el nombre del evento
+                if motor_session and motor_session not in event_str:
+                    display_event = f"{event_str} — {motor_session}"
+                else:
+                    display_event = event_str
 
                 is_favorite = matches_strict_criteria(blob, channels, sport=sport, competition=competition, event_time=time_clean)
 
