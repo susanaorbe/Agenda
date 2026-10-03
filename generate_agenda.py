@@ -289,14 +289,53 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
     return clean_tournament(raw_tournament, f"{tour} Tour")
 
 
-def classify_motor(blob: str, raw_tournament: str) -> str:
-    if ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob: return "Fórmula 1"
-    if "fórmula 2" in blob or F2_RE.search(blob): return "Fórmula 2"
-    if "fórmula 3" in blob or F3_RE.search(blob): return "Fórmula 3"
-    if "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob: return "MotoGP"
-    if MOTO2_RE.search(blob): return "Moto2"
-    if MOTO3_RE.search(blob): return "Moto3"
-    return clean_tournament(raw_tournament, "Motor")
+def classify_motor(blob: str, raw_tournament: str) -> tuple[str, str]:
+    """Clasifica la categoría de motor y normaliza el nombre exacto de la sesión."""
+    is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
+    is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
+    is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
+    is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
+    is_moto2 = MOTO2_RE.search(blob)
+    is_moto3 = MOTO3_RE.search(blob)
+
+    session_name = ""
+    if "libres 1" in blob or "fp1" in blob:
+        session_name = "Libres 1 (FP1)"
+    elif "libres 2" in blob or "fp2" in blob:
+        session_name = "Libres 2 (FP2)"
+    elif "libres 3" in blob or "fp3" in blob:
+        session_name = "Libres 3 (FP3)"
+    elif "sprint shootout" in blob or "shootout" in blob:
+        session_name = "Sprint Shootout"
+    elif "carrera sprint" in blob or "sprint" in blob:
+        session_name = "Carrera Sprint"
+    elif "práctica" in blob or "practica" in blob:
+        session_name = "Práctica"
+    elif "clasificación" in blob or "clasificacion" in blob or "qualy" in blob or "q1" in blob or "q2" in blob or "q3" in blob:
+        session_name = "Clasificación"
+    elif "warm up" in blob:
+        session_name = "Warm Up"
+    elif "carrera" in blob:
+        session_name = "Carrera Principal"
+
+    if is_f1:
+        comp = "Fórmula 1"
+    elif is_motogp:
+        comp = "MotoGP"
+    elif is_f2:
+        comp = "Fórmula 2"
+    elif is_f3:
+        comp = "Fórmula 3"
+    elif is_moto2:
+        comp = "Moto2"
+    elif is_moto3:
+        comp = "Moto3"
+    else:
+        comp = clean_tournament(raw_tournament, "Motor")
+
+    if session_name:
+        return comp, f"{comp} - {session_name}"
+    return comp, clean_tournament(raw_tournament, "Motor")
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -323,7 +362,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
-    if contains(MOTOR_GENERAL_RE, blob): return ("Motor", "🏎️", classify_motor(blob, raw_tournament))
+    if contains(MOTOR_GENERAL_RE, blob):
+        comp, detailed_comp = classify_motor(blob, raw_tournament)
+        return ("Motor", "🏎️", detailed_comp)
 
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
 
@@ -334,8 +375,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # MotoGP y Fórmula 1 son siempre favoritos sin condicionar por la sesión
-    if competition in {"Fórmula 1", "MotoGP"}:
+    if any(m in competition for m in {"Fórmula 1", "MotoGP"}):
         return True
 
     if contains(REAL_MADRID_RE, blob): return True
@@ -544,8 +584,8 @@ def generate_html(events):
         .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
-        .tv-container {{ display: flex; flex-wrap: wrap; gap: 4px; }}
-        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }}
+        .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
+        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
@@ -624,7 +664,7 @@ def generate_html(events):
                     <th class="sport-col" style="width: 100px;">Deporte</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
                     <th>Evento / Partido</th>
-                    <th style="width: 180px;">Canal TV</th>
+                    <th style="width: 210px;">Canal TV</th>
                 </tr>
             </thead>
             <tbody id="agendaTable">
