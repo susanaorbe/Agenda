@@ -194,7 +194,6 @@ EXCLUDED_SPORTS_RE = rx(
 )
 
 EXCLUDED_BLOB_RE = rx(
-    r"preol[ií]mpico\s+femenino",
     r"nfl\s+pretemporada",
     r"f1\s+academy",
     r"segunda\s+federaci[oó]n",
@@ -266,6 +265,9 @@ def contains(pattern: re.Pattern, text: str) -> bool:
 
 def is_excluded_event(blob: str) -> bool:
     normalized = normalize_search_text(blob)
+    # Si es un evento de tenis, no aplicamos los filtros globales de exclusión
+    if contains(TENNIS_RE, normalized) or contains(TENNIS_TOURNAMENT_RE, normalized) or WTA_RE.search(normalized) or ATP_RE.search(normalized):
+        return False
     return bool(EXCLUDED_SPORTS_RE.search(normalized) or EXCLUDED_BLOB_RE.search(normalized))
 
 
@@ -300,8 +302,8 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
-    # PRIORIDAD 1: Tenis (ATP / WTA) -> Se evalúa PRIMERO para que el tenis femenino no sea filtrado
-    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament) or WTA_RE.search(blob):
+    # PRIORIDAD 1: Tenis (ATP / WTA)
+    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament) or WTA_RE.search(blob) or ATP_RE.search(blob):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
     # Filtro general de deportes femeninos no deseados (excepto Real Madrid Femenino)
@@ -478,19 +480,25 @@ def fetch_and_parse_agenda() -> list[dict]:
         for item in soup.find_all(("div", "tr", "li")):
             try:
                 original_blob = normalize_search_text(item.get_text(" ", strip=True))
-                if is_excluded_event(original_blob): continue
 
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
 
-                # Si tras filtrar la lista de canales no queda ninguno válido, omitimos el evento
-                if not channels:
-                    continue
-
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
-                if is_excluded_event(blob): continue
+                # Evaluar deporte primero para verificar si es Tenis antes de descartar por falta de TV o filtros
+                sport, icon, competition = get_sport_and_competition(blob, tournament, tv_blob)
+                if sport == "__EXCLUDED__": continue
+
+                # Si no es tenis y se han filtrado todos los canales, omitir
+                if sport != "Tenis" and not channels:
+                    continue
+
+                # Canal genérico en caso de que en Tenis no venga canal parseado explícitamente
+                if sport == "Tenis" and not channels:
+                    channels = ["Eurosport / Tennis TV / M+"]
+
                 if contains(GOLF_RE, blob): continue
 
                 if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
@@ -499,9 +507,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 event_key = (time_clean, tournament.lower() if tournament else event_str.lower(), event_str.lower())
                 if event_key in seen_events: continue
                 seen_events.add(event_key)
-
-                sport, icon, competition = get_sport_and_competition(blob, tournament, tv_blob)
-                if sport == "__EXCLUDED__": continue
 
                 motor_session = get_motor_session(sport, competition, time_clean, blob=blob, event=event_str, tournament=tournament)
                 
