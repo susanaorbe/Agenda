@@ -165,6 +165,7 @@ PRIMERA_RFEF_RE = rx(
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
 SPACES_RE = re.compile(r"\s+")
+VS_SPLIT_RE = re.compile(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", re.IGNORECASE)
 
 
 def normalize_search_text(text: str) -> str:
@@ -175,7 +176,7 @@ def normalize_search_text(text: str) -> str:
 
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
+    r"(?:m\+|movistar\s+la|movistar\s+deportes|dazn|channel|eurosport|rtve|laliga\s+tv|teledeporte|tv\s+canaria|desport|disney\+?)"
 )
 
 CHANNEL_LINE_RE = rx(
@@ -213,7 +214,9 @@ EXCLUDED_BLOB_RE = rx(
     r"segunda\s+uruguay",
     r"\bwrc\b",
     r"primera\s+divisi[oó]n\s+argentina",
-    r"liga\s+auf\s+uruguaya"
+    r"liga\s+auf\s+uruguaya",
+    r"\bvelada\b",
+    r"\btop\s*14\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -379,7 +382,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
 
 
 # ============================================================================
-# PARSER
+# PARSER CORREGIDO
 # ============================================================================
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str]:
@@ -401,7 +404,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
-        if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
+        # Si tiene guión de partido (ej. Movistar Inter - ElPozo Murcia), ES UN EVENTO Y NO UN CANAL TV
+        has_vs = bool(VS_SPLIT_RE.search(part))
+
+        if not has_vs and (TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower):
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
@@ -415,7 +421,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
                 tournament = part
             continue
 
-        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
+        if has_vs:
             if not matchup:
                 matchup = part
             continue
@@ -424,6 +430,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             tournament = part
         elif not matchup:
             matchup = part
+
+    # Limpiar comillas o caracteres sueltos residuales en el nombre del partido
+    matchup = re.sub(r"^['\"\s]+|['\"\s]+$", "", matchup).strip()
+    tournament = re.sub(r"^['\"\s]+|['\"\s]+$", "", tournament).strip()
 
     if not matchup and tournament:
         matchup = tournament
