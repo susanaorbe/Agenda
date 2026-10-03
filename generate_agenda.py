@@ -300,7 +300,7 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
-    # PRIORIDAD 1: Tenis (ATP / WTA)
+    # PRIORIDAD 1: Tenis (ATP / WTA) -> Se evalúa PRIMERO para que el tenis femenino no sea filtrado
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament) or WTA_RE.search(blob):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
