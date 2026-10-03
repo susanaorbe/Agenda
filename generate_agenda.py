@@ -291,8 +291,8 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
 
 def classify_motor_sessions(events_list: list[dict]):
     """
-    Agrupa los eventos de motor por categoría base y hora para concatenar 
-    la sesión correspondiente directamente al nombre del evento.
+    Agrupa los eventos de motor por competición base y Gran Premio (limpiando el nombre del evento)
+    para ordenar cronológicamente las sesiones del día y etiquetarlas con precisión.
     """
     groups = {}
     for ev in events_list:
@@ -304,7 +304,12 @@ def classify_motor_sessions(events_list: list[dict]):
                 base_comp = key_prefix
                 break
         
-        key = (base_comp, ev["evento"])
+        # Extraer una clave limpia del Gran Premio (quitando palabras de sesiones para agrupar todo el GP junta)
+        clean_gp_name = re.sub(r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
+        if not clean_gp_name:
+            clean_gp_name = ev["evento"]
+
+        key = (base_comp, clean_gp_name)
         if key not in groups:
             groups[key] = []
         groups[key].append(ev)
@@ -313,46 +318,54 @@ def classify_motor_sessions(events_list: list[dict]):
         comp_base, _ = key
         group.sort(key=lambda x: x["hora"])
         total_sessions = len(group)
+        current_weekday = datetime.now().weekday()  # 0: Lunes ... 4: Viernes, 5: Sábado, 6: Domingo
 
         for idx, ev in enumerate(group):
             session_name = ""
             
             if comp_base == "MotoGP":
-                if total_sessions == 2:
-                    session_name = "Warm Up" if idx == 0 else "Carrera Principal"
-                elif total_sessions == 3:
-                    if idx == 0: session_name = "Libres 1 (FP1)"
-                    elif idx == 1: session_name = "Práctica / Libres 2"
-                    else: session_name = "Carrera Sprint / Clasificación"
-                else:
+                if current_weekday == 4:  # Viernes
                     if idx == 0: session_name = "Libres 1 (FP1)"
                     elif idx == 1: session_name = "Práctica"
-                    elif idx == 2: session_name = "Libres 2 (FP2)"
-                    elif idx == 3: session_name = "Clasificación (Q1/Q2)"
-                    elif idx == 4: session_name = "Carrera Sprint"
-                    elif idx == 5: session_name = "Warm Up"
-                    elif idx == 6: session_name = "Carrera Principal"
                     else: session_name = f"Sesión {idx + 1}"
+                elif current_weekday == 5:  # Sábado
+                    if idx == 0: session_name = "Libres 2 (FP2)"
+                    elif idx == 1: session_name = "Clasificación (Q1 y Q2)"
+                    elif idx == 2: session_name = "Carrera Sprint"
+                    else: session_name = f"Sesión {idx + 1}"
+                elif current_weekday == 6:  # Domingo
+                    if idx == 0: session_name = "Warm Up"
+                    elif idx == 1: session_name = "Carrera Principal"
+                    else: session_name = f"Sesión {idx + 1}"
+                else:
+                    if total_sessions == 2:
+                        session_name = "Warm Up" if idx == 0 else "Carrera Principal"
+                    elif total_sessions == 3:
+                        if idx == 0: session_name = "Libres 1 (FP1)"
+                        elif idx == 1: session_name = "Práctica"
+                        else: session_name = "Clasificación / Sprint"
             
             elif comp_base == "Fórmula 1":
-                if total_sessions == 1:
-                    session_name = "Carrera Principal"
-                elif total_sessions == 2:
-                    if idx == 0: session_name = "Libres 1 (FP1) / Sprint Shootout"
-                    else: session_name = "Clasificación / Carrera Sprint"
-                elif total_sessions == 3:
-                    if idx == 0: session_name = "Libres 1 (FP1)"
-                    elif idx == 1: session_name = "Libres 2 (FP2) / Sprint Shootout"
-                    else: session_name = "Libres 3 (FP3) / Clasificación"
-                else:
+                if current_weekday == 4:  # Viernes
                     if idx == 0: session_name = "Libres 1 (FP1)"
                     elif idx == 1: session_name = "Libres 2 (FP2)"
-                    elif idx == 2: session_name = "Sprint Shootout"
-                    elif idx == 3: session_name = "Libres 3 (FP3)"
-                    elif idx == 4: session_name = "Carrera Sprint"
-                    elif idx == 5: session_name = "Clasificación"
-                    elif idx == 6: session_name = "Carrera Principal"
                     else: session_name = f"Sesión {idx + 1}"
+                elif current_weekday == 5:  # Sábado
+                    if idx == 0: session_name = "Libres 3 (FP3)"
+                    elif idx == 1: session_name = "Clasificación"
+                    else: session_name = f"Sesión {idx + 1}"
+                elif current_weekday == 6:  # Domingo
+                    if idx == 0: session_name = "Carrera Principal"
+                    else: session_name = f"Sesión {idx + 1}"
+                else:
+                    if total_sessions == 1:
+                        session_name = "Carrera Principal"
+                    elif total_sessions == 2:
+                        session_name = "Libres / Shootout" if idx == 0 else "Clasificación / Sprint"
+                    elif total_sessions == 3:
+                        if idx == 0: session_name = "Libres 1 (FP1)"
+                        elif idx == 1: session_name = "Libres 2 / Shootout"
+                        else: session_name = "Libres 3 / Clasificación"
             else:
                 if total_sessions == 1:
                     session_name = "Carrera"
@@ -360,12 +373,14 @@ def classify_motor_sessions(events_list: list[dict]):
                 elif idx == 1: session_name = "Clasificación"
                 else: session_name = "Carrera"
 
-            # La competición se queda limpia con el nombre de la categoría base
+            # La competición se queda limpia con la categoría base
             ev["competicion"] = comp_base
             
-            # Concatenamos la sesión al evento si existe
+            # Concatenamos la sesión al evento de forma limpia
             if session_name:
-                ev["evento"] = f"{ev['evento']} - {session_name}"
+                # Limpiamos sufijos anteriores si ya los tuviera el texto original
+                clean_base_event = re.sub(r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
+                ev["evento"] = f"{clean_base_event} - {session_name}"
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -547,7 +562,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             except Exception:
                 continue
         
-        # Asignar sesiones y concatenarlas al evento
+        # Asignar sesiones según el día de la semana agrupando correctamente por GP
         classify_motor_sessions(results)
 
     except Exception as e:
