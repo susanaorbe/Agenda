@@ -53,7 +53,6 @@ EXCLUDED_CHANNELS = {
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
-    "orange fútbol 2(108)",
     "rcdeportivo tv youtube",
     "rcd deportivo tv youtube",
     "red bull tv",
@@ -66,7 +65,7 @@ EXCLUDED_CHANNELS = {
     "tvg(galicia)",
     "uefa tv",
     "uefa youtube",
-    "wta tv",
+    "wta tv"
 }
 
 
@@ -110,7 +109,7 @@ TENNIS_RE = rx(
     r"\bcopa davis\b", r"\bbillie jean king cup\b", r"\blaver cup\b",
     r"\bpek[í]n\b", r"\bbeijing\b", r"\bchina open\b", r"\btorneo de pek[í]n\b",
     r"\bhangzhou\b", r"\bchengd[uú]\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b",
-    r"\btennis\s+channel\b", r"\btennis\s+tv\b"
+    r"\btennis\s+channel\b", r"\btennis\s+tv\b", r"\bwta\s+tv\b"
 )
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
@@ -177,11 +176,11 @@ def normalize_search_text(text: str) -> str:
 
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar\s+la|movistar\s+deportes|dazn|channel|eurosport|rtve|laliga\s+tv|teledeporte|tv\s+canaria|desport|disney\+?)"
+    r"(?:m\+|movistar\s+la|movistar\s+deportes|dazn|channel|eurosport|rtve|laliga\s+tv|teledeporte|tv\s+canaria|desport|disney\+?|wta\s+tv)"
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b"
+    r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b", r"\bwta\s+tv\b"
 )
 
 EXCLUDED_SPORTS_RE = rx(
@@ -301,15 +300,17 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
-    if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob):
+    # PRIORIDAD 1: Tenis (ATP / WTA)
+    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament) or WTA_RE.search(blob):
+        return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
+
+    # Filtro general de deportes femeninos no deseados (excepto Real Madrid Femenino o Tenis)
+    if contains(WOMEN_RE, blob):
         if not contains(REAL_MADRID_RE, blob):
             return ("__EXCLUDED__", "", "")
 
     if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
         return ("__EXCLUDED__", "", "")
-
-    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
-        return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
     if contains(RUGBY_RE, blob): return ("Otros", "🏉", clean_tournament(raw_tournament, "Rugby"))
     if contains(BASKET_RE, blob): return ("Baloncesto", "🏀", clean_tournament(raw_tournament, "Baloncesto"))
@@ -327,17 +328,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
 
 
-# ============================================================================
-# DETECTOR PRECISO DE SESIONES DE MOTOR (SEGÚN TEXTO Y HORARIO ESTRUCTURADO)
-# ============================================================================
-
 def get_motor_session(sport: str, competition: str, event_time: str, blob: str = "", event: str = "", tournament: str = "") -> str | None:
     if competition not in {"Fórmula 1", "MotoGP"}:
         return None
 
     text = normalize_search_text(f"{blob} {event} {tournament}")
 
-    # 1. Si el texto indica la sesión explícitamente, usarla directamente
     if re.search(r"\bsprint\s+qualifying\b|\bqualifying\s+sprint\b|\bclasificaci[oó]n\s+sprint\b", text): 
         return "Clasificación Sprint"
     if re.search(r"\btissot\s+sprint\b|\bcarrera\s+al\s+sprint\b|\bsprint\b", text): 
@@ -351,8 +347,7 @@ def get_motor_session(sport: str, competition: str, event_time: str, blob: str =
     if re.search(r"\bcarrera\b|\brace\b|\bgrand\s+prix\b", text) and not re.search(r"\blibres|practice|qualifying|clasificacio", text): 
         return "Carrera"
 
-    # 2. Búsqueda estructurada basada en día de la semana y horas (GPs de Asia/Oriente Medio y Europa)
-    weekday = datetime.now().weekday()  # 4 = Viernes, 5 = Sábado, 6 = Domingo
+    weekday = datetime.now().weekday()
     try:
         hour = int(event_time.split(":")[0])
         minute = int(event_time.split(":")[1])
@@ -361,40 +356,27 @@ def get_motor_session(sport: str, competition: str, event_time: str, blob: str =
         time_num = 1200
 
     if competition == "MotoGP":
-        if weekday == 4: # Viernes
+        if weekday == 4:
             return "Libres"
-        elif weekday == 5: # Sábado
-            if 230 <= time_num <= 430:
-                return "Clasificación"
-            elif 730 <= time_num <= 930:
-                return "Carrera al Sprint"
-            elif time_num < 230 or 430 < time_num < 730:
-                return "Libres"
-        elif weekday == 6: # Domingo
-            if time_num <= 400:
-                return "Warm Up"
-            else:
-                return "Carrera"
+        elif weekday == 5:
+            if 230 <= time_num <= 430: return "Clasificación"
+            elif 730 <= time_num <= 930: return "Carrera al Sprint"
+            elif time_num < 230 or 430 < time_num < 730: return "Libres"
+        elif weekday == 6:
+            if time_num <= 400: return "Warm Up"
+            else: return "Carrera"
 
     elif competition == "Fórmula 1":
-        if weekday == 4: # Viernes
+        if weekday == 4:
             return "Libres"
-        elif weekday == 5: # Sábado
-            # Horarios Asia/Pacífico (GPs como Japón, Australia, Singapur, China)
-            if 400 <= time_num <= 830:
-                return "Libres"
-            elif 900 <= time_num <= 1130:
-                return "Clasificación"
-            elif 1130 < time_num <= 1500:
-                return "Carrera al Sprint"
-            # Horarios Europa
-            elif 1200 <= time_num <= 1330:
-                return "Libres"
-            elif 1500 <= time_num <= 1700:
-                return "Clasificación"
-            elif 1700 < time_num <= 2000:
-                return "Carrera al Sprint"
-        elif weekday == 6: # Domingo
+        elif weekday == 5:
+            if 400 <= time_num <= 830: return "Libres"
+            elif 900 <= time_num <= 1130: return "Clasificación"
+            elif 1130 < time_num <= 1500: return "Carrera al Sprint"
+            elif 1200 <= time_num <= 1330: return "Libres"
+            elif 1500 <= time_num <= 1700: return "Clasificación"
+            elif 1700 < time_num <= 2000: return "Carrera al Sprint"
+        elif weekday == 6:
             return "Carrera"
 
     return None
@@ -507,9 +489,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if is_excluded_event(blob): continue
                 if contains(GOLF_RE, blob): continue
 
-                if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob) and not contains(REAL_MADRID_RE, blob):
-                    continue
-
                 if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
                     continue
 
@@ -522,7 +501,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 motor_session = get_motor_session(sport, competition, time_clean, blob=blob, event=event_str, tournament=tournament)
                 
-                # Construir el nombre completo del evento deportivo
                 if motor_session and motor_session not in event_str:
                     display_event = f"{event_str} — {motor_session}"
                 else:
