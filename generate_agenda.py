@@ -120,8 +120,8 @@ WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b")
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 F2_RE = re.compile(r"\bf2\b", re.IGNORECASE)
 F3_RE = re.compile(r"\bf3\b")
-MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
-MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
+MOTO2_RE = re.compile(r"\bmoto\s*2\b", re.IGNORECASE)
+MOTO3_RE = re.compile(r"\bmoto\s*3\b", re.IGNORECASE)
 
 MOTOR_SERIES_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b",
@@ -136,7 +136,7 @@ MOTOR_GENERAL_RE = rx(
 )
 
 MOTO_STRICT_EXCLUDE_RE = rx(
-    r"\bmoto2\b", r"\bmoto3\b", r"rookies\s+cup", r"\brookies\b", r"\bnascar\b",
+    r"\bmoto\s*2\b", r"\bmoto\s*3\b", r"rookies\s+cup", r"\brookies\b", r"\bnascar\b",
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
@@ -190,7 +190,9 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bnfl\b",
     r"\bwnba\b",
     r"\bprimera\s+feb\b",
-    r"\bliga\s*u\b"
+    r"\bliga\s*u\b",
+    r"\bmoto\s*2\b",
+    r"\bmoto\s*3\b"
 )
 
 EXCLUDED_BLOB_RE = rx(
@@ -218,7 +220,9 @@ EXCLUDED_BLOB_RE = rx(
     r"\bvelada\b",
     r"rotterdam\s+open",
     r"giro\s+dell['\s]*emilia",
-    r"\btop\s+14\b"
+    r"\btop\s+14\b",
+    r"\bmoto\s*2\b",
+    r"\bmoto\s*3\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -268,6 +272,8 @@ def contains(pattern: re.Pattern, text: str) -> bool:
 
 def is_excluded_event(blob: str) -> bool:
     normalized = normalize_search_text(blob)
+    if MOTO2_RE.search(normalized) or MOTO3_RE.search(normalized):
+        return True
     return bool(EXCLUDED_SPORTS_RE.search(normalized) or EXCLUDED_BLOB_RE.search(normalized))
 
 
@@ -307,7 +313,7 @@ def classify_motor_sessions(events_list: list[dict]):
         if ev["deporte"] != "Motor":
             continue
         base_comp = ev["competicion"]
-        for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3"]:
+        for key_prefix in ["Fórmula 1", "MotoGP", "Fórmula 2", "Fórmula 3"]:
             if base_comp.startswith(key_prefix):
                 base_comp = key_prefix
                 break
@@ -422,19 +428,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
     
     if contains(MOTOR_GENERAL_RE, blob):
+        if MOTO2_RE.search(blob) or MOTO3_RE.search(blob):
+            return ("__EXCLUDED__", "", "")
+
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
         is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
-        is_moto2 = MOTO2_RE.search(blob)
-        is_moto3 = MOTO3_RE.search(blob)
 
         if is_f1: comp = "Fórmula 1"
         elif is_motogp: comp = "MotoGP"
         elif is_f2: comp = "Fórmula 2"
         elif is_f3: comp = "Fórmula 3"
-        elif is_moto2: comp = "Moto2"
-        elif is_moto3: comp = "Moto3"
         else: comp = clean_tournament(raw_tournament, "Motor")
 
         return ("Motor", "🏎️", comp)
@@ -723,7 +728,7 @@ def generate_html(events):
             <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎️️</div>
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎</div>
         </div>
         <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
             <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">{sport_counts['Otros']}</div></div><div style="font-size:1.1rem">🎯</div>
