@@ -328,48 +328,15 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
 
 
-MOTOR_TIME_SESSIONS = {
-    "01:45": "Libres",
-    "03:45": "Libres",
-    "06:00": "Libres",
-    "06:30": "Libres",
-    "08:00": "Libres",
-    "10:00": "Libres",
-    "01:10": "Libres",
-    "01:50": "Clasificación",
-    "02:15": "Clasificación",
-    "00:40": "Warm Up",
-    "05:00": "Carrera",
-    "09:00": "Carrera",
-}
-
-
-def get_motor_session(sport: str, competition: str, event_time: str, blob: str = "", event: str = "", tournament: str = "") -> str | None:
-    if competition not in {"Fórmula 1", "MotoGP"}:
-        return None
-
-    text = normalize_search_text(f"{blob} {event} {tournament}")
-    if re.search(r"\bsprint\s+qualifying\b|\bqualifying\s+sprint\b", text): return "Clasificación Sprint"
-    if re.search(r"\btissot\s+sprint\b|\bsprint\b|\bcarrera\s+al\s+sprint\b", text): return "Carrera al Sprint"
-    if re.search(r"\bgrand\s+prix\b|\brace\b|\bcarrera\b", text): return "Carrera"
-    if re.search(r"\bqualifying\b|\bclasificaci[oó]n\b", text): return "Clasificación"
-    if re.search(r"\bfree\s+practice\b|\bpractice\b|\blibres\b|\bfp[123]\b|\bentrenamientos?\b", text): return "Libres"
-    if re.search(r"\bwarm\s*up\b|\bwarmup\b", text): return "Warm Up"
-
-    clean_time = event_time.zfill(5)
-    return MOTOR_TIME_SESSIONS.get(clean_time, "Libres")
-
-
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # Marcar MotoGP y Fórmula 1 como favoritos si son sesiones principales (Clasificación, Carrera, Sprint)
+    # MotoGP y Fórmula 1 son siempre favoritos sin condicionar por la sesión
     if competition in {"Fórmula 1", "MotoGP"}:
-        session = get_motor_session(sport, competition, event_time, blob=blob)
-        return session in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}
+        return True
 
     if contains(REAL_MADRID_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
@@ -481,9 +448,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 sport, icon, competition = get_sport_and_competition(blob, tournament, tv_blob)
                 if sport == "__EXCLUDED__": continue
 
-                motor_session = get_motor_session(sport, competition, time_clean, blob=blob, event=event_str, tournament=tournament)
-                display_event = f"{event_str} — {motor_session}" if motor_session else event_str
-
                 is_favorite = matches_strict_criteria(blob, channels, sport=sport, competition=competition, event_time=time_clean)
 
                 results.append({
@@ -491,7 +455,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "deporte": sport,
                     "icono": icon,
                     "competicion": competition,
-                    "evento": display_event,
+                    "evento": event_str,
                     "tv_list": channels,
                     "is_filtered": is_favorite,
                 })
