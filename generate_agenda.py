@@ -53,6 +53,7 @@ EXCLUDED_CHANNELS = {
     "nba league pass",
     "onefootball",
     "orange fútbol 1(107)",
+    "orange fútbol 2(108)",
     "rcdeportivo tv youtube",
     "rcd deportivo tv youtube",
     "red bull tv",
@@ -365,10 +366,10 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
+    # Marcar MotoGP y Fórmula 1 como favoritos si son sesiones principales (Clasificación, Carrera, Sprint)
     if competition in {"Fórmula 1", "MotoGP"}:
         session = get_motor_session(sport, competition, event_time, blob=blob)
-        if session not in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}:
-            return False
+        return session in {"Clasificación", "Carrera al Sprint", "Carrera", "Clasificación Sprint"}
 
     if contains(REAL_MADRID_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
@@ -405,7 +406,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
-        # Descartar elementos que no contienen texto válido/nombres de equipos
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
@@ -456,7 +456,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
 
-                # Validar que event_str contenga caracteres alfanuméricos válidos
                 if not re.search(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]", event_str):
                     continue
 
