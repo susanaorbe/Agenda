@@ -376,6 +376,15 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
+        # Primero detectamos enfrentamientos. Esto es importante porque algunos
+        # equipos contienen identificadores que también aparecen en canales de TV
+        # (por ejemplo, "Movistar Inter - ElPozo Murcia"). Si comprobamos los
+        # canales antes, el partido termina apareciendo como Canal TV.
+        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
+            if not matchup:
+                matchup = part
+            continue
+
         if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
@@ -388,11 +397,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
             if not tournament:
                 tournament = part
-            continue
-
-        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
-            if not matchup:
-                matchup = part
             continue
 
         if not tournament and len(part) < 35:
@@ -535,6 +539,7 @@ def generate_html(events):
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
+        th:last-child, td.tv-col {{ width: 300px; min-width: 300px; }}
         tr.event-row:hover {{ background-color: #243146; }}
         
         .sport-col, .time-col, .date-col {{ white-space: nowrap; }}
@@ -544,8 +549,8 @@ def generate_html(events):
         .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
-        .tv-container {{ display: flex; flex-wrap: wrap; gap: 4px; }}
-        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }}
+        .tv-container {{ display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }}
+        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: normal; overflow-wrap: anywhere; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
@@ -624,7 +629,7 @@ def generate_html(events):
                     <th class="sport-col" style="width: 100px;">Deporte</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
                     <th>Evento / Partido</th>
-                    <th style="width: 180px;">Canal TV</th>
+                    <th style="width: 300px;">Canal TV</th>
                 </tr>
             </thead>
             <tbody id="agendaTable">
