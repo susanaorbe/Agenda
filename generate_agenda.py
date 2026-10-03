@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 
 # ============================================================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN COMPLETA Y RESTAURADA
 # ============================================================================
 
 WIDGET_URL = (
@@ -25,24 +25,52 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Tu lista estricta de canales excluidos
+# LISTA COMPLETA RESTAURADA DE CANALES EXCLUIDOS
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *",
+    "aragón play",
+    "aragón tv",
+    "asobal tv",
+    "atp tennis tv",
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
+    "fanplay",
     "fanseat",
+    "fff tv youtube",
     "fiba youtube",
     "hbo max",
     "laliga tv bar",
+    "laliga tv m2",
+    "laliga tv m3",
+    "laliga tv m4",
+    "laliga tv m5",
     "laliga+ plus",
+    "m+ #vamos bar 2(308)",
+    "m+ #vamos bar(307)",
+    "m+ laliga hdr(m440 o111)",
+    "motogp videopass",
     "movistar+ lite",
     "nba league pass",
-    "rtve play"
+    "onefootball",
+    "orange fútbol 1(107)",
+    "rcdeportivo tv youtube",
+    "rcd deportivo tv youtube",
+    "red bull tv",
+    "rtve play",
+    "sefutbol youtube",
+    "siroko tv",
+    "tv footballclub(acceder)",
+    "tv canaria",
+    "tv3(cataluña)",
+    "tvg(galicia)",
+    "uefa tv",
+    "uefa youtube",
+    "wta tv"
 }
 
 
 # ============================================================================
-# REGEX DE DETECCIÓN
+# REGEX
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -85,6 +113,7 @@ TENNIS_RE = rx(
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
 ATP_RE = re.compile(r"\batp\b", re.IGNORECASE)
+WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b")
 
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 F2_RE = re.compile(r"\bf2\b", re.IGNORECASE)
@@ -111,7 +140,7 @@ MOTO_STRICT_EXCLUDE_RE = rx(
 
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bbaloncesto\b", r"\bbasket\b",
-    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey\b", r"\bsupercopa\b", r"\bfiba\b"
+    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey\b", r"\bsupercopa\b", r"\bfiba\b", r"\bbasquete\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
@@ -177,7 +206,6 @@ def contains(pattern: re.Pattern, text: str) -> bool:
 
 def is_excluded_event(blob: str) -> bool:
     normalized = normalize_search_text(blob)
-    # Tenis NUNCA se descarta por filtros globales
     if contains(TENNIS_RE, normalized) or WTA_RE.search(normalized) or ATP_RE.search(normalized):
         return False
     return bool(EXCLUDED_SPORTS_RE.search(normalized) or EXCLUDED_BLOB_RE.search(normalized))
@@ -186,11 +214,9 @@ def is_excluded_event(blob: str) -> bool:
 def classify_tennis(blob: str, raw_tournament: str) -> str:
     text = normalize_search_text(f"{blob} {raw_tournament}")
     tour = "WTA" if "wta" in text else ("ATP" if "atp" in text else "")
-    
     clean_tourn = raw_tournament.strip() if raw_tournament else ""
     if clean_tourn and clean_tourn.lower() not in {"tenis", "atp", "wta"}:
         return clean_tourn
-    
     return f"{tour} Tour".strip()
 
 
@@ -207,12 +233,18 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
 def get_sport_and_competition(blob: str, raw_tournament: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
-    # Tenis (ATP y WTA)
+    # PRIORIDAD BALONCESTO (para evitar clasificar basket como tenis por error)
+    if contains(BASKET_RE, blob):
+        return ("Baloncesto", "🏀", raw_tournament or "Baloncesto")
+
+    # Tenis
     if contains(TENNIS_RE, blob) or WTA_RE.search(blob) or ATP_RE.search(blob) or WTA_RE.search(raw_tournament) or ATP_RE.search(raw_tournament):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament))
 
+    if contains(WOMEN_RE, blob) and not contains(REAL_MADRID_RE, blob):
+        return ("__EXCLUDED__", "", "")
+
     if contains(RUGBY_RE, blob): return ("Otros", "🏉", raw_tournament or "Rugby")
-    if contains(BASKET_RE, blob): return ("Baloncesto", "🏀", raw_tournament or "Baloncesto")
     if contains(HOCKEY_RE, blob): return ("Otros", "🎯", raw_tournament or "Hockey")
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", raw_tournament or "Fútbol Sala")
     if contains(HANDBALL_RE, blob): return ("Otros", "🎯", raw_tournament or "Balonmano")
@@ -229,7 +261,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str) -> tuple[str, str,
 
 def matches_strict_criteria(blob: str, sport: str = "", competition: str = "") -> bool:
     if is_excluded_event(blob): return False
-
     if contains(REAL_MADRID_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
 
@@ -243,7 +274,7 @@ def matches_strict_criteria(blob: str, sport: str = "", competition: str = "") -
 
 
 # ============================================================================
-# PARSER EXACTO DE LA FUENTE
+# PARSER ESTRICTO POR FILA (NO MEZCLA FILAS NI CANALES)
 # ============================================================================
 
 def fetch_and_parse_agenda() -> list[dict]:
@@ -254,15 +285,21 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
+        # Solo procesamos elementos de fila individuales exactos de la tabla
         for item in soup.find_all(("div", "tr", "li")):
+            # Si el elemento contiene subclases de contenedor grande, lo saltamos para no mezclar partidos
+            if item.find_all(("table", "ul", "tbody")):
+                continue
+
             text_full = item.get_text(" | ", strip=True)
             time_match = TIME_RE.search(text_full)
             if not time_match:
                 continue
             time_clean = time_match.group(0)
 
+            # Extraemos las líneas directas de este único evento
             lines = [part.strip() for part in item.get_text("\n", strip=True).split("\n") if part.strip()]
-            if len(lines) < 2:
+            if not (2 <= len(lines) <= 8): # Límite estricto para evitar abarcar la página completa
                 continue
 
             matchup = ""
@@ -276,54 +313,48 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if TIME_RE.match(line) or line_lower in {"ver partido", "directo"}:
                     continue
 
-                # Si es linea de canal (contiene marcas de TV habituales o parentesis de diales)
-                if any(x in line_lower for x in ["m+", "dazn", "tennis channel", "wta tv", "atp tennis tv", "eurosport", "tv", "youtube", "la 1", "teledeporte"]):
-                    if not VS_SPLIT_RE.search(line):
-                        for ch in line_clean.split(","):
-                            ch_fmt = ch.strip().rstrip(":")
-                            if ch_fmt and ch_fmt not in raw_channels:
-                                raw_channels.append(ch_fmt)
-                        continue
-
                 if VS_SPLIT_RE.search(line):
                     matchup = line_clean
-                elif not tournament and len(line_clean) < 40:
+                    continue
+
+                # Identificar canales de TV
+                if any(x in line_lower for x in ["m+", "dazn", "tennis channel", "wta tv", "atp tennis tv", "eurosport", "tv", "youtube", "la 1", "teledeporte", "orange"]):
+                    for ch in line_clean.split(","):
+                        ch_fmt = ch.strip().rstrip(":")
+                        if ch_fmt and ch_fmt not in raw_channels:
+                            raw_channels.append(ch_fmt)
+                    continue
+
+                if not tournament and len(line_clean) < 35:
                     tournament = line_clean
-                elif not matchup:
-                    matchup = line_clean
 
             if not matchup:
                 matchup = tournament
 
-            if not matchup:
+            if not matchup or len(matchup) > 80: # Si se ha colado un párrafo largo, se descarta
                 continue
 
-            # Filtrar solo la lista negra explícita
+            # Filtrar por la lista negra completa
             valid_channels = []
             for ch in raw_channels:
                 ch_norm = normalize_search_text(ch)
                 if not EXCLUDED_CHANNELS_RE.search(ch_norm):
                     valid_channels.append(ch)
 
-            # Si se han excluido todos los canales disponibles, omitir
             if not valid_channels:
                 continue
 
-            blob = normalize_search_text(f"{matchup} {tournament} {' '.join(valid_channels)}")
+            blob = normalize_search_text(f"{matchup} {tournament}")
             sport, icon, competition = get_sport_and_competition(blob, tournament)
-            
+
             if sport == "__EXCLUDED__":
                 continue
 
-            # Clave de deduplicación basada en la hora y los nombres limpios
             dedup_key = (time_clean, re.sub(r"\s+", "", matchup.lower()))
 
-            # Si ya existe el evento, nos quedamos con el que tenga más detalles de TV
             if dedup_key in events_map:
                 if len(valid_channels) > len(events_map[dedup_key]["tv_list"]):
                     events_map[dedup_key]["tv_list"] = valid_channels
-                    if tournament and not events_map[dedup_key]["competicion"]:
-                        events_map[dedup_key]["competicion"] = competition
             else:
                 is_fav = matches_strict_criteria(blob, sport=sport, competition=competition)
                 events_map[dedup_key] = {
