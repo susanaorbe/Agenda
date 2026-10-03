@@ -16,6 +16,8 @@ WIDGET_URL = (
     "?color=005df8&culture=es-ES"
 )
 
+MOVISTAR_GUIDE_URL = "https://www.movistarplus.es/programacion-tv/{channel_id}"
+
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -139,6 +141,14 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bmoto2\b", r"\bmoto3\b", r"rookies\s+cup", r"\brookies\b", r"\bnascar\b",
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
+
+SESSION_DETECTOR_RE = [
+    (rx(r"\bwarm\s*up\b", r"\bcalentamiento\b"), "Warm Up"),
+    (rx(r"\bsprint\b", r"\bcarrera sprint\b"), "Carrera Sprint"),
+    (rx(r"\bclasificaci[oó]n\b", r"\bqualy\b", r"\bqualifying\b"), "Clasificación"),
+    (rx(r"\blibres?\b", r"\bentrenamientos?\b", r"\bfp[1-3]\b", r"\bpr[aá]ctica\b"), "Entrenamientos Libres"),
+    (rx(r"\bcarrera\b", r"\brace\b"), "Carrera"),
+]
 
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bbaloncesto\b", r"\bbasket\b",
@@ -299,6 +309,55 @@ def classify_motor(blob: str, raw_tournament: str) -> str:
     return clean_tournament(raw_tournament, "Motor")
 
 
+# ============================================================================
+# EXTRACCIÓN DE SESIONES DESDE MOVISTAR PLUS+
+# ============================================================================
+
+def fetch_movistar_sessions() -> dict[str, dict[str, str]]:
+    """
+    Consulta las guías de Movistar Plus+ para DAZN F1 y DAZN MotoGP
+    y devuelve un diccionario mapeando (competicion, hora) -> tipo_de_sesion
+    """
+    channels = {
+        "Fórmula 1": "mvf1",
+        "MotoGP": "dazmot"
+    }
+    sessions_map = {}
+
+    for comp, channel_id in channels.items():
+        try:
+            url = MOVISTAR_GUIDE_URL.format(channel_id=channel_id)
+            res = requests.get(url, headers=REQUEST_HEADERS, timeout=10)
+            if res.status_code != 200:
+                continue
+
+            soup = BeautifulSoup(res.text, "html.parser")
+            items = soup.find_all(("li", "div", "tr"))
+
+            for item in items:
+                text = item.get_text(" ", strip=True)
+                time_match = TIME_RE.search(text)
+                if not time_match:
+                    continue
+
+                event_time = time_match.group(0)
+                text_lower = text.lower()
+
+                session_type = None
+                for pattern, s_name in SESSION_DETECTOR_RE:
+                    if pattern.search(text_lower):
+                        session_type = s_name
+                        break
+
+                if session_type:
+                    sessions_map[(comp, event_time)] = session_type
+
+        except Exception:
+            continue
+
+    return sessions_map
+
+
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
 
@@ -410,6 +469,9 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
+    # Obtener sesiones de Movistar Plus+ para enriquecer Motor
+    movistar_sessions = fetch_movistar_sessions()
+
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -447,6 +509,12 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 sport, icon, competition = get_sport_and_competition(blob, tournament, tv_blob)
                 if sport == "__EXCLUDED__": continue
+
+                # Enriquecimiento de sesión para MotoGP / F1 desde Movistar Plus+
+                if competition in {"Fórmula 1", "MotoGP"}:
+                    mov_session = movistar_sessions.get((competition, time_clean))
+                    if mov_session and mov_session.lower() not in event_str.lower():
+                        event_str = f"{event_str} ({mov_session})"
 
                 is_favorite = matches_strict_criteria(blob, channels, sport=sport, competition=competition, event_time=time_clean)
 
