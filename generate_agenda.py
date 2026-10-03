@@ -289,10 +289,19 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
     return clean_tournament(raw_tournament, f"{tour} Tour")
 
 
+def time_to_minutes(time_str: str) -> int:
+    """Convierte una hora en formato 'HH:MM' a minutos totales para ordenar correctamente."""
+    try:
+        parts = time_str.strip().split(":")
+        return int(parts[0]) * 60 + int(parts[1])
+    except Exception:
+        return 0
+
+
 def classify_motor_sessions(events_list: list[dict]):
     """
-    Agrupa los eventos de motor por competición base y Gran Premio (limpiando el nombre del evento)
-    para ordenar cronológicamente las sesiones del día y etiquetarlas con precisión.
+    Agrupa los eventos de motor por competición base y Gran Premio, 
+    ordenándolos cronológicamente por minutos reales para asignar sus sesiones con precisión.
     """
     groups = {}
     for ev in events_list:
@@ -304,7 +313,6 @@ def classify_motor_sessions(events_list: list[dict]):
                 base_comp = key_prefix
                 break
         
-        # Extraer una clave limpia del Gran Premio (quitando palabras de sesiones para agrupar todo el GP junta)
         clean_gp_name = re.sub(r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
         if not clean_gp_name:
             clean_gp_name = ev["evento"]
@@ -316,7 +324,8 @@ def classify_motor_sessions(events_list: list[dict]):
 
     for key, group in groups.items():
         comp_base, _ = key
-        group.sort(key=lambda x: x["hora"])
+        # Ordenación cronológica real basada en minutos desde medianoche (evita problemas con "10:00" vs "6:30")
+        group.sort(key=lambda x: time_to_minutes(x["hora"]))
         total_sessions = len(group)
         current_weekday = datetime.now().weekday()  # 0: Lunes ... 4: Viernes, 5: Sábado, 6: Domingo
 
@@ -373,12 +382,9 @@ def classify_motor_sessions(events_list: list[dict]):
                 elif idx == 1: session_name = "Clasificación"
                 else: session_name = "Carrera"
 
-            # La competición se queda limpia con la categoría base
             ev["competicion"] = comp_base
             
-            # Concatenamos la sesión al evento de forma limpia
             if session_name:
-                # Limpiamos sufijos anteriores si ya los tuviera el texto original
                 clean_base_event = re.sub(r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
@@ -562,7 +568,6 @@ def fetch_and_parse_agenda() -> list[dict]:
             except Exception:
                 continue
         
-        # Asignar sesiones según el día de la semana agrupando correctamente por GP
         classify_motor_sessions(results)
 
     except Exception as e:
