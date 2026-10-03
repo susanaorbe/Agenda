@@ -213,7 +213,11 @@ EXCLUDED_BLOB_RE = rx(
     r"segunda\s+uruguay",
     r"\bwrc\b",
     r"primera\s+divisi[oó]n\s+argentina",
-    r"liga\s+auf\s+uruguaya"
+    r"liga\s+auf\s+uruguaya",
+    r"\bvelada\b",
+    r"rotterdam\s+open",
+    r"giro\s+dell['\s]*emilia",
+    r"\btop\s+14\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -401,6 +405,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
+        # Descartar elementos que no contienen texto válido/nombres de equipos
+        if re.match(r"^[\s,.|;:/-]*$", part):
+            continue
+
         if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
@@ -447,6 +455,10 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
+
+                # Validar que event_str contenga caracteres alfanuméricos válidos
+                if not re.search(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]", event_str):
+                    continue
 
                 if not channels:
                     continue
