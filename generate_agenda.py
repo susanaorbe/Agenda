@@ -291,23 +291,19 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
 
 def classify_motor_sessions(events_list: list[dict]):
     """
-    Agrupa los eventos de motor por Gran Premio / Categoría y los ordena cronológicamente 
-    para asignarles la sesión exacta según su posición en el día y el tipo de campeonato.
+    Agrupa los eventos de motor por categoría base y hora para concatenar 
+    la sesión correspondiente directamente al nombre del evento.
     """
-    # Agrupar por categoría base detectada (F1, MotoGP, Moto2, Moto3, etc.)
     groups = {}
     for ev in events_list:
         if ev["deporte"] != "Motor":
             continue
-        # Clave de agrupación basada en el nombre base del GP (quitando palabras de sesión si las hubiera)
         base_comp = ev["competicion"]
         for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3"]:
             if base_comp.startswith(key_prefix):
                 base_comp = key_prefix
                 break
         
-        # Como no tenemos el día exacto de la semana en la estructura simple, 
-        # agrupamos por el título del evento (ej: G.P. Japón) y la hora ya ordenada
         key = (base_comp, ev["evento"])
         if key not in groups:
             groups[key] = []
@@ -315,7 +311,6 @@ def classify_motor_sessions(events_list: list[dict]):
 
     for key, group in groups.items():
         comp_base, _ = key
-        # Ordenar cronológicamente por hora
         group.sort(key=lambda x: x["hora"])
         total_sessions = len(group)
 
@@ -324,10 +319,8 @@ def classify_motor_sessions(events_list: list[dict]):
             
             if comp_base == "MotoGP":
                 if total_sessions == 2:
-                    # Suposición típica si hay 2 sesiones (ej: Domingo -> Warm Up y Carrera)
                     session_name = "Warm Up" if idx == 0 else "Carrera Principal"
                 elif total_sessions == 3:
-                    # Viernes o Sábado típico
                     if idx == 0: session_name = "Libres 1 (FP1)"
                     elif idx == 1: session_name = "Práctica / Libres 2"
                     else: session_name = "Carrera Sprint / Clasificación"
@@ -361,15 +354,18 @@ def classify_motor_sessions(events_list: list[dict]):
                     elif idx == 6: session_name = "Carrera Principal"
                     else: session_name = f"Sesión {idx + 1}"
             else:
-                # Para Moto2, Moto3, F2, F3 u otros
                 if total_sessions == 1:
                     session_name = "Carrera"
                 elif idx == 0: session_name = "Entrenamientos / Práctica"
                 elif idx == 1: session_name = "Clasificación"
                 else: session_name = "Carrera"
 
+            # La competición se queda limpia con el nombre de la categoría base
+            ev["competicion"] = comp_base
+            
+            # Concatenamos la sesión al evento si existe
             if session_name:
-                ev["competicion"] = f"{comp_base} - {session_name}"
+                ev["evento"] = f"{ev['evento']} - {session_name}"
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -551,7 +547,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             except Exception:
                 continue
         
-        # Aplicar la asignación secuencial inteligente para las sesiones de motor
+        # Asignar sesiones y concatenarlas al evento
         classify_motor_sessions(results)
 
     except Exception as e:
@@ -716,7 +712,7 @@ def generate_html(events):
                     <th class="time-col" style="width: 70px;">Hora</th>
                     <th class="sport-col" style="width: 100px;">Deporte</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
-                    <th>Evento / Partido</th>
+                    <th>Evento</th>
                     <th style="width: 210px;">Canal TV</th>
                 </tr>
             </thead>
@@ -777,7 +773,7 @@ function applyFilters() {{
             emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección y búsqueda.</td>';
             table.appendChild(emptyRow);
         }} else {{ emptyRow.style.display = ''; }}
-    }} else {{ if (emptyRow) emptyRow.emptyRow.style.display = 'none'; }}
+    }} else {{ if (emptyRow) emptyRow.style.display = 'none'; }}
 }}
 </script>
 </body>
