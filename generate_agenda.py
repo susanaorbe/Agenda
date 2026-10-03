@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime
+import json
 import re
 from typing import Iterable
 
@@ -15,8 +16,6 @@ WIDGET_URL = (
     "https://widgets.futbolenlatv.com/partidos/agenda"
     "?color=005df8&culture=es-ES"
 )
-
-MOVISTAR_GUIDE_URL = "https://www.movistarplus.es/programacion-tv/{channel_id}"
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -299,63 +298,32 @@ def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
     return clean_tournament(raw_tournament, f"{tour} Tour")
 
 
+def extract_motor_session_type(text: str) -> str:
+    text_lower = text.lower()
+    for pattern, session_name in SESSION_DETECTOR_RE:
+        if pattern.search(text_lower):
+            return session_name
+    return ""
+
+
 def classify_motor(blob: str, raw_tournament: str) -> str:
-    if ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob: return "Fórmula 1"
-    if "fórmula 2" in blob or F2_RE.search(blob): return "Fórmula 2"
-    if "fórmula 3" in blob or F3_RE.search(blob): return "Fórmula 3"
-    if "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob: return "MotoGP"
-    if MOTO2_RE.search(blob): return "Moto2"
-    if MOTO3_RE.search(blob): return "Moto3"
+    session = extract_motor_session_type(blob)
+    session_suffix = f" ({session})" if session else ""
+
+    if ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob:
+        return f"Fórmula 1{session_suffix}"
+    if "fórmula 2" in blob or F2_RE.search(blob):
+        return f"Fórmula 2{session_suffix}"
+    if "fórmula 3" in blob or F3_RE.search(blob):
+        return f"Fórmula 3{session_suffix}"
+    if MOTO2_RE.search(blob):
+        return f"Moto2{session_suffix}"
+    if MOTO3_RE.search(blob):
+        return f"Moto3{session_suffix}"
+    if "motogp" in blob and "rookies" not in blob:
+        return f"MotoGP{session_suffix}"
+
     return clean_tournament(raw_tournament, "Motor")
-
-
-# ============================================================================
-# EXTRACCIÓN DE SESIONES DESDE MOVISTAR PLUS+
-# ============================================================================
-
-def fetch_movistar_sessions() -> dict[str, dict[str, str]]:
-    """
-    Consulta las guías de Movistar Plus+ para DAZN F1 y DAZN MotoGP
-    y devuelve un diccionario mapeando (competicion, hora) -> tipo_de_sesion
-    """
-    channels = {
-        "Fórmula 1": "mvf1",
-        "MotoGP": "dazmot"
-    }
-    sessions_map = {}
-
-    for comp, channel_id in channels.items():
-        try:
-            url = MOVISTAR_GUIDE_URL.format(channel_id=channel_id)
-            res = requests.get(url, headers=REQUEST_HEADERS, timeout=10)
-            if res.status_code != 200:
-                continue
-
-            soup = BeautifulSoup(res.text, "html.parser")
-            items = soup.find_all(("li", "div", "tr"))
-
-            for item in items:
-                text = item.get_text(" ", strip=True)
-                time_match = TIME_RE.search(text)
-                if not time_match:
-                    continue
-
-                event_time = time_match.group(0)
-                text_lower = text.lower()
-
-                session_type = None
-                for pattern, s_name in SESSION_DETECTOR_RE:
-                    if pattern.search(text_lower):
-                        session_type = s_name
-                        break
-
-                if session_type:
-                    sessions_map[(comp, event_time)] = session_type
-
-        except Exception:
-            continue
-
-    return sessions_map
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -393,8 +361,8 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # MotoGP y Fórmula 1 son siempre favoritos sin condicionar por la sesión
-    if competition in {"Fórmula 1", "MotoGP"}:
+    # Acepta cualquier evento de MotoGP o Fórmula 1 independientemente de la sesión
+    if "fórmula 1" in competition.lower() or "motogp" in competition.lower() or "moto2" in competition.lower() or "moto3" in competition.lower():
         return True
 
     if contains(REAL_MADRID_RE, blob): return True
@@ -469,9 +437,6 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # Obtener sesiones de Movistar Plus+ para enriquecer Motor
-    movistar_sessions = fetch_movistar_sessions()
-
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -509,12 +474,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 sport, icon, competition = get_sport_and_competition(blob, tournament, tv_blob)
                 if sport == "__EXCLUDED__": continue
-
-                # Enriquecimiento de sesión para MotoGP / F1 desde Movistar Plus+
-                if competition in {"Fórmula 1", "MotoGP"}:
-                    mov_session = movistar_sessions.get((competition, time_clean))
-                    if mov_session and mov_session.lower() not in event_str.lower():
-                        event_str = f"{event_str} ({mov_session})"
 
                 is_favorite = matches_strict_criteria(blob, channels, sport=sport, competition=competition, event_time=time_clean)
 
