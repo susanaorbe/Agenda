@@ -72,7 +72,7 @@ EXCLUDED_CHANNELS = {
 
 
 # ============================================================================
-# REGEX Y REGISTRADORES
+# REGEX
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -141,7 +141,6 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Detectores de sesión ordenados por especificidad
 SESSION_DETECTOR_RE = [
     (rx(r"\bwarm\s*up\b", r"\bcalentamiento\b"), "Warm Up"),
     (rx(r"\bsprint\b", r"\bcarrera sprint\b"), "Carrera Sprint"),
@@ -371,7 +370,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
 
 
 # ============================================================================
-# PARSER ROBUSTO
+# PARSER
 # ============================================================================
 
 def fetch_and_parse_agenda() -> list[dict]:
@@ -383,51 +382,62 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Seleccionar las filas directas de la tabla o lista del widget
-        rows = soup.find_all(class_=re.compile(r'partido|evento|row|item', re.I))
-        if not rows:
-            rows = soup.find_all('tr')
+        # Seleccionamos todos los elementos contenedores potenciales (filas de tabla, divs de partido, ítems de lista)
+        items = soup.find_all(["tr", "div", "li"])
 
-        for row in rows:
+        for item in items:
             try:
-                text_full = row.get_text(" ", strip=True)
+                text_full = item.get_text(" | ", strip=True)
                 
-                # Extraer hora
+                # Exigir un patrón de hora en el texto
                 time_match = TIME_RE.search(text_full)
                 if not time_match:
                     continue
                 time_clean = time_match.group(0)
 
-                # Extraer Torneo / Competición por selector HTML explícito
-                tournament_elem = row.find(class_=re.compile(r'torneo|competicion|league|category', re.I))
-                tournament = tournament_elem.get_text(strip=True) if tournament_elem else ""
+                # Trocear las líneas internas
+                raw_lines = [line.strip() for line in item.get_text("\n", strip=True).split("\n") if line.strip()]
+                if not (2 <= len(raw_lines) <= 20):
+                    continue
 
-                # Extraer Enfrentamiento / Título por selector HTML explícito
-                matchup_elem = row.find(class_=re.compile(r'partido|equipo|title|event|desc', re.I))
-                matchup = matchup_elem.get_text(strip=True) if matchup_elem else text_full
-
-                # Extraer Canales
+                matchup = ""
                 channels = []
-                channel_elems = row.find_all(class_=re.compile(r'canal|cadena|tv|channel', re.I))
-                for ch_elem in channel_elems:
-                    ch_name = ch_elem.get_text(strip=True)
-                    ch_clean = re.sub(r'\(ver en directo\)|ver partido', '', ch_name, flags=re.IGNORECASE).strip()
-                    if ch_clean and ch_clean not in channels:
-                        channels.append(ch_clean)
+                tournament = ""
 
-                if not channels:
-                    # Fallback a búsqueda regex de canales si no hay clases CSS explícitas
-                    for word in text_full.split():
-                        if any(tv_id in word.lower() for tv_id in ["dazn", "m+", "movistar", "eurosport", "rtve", "teledeporte"]):
-                            clean_w = word.strip(",:|()")
-                            if clean_w and clean_w not in channels:
-                                channels.append(clean_w)
+                for line in raw_lines:
+                    line_lower = normalize_search_text(line)
+
+                    if TIME_RE.match(line) or line_lower in {"ver partido", "directo", "(ver en directo)"}:
+                        continue
+
+                    # Identificación de canales de TV
+                    if any(tv_id in line_lower for tv_id in ["m+", "movistar", "dazn", "eurosport", "rtve", "teledeporte", "laliga", "tv", "channel"]):
+                        clean_line = re.sub(r"\(ver en directo\)|ver partido", "", line, flags=re.IGNORECASE).strip()
+                        for ch in clean_line.split(","):
+                            ch_name = ch.strip().rstrip(":").strip()
+                            ch_lower = normalize_search_text(ch_name)
+                            if ch_name and not EXCLUDED_CHANNELS_RE.search(ch_lower) and ch_name not in channels:
+                                channels.append(ch_name)
+                        continue
+
+                    if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", line, re.IGNORECASE):
+                        if not matchup:
+                            matchup = line
+                        continue
+
+                    if not tournament and len(line) < 40:
+                        tournament = line
+                    elif not matchup:
+                        matchup = line
+
+                if not matchup:
+                    matchup = tournament if tournament else "Evento Deportivo"
 
                 if not channels:
                     continue
 
-                # Construcción del blob completo garantizando que el torneo y evento estén presentes
-                blob = normalize_search_text(f"{tournament} {matchup} {text_full}")
+                # Incluimos explícitamente todo el texto para capturar clasificatorias y torneos en el blob
+                blob = normalize_search_text(f"{tournament} {matchup} {text_full} {' '.join(channels)}")
 
                 if is_excluded_event(blob): continue
                 if contains(GOLF_RE, blob): continue
@@ -690,10 +700,7 @@ function applyFilters() {{
 
 if __name__ == "__main__":
     events = fetch_and_parse_agenda()
-    if events:
-        html_content = generate_html(events)
-        with open("index.html", "w", encoding="utf-8") as f:
-            f.write(html_content)
-        print(f"Archivo index.html generado con éxito. Eventos encontrados: {len(events)}")
-    else:
-        print("Atención: No se obtuvieron eventos de la fuente. Se conserva la agenda previa.")
+    html_content = generate_html(events)
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    print(f"Archivo index.html generado correctamente con {len(events)} eventos.")
