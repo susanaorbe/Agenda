@@ -205,7 +205,15 @@ EXCLUDED_BLOB_RE = rx(
     r"academy\b",
     r"\breplay\b",
     r"\bprimera\s+feb\b",
-    r"\bliga\s*u\b"
+    r"\bliga\s*u\b",
+    r"\bncaa\b",
+    r"\bnational\s+league\b",
+    r"\bprimera\s+catalana\b",
+    r"\bu20\s+elite\s+league\b",
+    r"segunda\s+uruguay",
+    r"\bwrc\b",
+    r"primera\s+divisi[oó]n\s+argentina",
+    r"liga\s+auf\s+uruguaya"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -485,7 +493,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML (FILTRADO DINÁMICO CORREGIDO)
+# GENERACIÓN DE HTML
 # ============================================================================
 
 def generate_html(events):
@@ -494,7 +502,6 @@ def generate_html(events):
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
     sport_counts = Counter(event["deporte"] for event in events)
 
-    # Normalizador de cadenas para atributos de filtro (elimina tildes para machichar 'fútbol' y 'futbol')
     def clean_key(s):
         return s.lower().replace("ú", "u").replace("ó", "o").replace("á", "a").replace("é", "e").replace("í", "i")
 
@@ -549,7 +556,6 @@ def generate_html(events):
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
         .search-input:focus {{ border-color: var(--accent-blue); }}
         
-        /* TABLA MODO ESCRITORIO / FIRE TV */
         .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
@@ -567,7 +573,6 @@ def generate_html(events):
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
-        /* MÓVIL REAL ÚNICAMENTE */
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
             body {{ padding: 8px 6px; }}
             h1 {{ font-size: 1.25rem; }}
@@ -689,7 +694,7 @@ function applyFilters() {{
         const matchesSearch = text.includes(searchFilter);
 
         if (matchesFilter && matchesSearch) {{
-            tr.style.display = ''; // Deja que el CSS determine la forma de mostrarse
+            tr.style.display = '';
             visibleCount++;
         }} else {{
             tr.style.display = 'none';
