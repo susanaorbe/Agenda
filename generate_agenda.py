@@ -81,6 +81,11 @@ def rx(*patterns: str) -> re.Pattern:
 REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
 CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
 
+SPAIN_RE = rx(
+    r"\bespaña\b", r"\bseleccion española\b", r"\bselección española\b",
+    r"\bsefutbol\b", r"\bnations league\b"
+)
+
 SPANISH_BIG_THREE_RE = rx(
     r"\breal madrid\b", r"\brm castilla\b", r"\bbarcelona\b",
     r"\bbarça\b", r"\batletico de madrid\b", r"\batlético de madrid\b"
@@ -120,8 +125,8 @@ WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b")
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 F2_RE = re.compile(r"\bf2\b", re.IGNORECASE)
 F3_RE = re.compile(r"\bf3\b")
-MOTO2_RE = re.compile(r"\bmoto\s*2\b", re.IGNORECASE)
-MOTO3_RE = re.compile(r"\bmoto\s*3\b", re.IGNORECASE)
+MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
+MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
 
 MOTOR_SERIES_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b",
@@ -132,11 +137,11 @@ MOTOR_SERIES_RE = rx(
 MOTOR_GENERAL_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bfórmula 2\b", r"\bfórmula 3\b",
     r"\bf2\b", r"\bf3\b", r"\bmotogp\b", r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b",
-    r"\bindy car\b", r"\bmoto2\b", r"\bmoto3\b", r"\bnascar\b", r"\brally\b", r"\bautomovilismo\b", r"\bmotor\b"
+    r"\bindy car\b", r"\bmoto2\b", r"\bmoto3\b", r"\brally\b", r"\bautomovilismo\b", r"\bmotor\b"
 )
 
 MOTO_STRICT_EXCLUDE_RE = rx(
-    r"\bmoto\s*2\b", r"\bmoto\s*3\b", r"rookies\s+cup", r"\brookies\b", r"\bnascar\b",
+    r"\bmoto2\b", r"\bmoto3\b", r"rookies\s+cup", r"\brookies\b", r"\bnascar\b",
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
@@ -190,9 +195,7 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bnfl\b",
     r"\bwnba\b",
     r"\bprimera\s+feb\b",
-    r"\bliga\s*u\b",
-    r"\bmoto\s*2\b",
-    r"\bmoto\s*3\b"
+    r"\bliga\s*u\b"
 )
 
 EXCLUDED_BLOB_RE = rx(
@@ -221,8 +224,7 @@ EXCLUDED_BLOB_RE = rx(
     r"rotterdam\s+open",
     r"giro\s+dell['\s]*emilia",
     r"\btop\s+14\b",
-    r"\bmoto\s*2\b",
-    r"\bmoto\s*3\b"
+    r"\bnascar\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -236,6 +238,7 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bserie a\b"), "Serie A"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
+    (rx(r"\bnations league\b"), "UEFA Nations League"),
 )
 
 TENNIS_TOURNAMENT_RE = rx(
@@ -272,8 +275,6 @@ def contains(pattern: re.Pattern, text: str) -> bool:
 
 def is_excluded_event(blob: str) -> bool:
     normalized = normalize_search_text(blob)
-    if MOTO2_RE.search(normalized) or MOTO3_RE.search(normalized):
-        return True
     return bool(EXCLUDED_SPORTS_RE.search(normalized) or EXCLUDED_BLOB_RE.search(normalized))
 
 
@@ -306,19 +307,22 @@ def time_to_minutes(time_str: str) -> int:
 def classify_motor_sessions(events_list: list[dict]):
     """
     Agrupa los eventos de motor, asigna sus sesiones de forma cronológica 
-    y ajusta estrictamente los favoritos según las reglas de MotoGP y F1.
+    o por palabras clave, y ajusta estrictamente los favoritos de MotoGP y F1.
     """
     groups = {}
     for ev in events_list:
         if ev["deporte"] != "Motor":
             continue
         base_comp = ev["competicion"]
-        for key_prefix in ["Fórmula 1", "MotoGP", "Fórmula 2", "Fórmula 3"]:
+        for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3"]:
             if base_comp.startswith(key_prefix):
                 base_comp = key_prefix
                 break
         
-        clean_gp_name = re.sub(r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
+        clean_gp_name = re.sub(
+            r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$", 
+            "", ev["evento"], flags=re.IGNORECASE
+        ).strip()
         if not clean_gp_name:
             clean_gp_name = ev["evento"]
 
@@ -331,75 +335,64 @@ def classify_motor_sessions(events_list: list[dict]):
         comp_base, _ = key
         group.sort(key=lambda x: time_to_minutes(x["hora"]))
         total_sessions = len(group)
-        current_weekday = datetime.now().weekday()  # 0: Lunes ... 5: Sábado, 6: Domingo
+        current_weekday = datetime.now().weekday()  # 0: Lunes ... 6: Domingo
 
         for idx, ev in enumerate(group):
             session_name = ""
+            ev_lower = ev["evento"].lower()
+            event_time_min = time_to_minutes(ev["hora"])
+
+            # 1. Si el texto original especifica la sesión, se respeta prioritariamente
+            if "carrera" in ev_lower or "race" in ev_lower:
+                session_name = "Carrera Principal"
+            elif "warm up" in ev_lower or "warm-up" in ev_lower:
+                session_name = "Warm Up"
+            elif "sprint" in ev_lower:
+                session_name = "Carrera Sprint"
+            elif "clasificación" in ev_lower or "qualifying" in ev_lower or "q1" in ev_lower or "q2" in ev_lower:
+                session_name = "Clasificación"
             
-            if comp_base == "MotoGP":
-                if current_weekday == 4:  # Viernes
-                    if idx == 0: session_name = "Libres 1 (FP1)"
-                    elif idx == 1: session_name = "Práctica"
-                    else: session_name = f"Sesión {idx + 1}"
-                elif current_weekday == 5:  # Sábado
-                    if idx == 0: session_name = "Libres 2 (FP2)"
-                    elif idx == 1: session_name = "Clasificación (Q1 y Q2)"
-                    elif idx == 2: session_name = "Carrera Sprint"
-                    else: session_name = f"Sesión {idx + 1}"
-                elif current_weekday == 6:  # Domingo
-                    if idx == 0: session_name = "Warm Up"
-                    elif idx == 1: session_name = "Carrera Principal"
-                    else: session_name = f"Sesión {idx + 1}"
-                else:
-                    if total_sessions == 2:
-                        session_name = "Warm Up" if idx == 0 else "Carrera Principal"
-                    elif total_sessions == 3:
-                        if idx == 0: session_name = "Libres 1 (FP1)"
-                        elif idx == 1: session_name = "Práctica"
-                        else: session_name = "Clasificación / Sprint"
-            
-            elif comp_base == "Fórmula 1":
-                if current_weekday == 4:  # Viernes
-                    if idx == 0: session_name = "Libres 1 (FP1)"
-                    elif idx == 1: session_name = "Libres 2 (FP2)"
-                    else: session_name = f"Sesión {idx + 1}"
-                elif current_weekday == 5:  # Sábado
-                    if idx == 0: session_name = "Libres 3 (FP3)"
-                    elif idx == 1: session_name = "Clasificación"
-                    else: session_name = f"Sesión {idx + 1}"
-                elif current_weekday == 6:  # Domingo
-                    if idx == 0: session_name = "Carrera Principal"
-                    else: session_name = f"Sesión {idx + 1}"
-                else:
-                    if total_sessions == 1:
+            # 2. Si no viene especificado en el texto, se infiere según horario y día
+            if not session_name:
+                if comp_base == "MotoGP":
+                    if current_weekday == 6:  # Domingo
+                        if event_time_min < 300 and total_sessions > 1 and idx == 0:
+                            session_name = "Warm Up"
+                        else:
+                            session_name = "Carrera Principal"
+                    elif current_weekday == 5:  # Sábado
+                        if idx == 0 and total_sessions > 2: session_name = "Libres 2 (FP2)"
+                        elif idx == 1 or (idx == 0 and total_sessions == 2): session_name = "Clasificación (Q1 y Q2)"
+                        else: session_name = "Carrera Sprint"
+                    else:
+                        session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
+
+                elif comp_base == "Fórmula 1":
+                    if current_weekday == 6:  # Domingo
                         session_name = "Carrera Principal"
-                    elif total_sessions == 2:
-                        session_name = "Libres / Shootout" if idx == 0 else "Clasificación / Sprint"
-                    elif total_sessions == 3:
-                        if idx == 0: session_name = "Libres 1 (FP1)"
-                        elif idx == 1: session_name = "Libres 2 / Shootout"
-                        else: session_name = "Libres 3 / Clasificación"
-            else:
-                if total_sessions == 1:
+                    elif current_weekday == 5:  # Sábado
+                        if idx == 0 and total_sessions > 1: session_name = "Libres 3 (FP3)"
+                        else: session_name = "Clasificación"
+                    else:
+                        session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
+                else:
                     session_name = "Carrera"
-                elif idx == 0: session_name = "Entrenamientos / Práctica"
-                elif idx == 1: session_name = "Clasificación"
-                else: session_name = "Carrera"
 
             ev["competicion"] = comp_base
             
             if session_name:
-                clean_base_event = re.sub(r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|q\d).*$", "", ev["evento"], flags=re.IGNORECASE).strip()
+                clean_base_event = re.sub(
+                    r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$", 
+                    "", ev["evento"], flags=re.IGNORECASE
+                ).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
-            # REGLAS ESTRICTAS DE FAVORITOS PARA MOTOR:
-            ev_lower = ev["evento"].lower()
+            # REGLAS DE FAVORITOS PARA MOTOR:
+            final_ev_lower = ev["evento"].lower()
             if comp_base == "MotoGP":
-                # MotoGP: Solo Carreras Sprint y Carreras Principales
-                ev["is_filtered"] = any(term in ev_lower for term in ["sprint", "carrera principal", "carrera"])
+                ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
             elif comp_base == "Fórmula 1":
-                # F1: Carreras Sprint, Carreras Principales y Clasificaciones (incluyendo shootout)
-                ev["is_filtered"] = any(term in ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
+                ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -428,18 +421,19 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
     
     if contains(MOTOR_GENERAL_RE, blob):
-        if MOTO2_RE.search(blob) or MOTO3_RE.search(blob):
-            return ("__EXCLUDED__", "", "")
-
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
         is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
+        is_moto2 = MOTO2_RE.search(blob)
+        is_moto3 = MOTO3_RE.search(blob)
 
         if is_f1: comp = "Fórmula 1"
         elif is_motogp: comp = "MotoGP"
         elif is_f2: comp = "Fórmula 2"
         elif is_f3: comp = "Fórmula 3"
+        elif is_moto2: comp = "Moto2"
+        elif is_moto3: comp = "Moto3"
         else: comp = clean_tournament(raw_tournament, "Motor")
 
         return ("Motor", "🏎️", comp)
@@ -450,14 +444,19 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
+    # OPCIÓN A: Excluir deportes de la categoría "Otros" de Favoritos
+    if sport == "Otros":
+        return False
+
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # El motor se filtra con precisión milimétrica después en 'classify_motor_sessions'
+    # El motor se filtra con precisión en 'classify_motor_sessions'
     if competition in {"Fórmula 1", "MotoGP"}:
         return False
 
     if contains(REAL_MADRID_RE, blob): return True
+    if contains(SPAIN_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
 
     if contains(BASKET_RE, blob):
@@ -659,7 +658,8 @@ def generate_html(events):
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
         tr.event-row:hover {{ background-color: #243146; }}
         
-        .sport-col, .time-col, .date-col {{ white-space: nowrap; }}
+        .sport-col {{ width: 155px !important; min-width: 155px !important; white-space: nowrap; }}
+        .time-col, .date-col {{ white-space: nowrap; }}
         .sport-tag {{ font-weight: 600; white-space: nowrap; }}
         .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
         .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
@@ -694,7 +694,7 @@ def generate_html(events):
             td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
             .date-col {{ display: none; }}
             .time-col {{ order: 1; display: inline-block; }}
-            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; }}
+            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
             .comp-col {{ order: 3; margin-top: 4px; }}
             .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
             .event-col {{ order: 4; margin: 2px 0 4px 0; }}
@@ -743,7 +743,7 @@ def generate_html(events):
                 <tr>
                     <th class="date-col" style="width: 70px;">Fecha</th>
                     <th class="time-col" style="width: 70px;">Hora</th>
-                    <th class="sport-col" style="width: 100px;">Deporte</th>
+                    <th class="sport-col" style="width: 155px;">Deporte</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
                     <th>Evento</th>
                     <th style="width: 210px;">Canal TV</th>
