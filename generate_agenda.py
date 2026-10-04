@@ -83,7 +83,7 @@ CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b
 
 SPAIN_RE = rx(
     r"\bespaña\b", r"\bseleccion española\b", r"\bselección española\b",
-    r"\bsefutbol\b", r"\bnations league\b"
+    r"\bsefutbol\b"
 )
 
 SPANISH_BIG_THREE_RE = rx(
@@ -152,14 +152,16 @@ BASKET_RE = rx(
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
 FUTSAL_RE = rx(r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b")
-RUGBY_RE = rx(r"\brugby\b", r"\bdivisi[oó]n\s+de\s+honor\b")
+RUGBY_RE = rx(r"\brugby\b", r"\bdivisi[oó]n\s+de\s+honor\b", r"\bgallagher\b", r"\bpremiership\b")
 HANDBALL_RE = rx(r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b")
 CYCLING_RE = rx(r"\bciclismo\b")
 GOLF_RE = rx(r"\bgolf\b")
+NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
 
 FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
-    r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b"
+    r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
+    r"\bnations\s+league\b"
 )
 
 PRIMERA_RFEF_RE = rx(
@@ -224,7 +226,13 @@ EXCLUDED_BLOB_RE = rx(
     r"rotterdam\s+open",
     r"giro\s+dell['\s]*emilia",
     r"\btop\s+14\b",
-    r"\bnascar\b"
+    r"\bnascar\b",
+    r"\bmoto2\b",
+    r"\bmoto3\b",
+    r"\brugby\b",
+    r"\bdivisi[oó]n\s+de\s+honor\b",
+    r"\bgallagher\b",
+    r"\bpremiership\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -238,7 +246,7 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bserie a\b"), "Serie A"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
-    (rx(r"\bnations league\b"), "UEFA Nations League"),
+    (NATIONS_LEAGUE_RE, "UEFA Nations League"),
 )
 
 TENNIS_TOURNAMENT_RE = rx(
@@ -408,7 +416,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
-    if contains(RUGBY_RE, blob): return ("Otros", "🏉", clean_tournament(raw_tournament, "Rugby"))
+    if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
     if contains(BASKET_RE, blob): return ("Baloncesto", "🏀", clean_tournament(raw_tournament, "Baloncesto"))
     if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
@@ -425,15 +433,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
         is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
-        is_moto2 = MOTO2_RE.search(blob)
-        is_moto3 = MOTO3_RE.search(blob)
 
         if is_f1: comp = "Fórmula 1"
         elif is_motogp: comp = "MotoGP"
         elif is_f2: comp = "Fórmula 2"
         elif is_f3: comp = "Fórmula 3"
-        elif is_moto2: comp = "Moto2"
-        elif is_moto3: comp = "Moto3"
         else: comp = clean_tournament(raw_tournament, "Motor")
 
         return ("Motor", "🏎️", comp)
@@ -444,17 +448,23 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
-    # OPCIÓN A: Excluir deportes de la categoría "Otros" de Favoritos
+    # 1. La categoría "Otros" queda descartada de Favoritos
     if sport == "Otros":
         return False
 
+    # 2. Canales excluidos
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # El motor se filtra con precisión en 'classify_motor_sessions'
+    # 3. El Motor se clasifica en 'classify_motor_sessions'
     if competition in {"Fórmula 1", "MotoGP"}:
         return False
 
+    # 4. UEFA Nations League: SOLO es favorito si juega España
+    if contains(NATIONS_LEAGUE_RE, blob):
+        return contains(SPAIN_RE, blob)
+
+    # 5. Equipos/Selecciones prioritarias y filtros de deporte
     if contains(REAL_MADRID_RE, blob): return True
     if contains(SPAIN_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
