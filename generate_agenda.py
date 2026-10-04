@@ -34,6 +34,7 @@ EXCLUDED_CHANNELS = {
     "atp tennis tv",
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
+    "etb1(país vasco)",
     "fanplay",
     "fanseat",
     "fff tv youtube",
