@@ -26,6 +26,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
+
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *",
     "aragón play",
@@ -58,6 +59,8 @@ EXCLUDED_CHANNELS = {
     "rcdeportivo tv youtube",
     "rcd deportivo tv youtube",
     "red bull tv",
+    "rfef tv youtube",
+    "rfef.es",
     "rtve play",
     "sefutbol youtube",
     "siroko tv",
@@ -69,7 +72,6 @@ EXCLUDED_CHANNELS = {
     "uefa youtube",
     "wta tv",
 }
-
 
 # ============================================================================
 # REGEX
@@ -146,9 +148,10 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
+# Corrección: Eliminado 'copa del rey' genérico de Baloncesto para evitar colisiones con fútbol
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bbaloncesto\b", r"\bbasket\b",
-    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey\b", r"\bsupercopa\b", r"\bfiba\b"
+    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
@@ -418,13 +421,16 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
+
+    # Corrección: Comprobamos primero las competiciones de Fútbol explícitas (como Copa del Rey)
+    for pattern, comp_name in FOOTBALL_COMPETITIONS:
+        if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
+
     if contains(BASKET_RE, blob): return ("Baloncesto", "🏀", clean_tournament(raw_tournament, "Baloncesto"))
     if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
     if contains(HANDBALL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
 
-    for pattern, comp_name in FOOTBALL_COMPETITIONS:
-        if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
