@@ -148,17 +148,18 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Corrección: Eliminado 'copa del rey' genérico de Baloncesto para evitar colisiones con fútbol
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bbaloncesto\b", r"\bbasket\b",
-    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b"
+    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey baloncesto\b", r"\bcopa acb\b",
+    r"\bsupercopa endesa\b", r"\bfiba\b", r"\bbasketball champions league\b", r"\bbcl\b",
+    r"\bjoventut\b", r"\bjuventud\b", r"\bbnei\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
 FUTSAL_RE = rx(r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b")
 RUGBY_RE = rx(r"\brugby\b", r"\bdivisi[oó]n\s+de\s+honor\b", r"\bgallagher\b", r"\bpremiership\b")
 HANDBALL_RE = rx(r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b")
-CYCLING_RE = rx(r"\bciclismo\b")
+CYCLING_RE = rx(r"\bciclismo\b", r"\buci\b", r"\btour\b", r"\bgiro\b", r"\bvuelta\b")
 GOLF_RE = rx(r"\bgolf\b")
 NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
 
@@ -172,6 +173,13 @@ PRIMERA_RFEF_RE = rx(
     r"\bprimera federaci[oó]n\b",
     r"\bprimera rfef\b",
     r"\b1[ªa]\s*federaci[oó]n\b",
+)
+
+# Reconocimiento explícito de organizaciones y ligas conocidas
+KNOWN_COMPETITIONS_RE = rx(
+    r"\buci\s+world\s+tour\b", r"\buci\b",
+    r"\batp\b", r"\bwta\b", r"\beuroleague\b", r"\bliga\s+endesa\b",
+    r"\bpremier\s+league\b", r"\bserie\s+a\b", r"\bbundesliga\b"
 )
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
@@ -189,6 +197,8 @@ def normalize_search_text(text: str) -> str:
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
 )
+
+CHANNEL_SPLIT_RE = re.compile(r"(eurosport\s*\d?)(dazn)", re.IGNORECASE)
 
 CHANNEL_LINE_RE = rx(
     r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b"
@@ -236,7 +246,10 @@ EXCLUDED_BLOB_RE = rx(
     r"\brugby\b",
     r"\bdivisi[oó]n\s+de\s+honor\b",
     r"\bgallagher\b",
-    r"\bpremiership\b"
+    r"\bpremiership\b",
+    r"uci\s+europe\s+tour",
+    r"ehf\s+european\s+league",
+    r"ehf\s+euro\s+league"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -317,10 +330,6 @@ def time_to_minutes(time_str: str) -> int:
 
 
 def classify_motor_sessions(events_list: list[dict]):
-    """
-    Agrupa los eventos de motor, asigna sus sesiones de forma cronológica 
-    o por palabras clave, y ajusta estrictamente los favoritos de MotoGP y F1.
-    """
     groups = {}
     for ev in events_list:
         if ev["deporte"] != "Motor":
@@ -347,14 +356,13 @@ def classify_motor_sessions(events_list: list[dict]):
         comp_base, _ = key
         group.sort(key=lambda x: time_to_minutes(x["hora"]))
         total_sessions = len(group)
-        current_weekday = datetime.now().weekday()  # 0: Lunes ... 6: Domingo
+        current_weekday = datetime.now().weekday()
 
         for idx, ev in enumerate(group):
             session_name = ""
             ev_lower = ev["evento"].lower()
             event_time_min = time_to_minutes(ev["hora"])
 
-            # 1. Si el texto original especifica la sesión, se respeta prioritariamente
             if "carrera" in ev_lower or "race" in ev_lower:
                 session_name = "Carrera Principal"
             elif "warm up" in ev_lower or "warm-up" in ev_lower:
@@ -364,15 +372,14 @@ def classify_motor_sessions(events_list: list[dict]):
             elif "clasificación" in ev_lower or "qualifying" in ev_lower or "q1" in ev_lower or "q2" in ev_lower:
                 session_name = "Clasificación"
             
-            # 2. Si no viene especificado en el texto, se infiere según horario y día
             if not session_name:
                 if comp_base == "MotoGP":
-                    if current_weekday == 6:  # Domingo
+                    if current_weekday == 6:
                         if event_time_min < 300 and total_sessions > 1 and idx == 0:
                             session_name = "Warm Up"
                         else:
                             session_name = "Carrera Principal"
-                    elif current_weekday == 5:  # Sábado
+                    elif current_weekday == 5:
                         if idx == 0 and total_sessions > 2: session_name = "Libres 2 (FP2)"
                         elif idx == 1 or (idx == 0 and total_sessions == 2): session_name = "Clasificación (Q1 y Q2)"
                         else: session_name = "Carrera Sprint"
@@ -380,9 +387,9 @@ def classify_motor_sessions(events_list: list[dict]):
                         session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
 
                 elif comp_base == "Fórmula 1":
-                    if current_weekday == 6:  # Domingo
+                    if current_weekday == 6:
                         session_name = "Carrera Principal"
-                    elif current_weekday == 5:  # Sábado
+                    elif current_weekday == 5:
                         if idx == 0 and total_sessions > 1: session_name = "Libres 3 (FP3)"
                         else: session_name = "Clasificación"
                     else:
@@ -399,7 +406,6 @@ def classify_motor_sessions(events_list: list[dict]):
                 ).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
-            # REGLAS DE FAVORITOS PARA MOTOR:
             final_ev_lower = ev["evento"].lower()
             if comp_base == "MotoGP":
                 ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
@@ -417,19 +423,28 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
         return ("__EXCLUDED__", "", "")
 
+    # Tenis
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Corrección: Comprobamos primero las competiciones de Fútbol explícitas (como Copa del Rey)
-    for pattern, comp_name in FOOTBALL_COMPETITIONS:
-        if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
+    # Baloncesto (Evaluado antes de fútbol para atrapar la Basketball Champions League)
+    if contains(BASKET_RE, blob) or "basketball champions league" in blob or "bcl" in blob:
+        if "champions league" in blob or "bcl" in blob or "liga de campeones" in blob:
+            comp_name = "Basketball Champions League"
+        else:
+            comp_name = clean_tournament(raw_tournament, "Baloncesto")
+        return ("Baloncesto", "🏀", comp_name)
 
-    if contains(BASKET_RE, blob): return ("Baloncesto", "🏀", clean_tournament(raw_tournament, "Baloncesto"))
+    # Otros deportes
     if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
     if contains(HANDBALL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
+
+    # Fútbol
+    for pattern, comp_name in FOOTBALL_COMPETITIONS:
+        if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
@@ -455,23 +470,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
-    # 1. La categoría "Otros" queda descartada de Favoritos
     if sport == "Otros":
         return False
 
-    # 2. Canales excluidos
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # 3. El Motor se clasifica en 'classify_motor_sessions'
     if competition in {"Fórmula 1", "MotoGP"}:
         return False
 
-    # 4. UEFA Nations League: SOLO es favorito si juega España
     if contains(NATIONS_LEAGUE_RE, blob):
         return contains(SPAIN_RE, blob)
 
-    # 5. Equipos/Selecciones prioritarias y filtros de deporte
     if contains(REAL_MADRID_RE, blob): return True
     if contains(SPAIN_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
@@ -503,6 +513,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     tournament = ""
 
     for part in raw_parts:
+        part = CHANNEL_SPLIT_RE.sub(r"\1, \2", part)
         part_lower = normalize_search_text(part)
 
         if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
@@ -520,7 +531,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
                     channels.append(channel)
             continue
 
-        if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
+        if KNOWN_COMPETITIONS_RE.search(part_lower) or TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
             if not tournament:
                 tournament = part
             continue
@@ -530,13 +541,13 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
                 matchup = part
             continue
 
-        if not tournament and len(part) < 35:
-            tournament = part
-        elif not matchup:
+        if not matchup:
             matchup = part
+        elif not tournament:
+            tournament = part
 
     if not matchup and tournament:
-        matchup = tournament
+        matchup, tournament = tournament, ""
 
     return time_clean, matchup, channels, tournament
 
