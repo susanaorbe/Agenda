@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime
+import zoneinfo
 import re
 from typing import Iterable
 
@@ -35,6 +36,7 @@ EXCLUDED_CHANNELS = {
     "atp tennis tv",
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
+    "esport3 web",
     "etb1(país vasco)",
     "fanplay",
     "fanseat",
@@ -56,6 +58,7 @@ EXCLUDED_CHANNELS = {
     "onefootball",
     "orange fútbol 1(107)",
     "orange fútbol 2(108)",
+    "prosieben maxx(m+ astra)",
     "rcdeportivo tv youtube",
     "rcd deportivo tv youtube",
     "red bull tv",
@@ -148,11 +151,13 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Corrección: Eliminado 'copa del rey' genérico de Baloncesto para evitar colisiones con fútbol
+# Se añade Eurocup a la detección de baloncesto
 BASKET_RE = rx(
-    r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bbaloncesto\b", r"\bbasket\b",
-    r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b",
-    r"\bchampions\s+league\s+ba[sk]et\b", r"\bliga\s+de\s+campeones\s+de\s+baloncesto\b", r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b"
+    r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beurocup\b", r"\beurocopa\b",
+    r"\bbaloncesto\b", r"\bbasket\b", r"\bnba\b", r"\bliga endesa\b",
+    r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b",
+    r"\bchampions\s+league\s+ba[sk]et\b", r"\bliga\s+de\s+campeones\s+de\s+baloncesto\b",
+    r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
@@ -163,10 +168,11 @@ CYCLING_RE = rx(r"\bciclismo\b")
 GOLF_RE = rx(r"\bgolf\b")
 NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
 
+# Se añade Europeo Sub-21 / Sub-21 a Fútbol
 FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
     r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
-    r"\bnations\s+league\b"
+    r"\bnations\s+league\b", r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"
 )
 
 PRIMERA_RFEF_RE = rx(
@@ -238,8 +244,8 @@ EXCLUDED_BLOB_RE = rx(
     r"\bdivisi[oó]n\s+de\s+honor\b",
     r"\bgallagher\b",
     r"\bpremiership\b",
-    r"\buci\b",                   # Exclusión UCI Europe Tour y similares
-    r"\behf\b"                   # Exclusión EHF European League y similares
+    r"\buci\b",
+    r"\behf\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -254,6 +260,7 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bbundesliga\b"), "Bundesliga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (NATIONS_LEAGUE_RE, "UEFA Nations League"),
+    (rx(r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"), "Europeo Sub-21"),
 )
 
 TENNIS_TOURNAMENT_RE = rx(
@@ -320,10 +327,6 @@ def time_to_minutes(time_str: str) -> int:
 
 
 def classify_motor_sessions(events_list: list[dict]):
-    """
-    Agrupa los eventos de motor, asigna sus sesiones de forma cronológica 
-    o por palabras clave, y ajusta estrictamente los favoritos de MotoGP y F1.
-    """
     groups = {}
     for ev in events_list:
         if ev["deporte"] != "Motor":
@@ -350,14 +353,13 @@ def classify_motor_sessions(events_list: list[dict]):
         comp_base, _ = key
         group.sort(key=lambda x: time_to_minutes(x["hora"]))
         total_sessions = len(group)
-        current_weekday = datetime.now().weekday()  # 0: Lunes ... 6: Domingo
+        current_weekday = datetime.now().weekday()
 
         for idx, ev in enumerate(group):
             session_name = ""
             ev_lower = ev["evento"].lower()
             event_time_min = time_to_minutes(ev["hora"])
 
-            # 1. Si el texto original especifica la sesión, se respeta prioritariamente
             if "carrera" in ev_lower or "race" in ev_lower:
                 session_name = "Carrera Principal"
             elif "warm up" in ev_lower or "warm-up" in ev_lower:
@@ -367,15 +369,14 @@ def classify_motor_sessions(events_list: list[dict]):
             elif "clasificación" in ev_lower or "qualifying" in ev_lower or "q1" in ev_lower or "q2" in ev_lower:
                 session_name = "Clasificación"
             
-            # 2. Si no viene especificado en el texto, se infiere según horario y día
             if not session_name:
                 if comp_base == "MotoGP":
-                    if current_weekday == 6:  # Domingo
+                    if current_weekday == 6:
                         if event_time_min < 300 and total_sessions > 1 and idx == 0:
                             session_name = "Warm Up"
                         else:
                             session_name = "Carrera Principal"
-                    elif current_weekday == 5:  # Sábado
+                    elif current_weekday == 5:
                         if idx == 0 and total_sessions > 2: session_name = "Libres 2 (FP2)"
                         elif idx == 1 or (idx == 0 and total_sessions == 2): session_name = "Clasificación (Q1 y Q2)"
                         else: session_name = "Carrera Sprint"
@@ -383,9 +384,9 @@ def classify_motor_sessions(events_list: list[dict]):
                         session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
 
                 elif comp_base == "Fórmula 1":
-                    if current_weekday == 6:  # Domingo
+                    if current_weekday == 6:
                         session_name = "Carrera Principal"
-                    elif current_weekday == 5:  # Sábado
+                    elif current_weekday == 5:
                         if idx == 0 and total_sessions > 1: session_name = "Libres 3 (FP3)"
                         else: session_name = "Clasificación"
                     else:
@@ -402,7 +403,6 @@ def classify_motor_sessions(events_list: list[dict]):
                 ).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
-            # REGLAS DE FAVORITOS PARA MOTOR:
             final_ev_lower = ev["evento"].lower()
             if comp_base == "MotoGP":
                 ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
@@ -425,14 +425,16 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Mapeo prioritario para Baloncesto
+    # Baloncesto (incluye Eurocup)
     if contains(BASKET_RE, blob):
         comp = clean_tournament(raw_tournament, "Baloncesto")
-        if "champions" in comp.lower() or "champions" in blob:
+        if "eurocup" in comp.lower() or "eurocup" in blob:
+            comp = "Eurocup"
+        elif "champions" in comp.lower() or "champions" in blob:
             comp = "Liga de Campeones de Baloncesto"
         return ("Baloncesto", "🏀", comp)
 
-    # Comprobamos las competiciones de Fútbol explícitas
+    # Competiciones de Fútbol explícitas (incluye Europeo Sub-21)
     for pattern, comp_name in FOOTBALL_COMPETITIONS:
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
@@ -464,23 +466,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
-    # 1. La categoría "Otros" queda descartada de Favoritos
     if sport == "Otros":
         return False
 
-    # 2. Canales excluidos
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    # 3. El Motor se clasifica en 'classify_motor_sessions'
     if competition in {"Fórmula 1", "MotoGP"}:
         return False
 
-    # 4. UEFA Nations League: SOLO es favorito si juega España
     if contains(NATIONS_LEAGUE_RE, blob):
         return contains(SPAIN_RE, blob)
 
-    # 5. Equipos/Selecciones prioritarias y filtros de deporte
     if contains(REAL_MADRID_RE, blob): return True
     if contains(SPAIN_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
@@ -547,7 +544,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     if not matchup and tournament:
         matchup = tournament
 
-    # Corrección para intercambio de columnas en UCI/Ciclismo u otros eventos traspuestos
     if "uci" in tournament.lower():
         tournament, matchup = matchup, tournament
 
@@ -623,7 +619,10 @@ def fetch_and_parse_agenda() -> list[dict]:
 # ============================================================================
 
 def generate_html(events):
-    fecha_act = datetime.now().strftime("%d/%m/%Y - %H:%M")
+    # Obtener hora local de España (CET/CEST)
+    spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
+    
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
     sport_counts = Counter(event["deporte"] for event in events)
@@ -739,7 +738,7 @@ def generate_html(events):
     <header>
         <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
-        <div class="last-update">Última actualización: <strong>{fecha_act} (UTC)</strong></div>
+        <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
