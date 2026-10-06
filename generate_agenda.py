@@ -152,7 +152,7 @@ BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bbaloncesto\b", r"\bbasket\b",
     r"\bnba\b", r"\bliga endesa\b", r"\bcopa del rey baloncesto\b", r"\bcopa acb\b",
     r"\bsupercopa endesa\b", r"\bfiba\b", r"\bbasketball champions league\b", r"\bbcl\b",
-    r"\bjoventut\b", r"\bjuventud\b", r"\bbnei\b"
+    r"\bjoventut\b", r"\bjuventud\b", r"\bbnei\b", r"\neurocup\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
@@ -166,7 +166,7 @@ NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
 FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
     r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
-    r"\bnations\s+league\b"
+    r"\bnations\s+league\b", r"\beuropeo\b", r"\beurocopa\b", r"\bamistoso\b", r"\bsub-21\b", r"\bsub\s*21\b"
 )
 
 PRIMERA_RFEF_RE = rx(
@@ -175,7 +175,6 @@ PRIMERA_RFEF_RE = rx(
     r"\b1[ªa]\s*federaci[oó]n\b",
 )
 
-# Reconocimiento explícito de organizaciones y ligas conocidas
 KNOWN_COMPETITIONS_RE = rx(
     r"\buci\s+world\s+tour\b", r"\buci\b",
     r"\batp\b", r"\bwta\b", r"\beuroleague\b", r"\bliga\s+endesa\b",
@@ -264,6 +263,8 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bbundesliga\b"), "Bundesliga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (NATIONS_LEAGUE_RE, "UEFA Nations League"),
+    (rx(r"\beuropeo\s+sub-21\b", r"\beuropeo\s+sub\s*21\b", r"\bsub-21\b", r"\bsub\s*21\b"), "Europeo Sub-21"),
+    (rx(r"\bamistoso\b"), "Amistoso Internacional"),
 )
 
 TENNIS_TOURNAMENT_RE = rx(
@@ -423,31 +424,44 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
         return ("__EXCLUDED__", "", "")
 
-    # Tenis
+    # 1. Tenis
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
         return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Baloncesto (Evaluado antes de fútbol para atrapar la Basketball Champions League)
-    if contains(BASKET_RE, blob) or "basketball champions league" in blob or "bcl" in blob:
-        if "champions league" in blob or "bcl" in blob or "liga de campeones" in blob:
+    # 2. Baloncesto
+    is_basket_event = contains(BASKET_RE, blob) or "basketball champions league" in blob or "bcl" in blob
+    # Si contiene Joventut o Bnei y habla de Champions/Liga de Campeones, se fuerza Baloncesto
+    if ("joventut" in blob or "juventud" in blob or "bnei" in blob) and ("champions" in blob or "liga de campeones" in blob or "bcl" in blob):
+        is_basket_event = True
+
+    if is_basket_event and not contains(FOOTBALL_RE, blob):
+        if "champions" in blob or "bcl" in blob or "liga de campeones" in blob:
             comp_name = "Basketball Champions League"
         else:
             comp_name = clean_tournament(raw_tournament, "Baloncesto")
         return ("Baloncesto", "🏀", comp_name)
 
-    # Otros deportes
-    if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
-    if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
-    if contains(HANDBALL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
-
-    # Fútbol
+    # 3. Fútbol (Se evalúa con prioridad para evitar que partidos pasen a "Otros")
     for pattern, comp_name in FOOTBALL_COMPETITIONS:
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
-    if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
+    if contains(FOOTBALL_RE, blob):
+        return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
+    # 4. Baloncesto general (por si faltaban palabras clave de fútbol)
+    if is_basket_event:
+        if "champions" in blob or "bcl" in blob or "liga de campeones" in blob:
+            comp_name = "Basketball Champions League"
+        else:
+            comp_name = clean_tournament(raw_tournament, "Baloncesto")
+        return ("Baloncesto", "🏀", comp_name)
+
+    # 5. Otros deportes específicos
+    if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
+    if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
+    if contains(HANDBALL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
     
     if contains(MOTOR_GENERAL_RE, blob):
@@ -545,9 +559,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             matchup = part
         elif not tournament:
             tournament = part
-
-    if not matchup and tournament:
-        matchup, tournament = tournament, ""
 
     return time_clean, matchup, channels, tournament
 
