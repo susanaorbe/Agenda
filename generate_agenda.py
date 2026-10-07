@@ -156,7 +156,6 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Se añaden Unicaja y equipos habituales de BCL para forzar detección de baloncesto
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beurocup\b", r"\beurocopa\b",
     r"\bbaloncesto\b", r"\bbasket\b", r"\bnba\b", r"\bliga endesa\b",
@@ -180,6 +179,12 @@ FOOTBALL_RE = rx(
     r"\bnations\s+league\b", r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"
 )
 
+PRIMERA_RFEF_RE = rx(
+    r"\bprimera federaci[oó]n\b",
+    r"\bprimera rfef\b",
+    r"\b1[ªa]\s*federaci[oó]n\b",
+)
+
 FOOTBALL_COMPETITIONS = (
     (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
     (rx(r"\beuropa league\b"), "UEFA Europa League"),
@@ -193,12 +198,6 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (NATIONS_LEAGUE_RE, "UEFA Nations League"),
     (rx(r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"), "Europeo Sub-21"),
-)
-
-PRIMERA_RFEF_RE = rx(
-    r"\bprimera federaci[oó]n\b",
-    r"\bprimera rfef\b",
-    r"\b1[ªa]\s*federaci[oó]n\b",
 )
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
@@ -430,7 +429,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Baloncesto: evaluado ANTES de las reglas de fútbol para clasificar correctamente BCL / Unicaja
     if contains(BASKET_RE, blob):
         comp = clean_tournament(raw_tournament, "Baloncesto")
         if "eurocup" in comp.lower() or "eurocup" in blob:
@@ -439,7 +437,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             comp = "Liga de Campeones de Baloncesto"
         return ("Baloncesto", "🏀", comp)
 
-    # Competiciones de Fútbol explícitas (incluye Europeo Sub-21)
     for pattern, comp_name in FOOTBALL_COMPETITIONS:
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
@@ -493,7 +490,6 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if sport == "Tenis":
         return contains(TENNIS_FAVORITES_RE, blob) or ("españa" in blob)
 
-    # Para fútbol / extranjero: sólo considerar Juventus si es fútbol
     if "juventus" in blob and sport != "Fútbol":
         return False
 
@@ -628,7 +624,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 # ============================================================================
 
 def generate_html(events):
-    # Obtener hora local de España (CET/CEST)
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
