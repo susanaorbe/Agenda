@@ -152,14 +152,18 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Patrones explícitos para detectar partidos de Baloncesto
+# Patrones explícitos para detectar partidos y equipos de Baloncesto
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beurocup\b", r"\beurocopa\b",
     r"\bbaloncesto\b", r"\bbasket\b", r"\bnba\b", r"\bliga endesa\b",
     r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b",
     r"\bchampions\s+league\s+ba[sk]et\b", r"\bliga\s+de\s+campeones\s+de\s+baloncesto\b",
     r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b", r"\bbc\b", r"\bcb\b", r"\bunicaja\b",
-    r"\bbaskets\b", r"\bpallacanestro\b", r"\bbasket\b"
+    r"\bbaskets\b", r"\bpallacanestro\b",
+    # Nombres y términos de equipos de la Basketball Champions League / Eurocup
+    r"\btrabzonspor\b", r"\bnanterre\b", r"\bslavia\s+prague\b", r"\bera\s+nbk\b",
+    r"\balba\s+berlin\b", r"\btelenet\b", r"\bgiants\b", r"\bantwerp\b",
+    r"\bfalco\b", r"\bszombathely\b", r"\bporto\s+cb\b", r"\bjuventus\s+utena\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
@@ -426,7 +430,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Corrección para eventos de Baloncesto etiquetados erróneamente como UEFA Champions League
+    # Detección prioritaria de Baloncesto (evita falsos positivos en UEFA Champions League)
     is_basket = contains(BASKET_RE, blob)
     if is_basket:
         comp = clean_tournament(raw_tournament, "Baloncesto")
@@ -490,7 +494,6 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if sport == "Tenis":
         return contains(TENNIS_FAVORITES_RE, blob) or ("españa" in blob)
 
-    # TOP3_FOREIGN_RE solo aplica estrictamente si el deporte es Fútbol
     if sport == "Fútbol":
         return contains(SPANISH_BIG_THREE_RE, blob) or contains(TOP3_FOREIGN_RE, blob)
 
@@ -625,7 +628,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 # ============================================================================
 
 def generate_html(events):
-    # Obtener hora local de España (CET/CEST)
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
