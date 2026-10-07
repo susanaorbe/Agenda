@@ -37,6 +37,7 @@ EXCLUDED_CHANNELS = {
     "dazn 1 bar(m148)",
     "dazn 2 bar(m149)",
     "esport3 web",
+    "esport3(cataluña)",
     "etb1(país vasco)",
     "fanplay",
     "fanseat",
@@ -151,13 +152,14 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Se añade Eurocup a la detección de baloncesto
+# Patrones explícitos para detectar partidos de Baloncesto
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beurocup\b", r"\beurocopa\b",
     r"\bbaloncesto\b", r"\bbasket\b", r"\bnba\b", r"\bliga endesa\b",
     r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b",
     r"\bchampions\s+league\s+ba[sk]et\b", r"\bliga\s+de\s+campeones\s+de\s+baloncesto\b",
-    r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b"
+    r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b", r"\bbc\b", r"\bcb\b", r"\bunicaja\b",
+    r"\bbaskets\b", r"\bpallacanestro\b", r"\bbasket\b"
 )
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
@@ -168,7 +170,6 @@ CYCLING_RE = rx(r"\bciclismo\b")
 GOLF_RE = rx(r"\bgolf\b")
 NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
 
-# Se añade Europeo Sub-21 / Sub-21 a Fútbol
 FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
     r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
@@ -425,16 +426,17 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Baloncesto (incluye Eurocup)
-    if contains(BASKET_RE, blob):
+    # Corrección para eventos de Baloncesto etiquetados erróneamente como UEFA Champions League
+    is_basket = contains(BASKET_RE, blob)
+    if is_basket:
         comp = clean_tournament(raw_tournament, "Baloncesto")
         if "eurocup" in comp.lower() or "eurocup" in blob:
             comp = "Eurocup"
-        elif "champions" in comp.lower() or "champions" in blob:
+        elif "champions" in comp.lower() or "champions" in blob or "uefa" in blob:
             comp = "Liga de Campeones de Baloncesto"
         return ("Baloncesto", "🏀", comp)
 
-    # Competiciones de Fútbol explícitas (incluye Europeo Sub-21)
+    # Competiciones de Fútbol explícitas
     for pattern, comp_name in FOOTBALL_COMPETITIONS:
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
@@ -482,13 +484,17 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if contains(SPAIN_RE, blob): return True
     if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
 
-    if contains(BASKET_RE, blob):
+    if sport == "Baloncesto":
         return "españa" in blob or "spain" in blob or contains(REAL_MADRID_RE, blob)
 
     if sport == "Tenis":
         return contains(TENNIS_FAVORITES_RE, blob) or ("españa" in blob)
 
-    return contains(MOTOR_SERIES_RE, blob) or contains(SPANISH_BIG_THREE_RE, blob) or contains(TOP3_FOREIGN_RE, blob)
+    # TOP3_FOREIGN_RE solo aplica estrictamente si el deporte es Fútbol
+    if sport == "Fútbol":
+        return contains(SPANISH_BIG_THREE_RE, blob) or contains(TOP3_FOREIGN_RE, blob)
+
+    return contains(MOTOR_SERIES_RE, blob)
 
 
 # ============================================================================
