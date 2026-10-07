@@ -83,29 +83,29 @@
     <header>
         <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
-        <div class="last-update">Última actualización: <strong>07/10/2026 - 15:37 (España)</strong></div>
+        <div class="last-update">Última actualización: <strong>08/10/2026 - 01:45 (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">30</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Todos</div><div class="val">21</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
-            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">2</div></div><div style="font-size:1.1rem">⭐</div>
+            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">5</div></div><div style="font-size:1.1rem">⭐</div>
         </div>
         <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">2</div></div><div style="font-size:1.1rem">⚽</div>
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">1</div></div><div style="font-size:1.1rem">⚽</div>
         </div>
         <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">11</div></div><div style="font-size:1.1rem">🏀</div>
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">6</div></div><div style="font-size:1.1rem">🏀</div>
         </div>
         <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">16</div></div><div style="font-size:1.1rem">🎾</div>
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">14</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
             <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">0</div></div><div style="font-size:1.1rem">🏎</div>
         </div>
         <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
-            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">1</div></div><div style="font-size:1.1rem">🎯</div>
+            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">0</div></div><div style="font-size:1.1rem">🎯</div>
         </div>
     </div>
     <div class="filter-container">
@@ -125,274 +125,193 @@
             </thead>
             <tbody id="agendaTable">
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="1:30 fútbol amistoso argentina - benín m+ liga de campeones(m60 o115) movistar plus+(m7)">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="0:30 fútbol serie a internacional - corinthians m+ vamos(8 y 50)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">1:30</span></td>
+                    <td class="time-col"><span class="time-badge">0:30</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Amistoso</div></td>
-                    <td class="event-col"><div class="event-title">Argentina - Benín</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Liga de Campeones(M60 O115)</span><span class="tv-badge">Movistar Plus+(M7)</span></div></td>
+                    <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Internacional - Corinthians</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Vamos(8 y 50)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="1:45 fútbol amistoso colombia - perú m+ vamos(8 y 50) m+ liga de campeones 2(m61 o117)">
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="6:00 tenis masters shanghai j. munar - j. brooksby m+ deportes 2(64)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">1:45</span></td>
-                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Amistoso</div></td>
-                    <td class="event-col"><div class="event-title">Colombia - Perú</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Vamos(8 y 50)</span><span class="tv-badge">M+ Liga de Campeones 2(M61 O117)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:10 tenis masters shanghai a. gea - j. faria m+ deportes 3(65)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">6:10</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Gea - J. Faria</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:10 tenis masters shanghai s. shimabukuro - m. kecmanovic m+ deportes 4(66)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">6:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">S. Shimabukuro - M. Kecmanovic</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:10 tenis masters shanghai a. kovacevic - m. berrettini m+ deportes 2(64)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">6:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Kovacevic - M. Berrettini</div></td>
+                    <td class="event-col"><div class="event-title">J. Munar - J. Brooksby</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="7:10 tenis wta pekín i. jovic - i. swiatek tennis channel - orange tv(131)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:00 tenis masters shanghai p. kotov - t. griekspoor m+ deportes 3(65)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">7:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">WTA Pekín</div></td>
-                    <td class="event-col"><div class="event-title">I. Jovic - I. Swiatek</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="7:40 tenis masters shanghai a. mannarino - n. basilashvili m+ deportes 4(66)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">7:40</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Mannarino - N. Basilashvili</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="8:35 tenis masters shanghai y. hanfmann - k. majchrzak m+ deportes 3(65)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">8:35</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Y. Hanfmann - K. Majchrzak</div></td>
+                    <td class="event-col"><div class="event-title">P. Kotov - T. Griekspoor</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="8:45 tenis masters shanghai zh. zhang - t. machac m+ deportes 2(64)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:00 tenis masters shanghai k. coppejans - s. tsitsipas m+ deportes 4(66)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">8:45</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Zh. Zhang - T. Machac</div></td>
+                    <td class="event-col"><div class="event-title">K. Coppejans - S. Tsitsipas</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="7:30 tenis masters shanghai b. tomic - m. arnaldi m+ deportes 3(65)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">7:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">B. Tomic - M. Arnaldi</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="7:30 tenis masters shanghai h. hurkacz - j. duckworth m+ deportes 4(66)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">7:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">H. Hurkacz - J. Duckworth</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="7:30 tenis masters shanghai m. navone - p. carreño m+ deportes 2(64)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">7:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">M. Navone - P. Carreño</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis masters shanghai m. trungelliti - r. sakamoto m+ deportes 4(66)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis masters shanghai m. giron - s. báez m+ deportes 3(65)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">9:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">M. Trungelliti - R. Sakamoto</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="9:05 tenis wta pekín c. gauff - e. mertens tennis channel - orange tv(131)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">9:05</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">WTA Pekín</div></td>
-                    <td class="event-col"><div class="event-title">C. Gauff - E. Mertens</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="10:55 tenis masters shanghai q. halys - c. wong m+ deportes 4(66)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:55</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Q. Halys - C. Wong</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="12:05 tenis masters shanghai y. wu - m. zheng m+ deportes 2(64) m+ vamos(8 y 50)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">12:05</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Y. Wu - M. Zheng</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span><span class="tv-badge">M+ Vamos(8 y 50)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="12:05 tenis masters shanghai m. bellucci - y. zhou m+ deportes 3(65)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">12:05</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">M. Bellucci - Y. Zhou</div></td>
+                    <td class="event-col"><div class="event-title">M. Giron - S. Báez</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="13:10 tenis wta pekín a. charaeva - q. zheng tennis channel - orange tv(131)">
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="9:00 tenis masters shanghai m. landaluce - jl. struff m+ deportes 2(64) movistar plus+(m7)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">13:10</span></td>
+                    <td class="time-col"><span class="time-badge">9:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">M. Landaluce - JL. Struff</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span><span class="tv-badge">Movistar Plus+(M7)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis wta pekín k. muchova - n. bartunkova tennis channel - orange tv(131)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">9:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Pekín</div></td>
-                    <td class="event-col"><div class="event-title">A. Charaeva - Q. Zheng</div></td>
+                    <td class="event-col"><div class="event-title">K. Muchova - N. Bartunkova</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="14:15 tenis masters shanghai a. fery - m. cilic m+ deportes 2(64)">
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="10:30 tenis masters shanghai b. van de zandschulp - d. mérida m+ deportes 3(65)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">14:15</span></td>
+                    <td class="time-col"><span class="time-badge">10:30</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Fery - M. Cilic</div></td>
+                    <td class="event-col"><div class="event-title">B. Van de Zandschulp - D. Mérida</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="10:30 tenis masters shanghai v. kopriva - z. bergs m+ deportes 2(64)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">10:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">V. Kopriva - Z. Bergs</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 2(64)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="14:30 tenis masters shanghai h. rune - d. altmaier m+ deportes 3(65)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="12:00 tenis masters shanghai l. van assche - y. bu m+ deportes 4(66)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">14:30</span></td>
+                    <td class="time-col"><span class="time-badge">12:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">H. Rune - D. Altmaier</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 3(65)</span></div></td>
+                    <td class="event-col"><div class="event-title">L. Van Assche - Y. Bu</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="15:00 tenis wta pekín a. li - e. svitolina tennis channel - orange tv(131)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="13:00 tenis wta pekín e. alexandrova - m. andreeva tennis channel - orange tv(131)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="time-col"><span class="time-badge">13:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Pekín</div></td>
-                    <td class="event-col"><div class="event-title">A. Li - E. Svitolina</div></td>
+                    <td class="event-col"><div class="event-title">E. Alexandrova - M. Andreeva</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">Tennis Channel - Orange TV(131)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="16:05 otros campeonato de europa contrarreloj masculina eurosport 1 dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="13:30 tenis masters shanghai c. norrie - d. svrcina m+ deportes 4(66)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">16:05</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                    <td class="comp-col"><div class="comp-title">Campeonato de Europa</div></td>
-                    <td class="event-col"><div class="event-title">Contrarreloj Masculina</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">Eurosport 1</span><span class="tv-badge">DAZN</span></div></td>
+                    <td class="time-col"><span class="time-badge">13:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">C. Norrie - D. Svrcina</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Deportes 4(66)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="18:00 baloncesto liga de campeones de baloncesto aek bc - salon vilpas vikings dazn">
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="18:00 baloncesto euroliga dubai basketball - crvena zvezda mts belgrade m+ baloncesto(m66)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">18:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">AEK BC - Salon Vilpas Vikings</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="18:00 baloncesto liga de campeones de baloncesto trabzonspor mp - nanterre 92 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">18:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">Trabzonspor MP - Nanterre 92</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="18:00 baloncesto liga de campeones de baloncesto slavia prague era nbk - alba berlin dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">18:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">Slavia Prague ERA NBK - ALBA Berlin</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="19:00 baloncesto liga de campeones de baloncesto juventus utena - unicaja málaga teledeporte dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">19:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">Juventus Utena - Unicaja Málaga</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">Teledeporte</span><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="19:00 baloncesto eurocup aris thessaloniki bc - san pablo burgos m+ baloncesto 2(m67)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">19:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Eurocup</div></td>
-                    <td class="event-col"><div class="event-title">Aris Thessaloniki BC - San Pablo Burgos</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto 2(M67)</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:00 baloncesto liga de campeones de baloncesto telenet giants antwerp - falco szombathely dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">Telenet Giants Antwerp - Falco Szombathely</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:00 baloncesto liga de campeones de baloncesto telekom baskets bonn - fc porto cb dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">Telekom Baskets Bonn - FC Porto CB</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:00 baloncesto liga de campeones de baloncesto kk spartak subotica bc - rasta vechta dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">KK Spartak Subotica BC - Rasta Vechta</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:30 baloncesto liga de campeones de baloncesto ucam murcia cb - pallacanestro varese dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga de Campeones de Baloncesto</div></td>
-                    <td class="event-col"><div class="event-title">UCAM Murcia CB - Pallacanestro Varese</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">DAZN</span></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:30 baloncesto eurocup kids&us manresa - ratiopharm ulm m+ baloncesto(m66)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Eurocup</div></td>
-                    <td class="event-col"><div class="event-title">Kids&Us Manresa - Ratiopharm Ulm</div></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Dubai Basketball - Crvena Zvezda MTS Belgrade</div></td>
                     <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto(M66)</span></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:45 baloncesto euroliga paris basketball - asvel lyon-villeurbanne m+ baloncesto 3(m194)">
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="18:00 baloncesto euroliga maccabi tel aviv bc - ax olimpia milano m+ baloncesto 2(m67)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Maccabi Tel Aviv BC - AX Olimpia Milano</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto 2(M67)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:00 baloncesto euroliga fc bayern basketball - virtus bologna m+ vamos 3(53)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">FC Bayern Basketball - Virtus Bologna</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Vamos 3(53)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:15 baloncesto euroliga panathinaikos bc - fenerbahce istanbul m+ baloncesto 2(m67)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Panathinaikos BC - Fenerbahce Istanbul</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto 2(M67)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:30 baloncesto euroliga valencia basket - hapoel tel aviv bc m+ baloncesto(m66)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Valencia Basket - Hapoel Tel Aviv BC</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto(M66)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="true" data-search="20:45 baloncesto euroliga real madrid baloncesto - bc partizan beograd m+ vamos(8 y 50)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">20:45</span></td>
                     <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
                     <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                    <td class="event-col"><div class="event-title">Paris Basketball - ASVEL Lyon-Villeurbanne</div></td>
-                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Baloncesto 3(M194)</span></div></td>
+                    <td class="event-col"><div class="event-title">Real Madrid Baloncesto - BC Partizan Beograd</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">M+ Vamos(8 y 50)</span></div></td>
                 </tr>
                 
             </tbody>
