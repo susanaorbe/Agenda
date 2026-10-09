@@ -253,10 +253,13 @@ EXCLUDED_BLOB_RE = rx(
     r"\bpremiership\b",
     r"\buci\b",
     r"\behf\b",
+    # Exclusiones estrictas para Boxeo, Pádel y Challengers
     r"\bboxeo\b",
     r"\bboxing\b",
+    r"\bt[ií]tulo\s+internacional\b",
     r"\bpadel\b",
     r"\bpádel\b",
+    r"\balemania\s+open\b",
     r"\bchallenger\b",
     r"\bvillena\b"
 )
@@ -405,7 +408,18 @@ def classify_motor_sessions(events_list: list[dict]):
                         if idx == 0 and total_sessions > 1: session_name = "Libres 3 (FP3)"
                         else: session_name = "Clasificación"
                     else:
-                        session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
+                        if total_sessions == 1:
+                            session_name = "Carrera Principal"
+                        else:
+                            # Reemplazos específicos solicitados para Fórmula 1
+                            if idx == 0:
+                                session_name = "Sesión 1"
+                            elif idx == 1:
+                                session_name = "Sesión 2 / Clasificación Sprint"
+                            elif idx == 2:
+                                session_name = "Sesión 3 / Carrera Sprint"
+                            else:
+                                session_name = f"Sesión {idx + 1}"
                 else:
                     session_name = "Carrera"
 
@@ -475,6 +489,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         else: comp = clean_tournament(raw_tournament, "Motor")
 
         return ("Motor", "🏎️", comp)
+
+    # Filtro adicional para descartar eventos ambiguos de la categoría "Otros" (como boxeo/pádel no etiquetados)
+    other_tournament = clean_tournament(raw_tournament, "Evento Deportivo").lower()
+    if any(k in other_tournament or k in blob for k in ["título", "internacional", "open", "cuadro", "1/4", "semifinal", "final", "peso", "combate"]):
+        return ("__EXCLUDED__", "", "")
 
     return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
 
