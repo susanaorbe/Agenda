@@ -55,6 +55,16 @@ CHANNEL_URLS = {
     "real madrid tv": "https://dlive.sx/stream/stream-523.php",
     "replay": "https://dlive.sx/stream/stream-530.php",
     "teledeporte": "https://dlive.sx/stream/stream-529.php",
+    "dazn": "https://dlive.sx/",
+    "dazn app gratis": "https://dlive.sx/",
+    "dazn motogp": "https://dlive.sx/",
+    "m+ baloncesto": "https://dlive.sx/",
+    "m+ baloncesto 2": "https://dlive.sx/",
+    "m+ baloncesto 3": "https://dlive.sx/",
+    "m+ liga de campeones 2": "https://dlive.sx/",
+    "m+ liga de campeones 3": "https://dlive.sx/",
+    "m+ liga de campeones 4": "https://dlive.sx/",
+    "primera federacion": "https://dlive.sx/",
 }
 
 
