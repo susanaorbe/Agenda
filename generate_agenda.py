@@ -27,6 +27,76 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
+# Mapeo de canales a sus URLs directas según la tabla facilitada
+CHANNEL_URLS = {
+    "la 1": "https://dlive.sx/stream/stream-533.php",
+    "la 2": "https://dlive.sx/stream/stream-536.php",
+    "antena 3": "https://dlive.sx/stream/stream-531.php",
+    "cuatro": "https://dlive.sx/stream/stream-535.php",
+    "telecinco": "https://dlive.sx/stream/stream-532.php",
+    "la sexta": "https://dlive.sx/stream/stream-534.php",
+    "movistar plus": "https://dlive.sx/stream/stream-437.php",
+    "movistar+": "https://dlive.sx/stream/stream-437.php",
+    "m+": "https://dlive.sx/stream/stream-437.php",
+    "#vamos spain": "https://dlive.sx/stream/stream-521.php",
+    "#vamos": "https://dlive.sx/stream/stream-521.php",
+    "m+ #vamos": "https://dlive.sx/stream/stream-521.php",
+    "dazn laliga": "https://dlive.sx/stream/stream-538.php",
+    "movistar laliga": "https://dlive.sx/stream/stream-84.php",
+    "m+ laliga": "https://dlive.sx/stream/stream-84.php",
+    "m+ laliga tv": "https://dlive.sx/stream/stream-84.php",
+    "movistar liga de campeones": "https://dlive.sx/stream/stream-435.php",
+    "m+ liga de campeones": "https://dlive.sx/stream/stream-435.php",
+    "laliga hypermotion tv": "https://dlive.sx/stream/stream-539.php",
+    "laliga tv hypermotion": "https://dlive.sx/stream/stream-539.php",
+    "dazn 1 spain": "https://dlive.sx/stream/stream-445.php",
+    "dazn 1": "https://dlive.sx/stream/stream-445.php",
+    "dazn 2 spain": "https://dlive.sx/stream/stream-446.php",
+    "dazn 2": "https://dlive.sx/stream/stream-446.php",
+    "dazn 3 spain": "https://dlive.sx/stream/stream-447.php",
+    "dazn 3": "https://dlive.sx/stream/stream-447.php",
+    "dazn 4 spain": "https://dlive.sx/stream/stream-448.php",
+    "dazn 4": "https://dlive.sx/stream/stream-448.php",
+    "dazn f1 es": "https://dlive.sx/stream/stream-537.php",
+    "dazn f1": "https://dlive.sx/stream/stream-537.php",
+    "dazn 1 motor": "https://dlive.sx/stream/stream-537.php",
+    "eurosport 1 spain": "https://dlive.sx/stream/stream-524.php",
+    "eurosport 1": "https://dlive.sx/stream/stream-524.php",
+    "eurosport 2 spain": "https://dlive.sx/stream/stream-525.php",
+    "eurosport 2": "https://dlive.sx/stream/stream-525.php",
+    "movistar deportes spain": "https://dlive.sx/stream/stream-436.php",
+    "movistar deportes": "https://dlive.sx/stream/stream-436.php",
+    "m+ deportes": "https://dlive.sx/stream/stream-436.php",
+    "movistar deportes 2 spain": "https://dlive.sx/stream/stream-438.php",
+    "movistar deportes 2": "https://dlive.sx/stream/stream-438.php",
+    "m+ deportes 2": "https://dlive.sx/stream/stream-438.php",
+    "movistar deportes 3 spain": "https://dlive.sx/stream/stream-526.php",
+    "movistar deportes 3": "https://dlive.sx/stream/stream-526.php",
+    "m+ deportes 3": "https://dlive.sx/stream/stream-526.php",
+    "movistar deportes 4 spain": "https://dlive.sx/stream/stream-527.php",
+    "movistar deportes 4": "https://dlive.sx/stream/stream-527.php",
+    "m+ deportes 4": "https://dlive.sx/stream/stream-527.php",
+    "real madrid tv spain": "https://dlive.sx/stream/stream-523.php",
+    "real madrid tv": "https://dlive.sx/stream/stream-523.php",
+    "replay spain": "https://dlive.sx/stream/stream-530.php",
+    "teledeporte spain (tdp)": "https://dlive.sx/stream/stream-529.php",
+    "teledeporte": "https://dlive.sx/stream/stream-529.php",
+    "tdp": "https://dlive.sx/stream/stream-529.php",
+}
+
+
+def get_channel_url(channel_name: str) -> str:
+    """Busca la URL correspondiente a un canal usando coincidencia exacta o parcial."""
+    norm = normalize_search_text(channel_name)
+    if norm in CHANNEL_URLS:
+        return CHANNEL_URLS[norm]
+    
+    # Búsqueda secundaria de coincidencia si hay ligeras variaciones de nombre
+    for key, url in CHANNEL_URLS.items():
+        if key in norm or norm in key:
+            return url
+    return ""
+
 
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *",
@@ -153,7 +223,6 @@ MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
 )
 
-# Patrones explícitos para detectar partidos y equipos de Baloncesto
 BASKET_RE = rx(
     r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beurocup\b", r"\beurocopa\b",
     r"\bbaloncesto\b", r"\bbasket\b", r"\bnba\b", r"\bliga endesa\b",
@@ -161,7 +230,6 @@ BASKET_RE = rx(
     r"\bchampions\s+league\s+ba[sk]et\b", r"\bliga\s+de\s+campeones\s+de\s+baloncesto\b",
     r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b", r"\bbc\b", r"\bcb\b", r"\bunicaja\b",
     r"\bbaskets\b", r"\bpallacanestro\b",
-    # Nombres y términos de equipos de la Basketball Champions League / Eurocup
     r"\btrabzonspor\b", r"\bnanterre\b", r"\bslavia\s+prague\b", r"\bera\s+nbk\b",
     r"\balba\s+berlin\b", r"\btelenet\b", r"\bgiants\b", r"\bantwerp\b",
     r"\bfalco\b", r"\bszombathely\b", r"\bporto\s+cb\b", r"\bjuventus\s+utena\b"
@@ -253,7 +321,6 @@ EXCLUDED_BLOB_RE = rx(
     r"\bpremiership\b",
     r"\buci\b",
     r"\behf\b",
-    # Exclusiones estrictas para Boxeo, Pádel y Challengers
     r"\bboxeo\b",
     r"\bboxing\b",
     r"\bt[ií]tulo\s+internacional\b",
@@ -411,7 +478,6 @@ def classify_motor_sessions(events_list: list[dict]):
                         if total_sessions == 1:
                             session_name = "Carrera Principal"
                         else:
-                            # Reemplazos específicos solicitados para Fórmula 1
                             if idx == 0:
                                 session_name = "Sesión 1"
                             elif idx == 1:
@@ -454,7 +520,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
 
-    # Detección prioritaria de Baloncesto (evita falsos positivos en UEFA Champions League)
     is_basket = contains(BASKET_RE, blob)
     if is_basket:
         comp = clean_tournament(raw_tournament, "Baloncesto")
@@ -464,7 +529,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             comp = "Liga de Campeones de Baloncesto"
         return ("Baloncesto", "🏀", comp)
 
-    # Competiciones de Fútbol explícitas
     for pattern, comp_name in FOOTBALL_COMPETITIONS:
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
@@ -490,7 +554,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
         return ("Motor", "🏎️", comp)
 
-    # Filtro adicional para descartar eventos ambiguos de la categoría "Otros" (como boxeo/pádel no etiquetados)
     other_tournament = clean_tournament(raw_tournament, "Evento Deportivo").lower()
     if any(k in other_tournament or k in blob for k in ["título", "internacional", "open", "cuadro", "1/4", "semifinal", "final", "peso", "combate"]):
         return ("__EXCLUDED__", "", "")
@@ -672,7 +735,15 @@ def generate_html(events):
         rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
     else:
         for ev in events:
-            tv_badges = "".join(f'<span class="tv-badge">{channel}</span>' for channel in ev["tv_list"])
+            tv_badges_list = []
+            for channel in ev["tv_list"]:
+                url = get_channel_url(channel)
+                if url:
+                    tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
+                else:
+                    tv_badges_list.append(f'<span class="tv-badge">{channel}</span>')
+            
+            tv_badges = "".join(tv_badges_list)
             search_text = " ".join([ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]).lower()
 
             rows_list.append(
@@ -733,7 +804,9 @@ def generate_html(events):
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
-        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; }}
+        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; }}
+        .tv-link {{ transition: all 0.2s ease; cursor: pointer; }}
+        .tv-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
