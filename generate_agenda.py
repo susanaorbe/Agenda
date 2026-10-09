@@ -58,6 +58,7 @@ CHANNEL_URLS = {
     "dazn": "https://dlive.sx/",
     "dazn app gratis": "https://dlive.sx/",
     "dazn motogp": "https://dlive.sx/",
+    "m+ vamos 2": "https://dlive.sx/",
     "m+ baloncesto": "https://dlive.sx/",
     "m+ baloncesto 2": "https://dlive.sx/",
     "m+ baloncesto 3": "https://dlive.sx/",
