@@ -27,7 +27,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Mapeo de canales a sus URLs directas según la tabla facilitada
+# Mapeo ajustado de canales a sus URLs directas
 CHANNEL_URLS = {
     "la 1": "https://dlive.sx/stream/stream-533.php",
     "la 2": "https://dlive.sx/stream/stream-536.php",
@@ -76,6 +76,8 @@ CHANNEL_URLS = {
     "movistar deportes 4 spain": "https://dlive.sx/stream/stream-527.php",
     "movistar deportes 4": "https://dlive.sx/stream/stream-527.php",
     "m+ deportes 4": "https://dlive.sx/stream/stream-527.php",
+    "tennis channel": "https://dlive.sx/stream/stream-40.php",
+    "tennis channel orange tv": "https://dlive.sx/stream/stream-40.php",
     "real madrid tv spain": "https://dlive.sx/stream/stream-523.php",
     "real madrid tv": "https://dlive.sx/stream/stream-523.php",
     "replay spain": "https://dlive.sx/stream/stream-530.php",
@@ -86,15 +88,26 @@ CHANNEL_URLS = {
 
 
 def get_channel_url(channel_name: str) -> str:
-    """Busca la URL correspondiente a un canal usando coincidencia exacta o parcial."""
+    """Busca la URL correspondiente a un canal asegurando coincidencias precisas."""
     norm = normalize_search_text(channel_name)
+    
+    # 1. Coincidencia exacta
     if norm in CHANNEL_URLS:
         return CHANNEL_URLS[norm]
     
-    # Búsqueda secundaria de coincidencia si hay ligeras variaciones de nombre
+    # Limpieza de diales tipo (64), (M66), etc.
+    clean_name = re.sub(r"\(\s*[a-z0-9]+\s*\)", "", norm).strip()
+    if clean_name in CHANNEL_URLS:
+        return CHANNEL_URLS[clean_name]
+
+    # 2. Búsqueda por subcadena exacta si no es ambiguo
     for key, url in CHANNEL_URLS.items():
-        if key in norm or norm in key:
+        if len(key) > 3 and key in clean_name:
+            # Prevenir falsos positivos con 'm+' o 'dazn' genéricos
+            if key in {"m+", "movistar+", "dazn"} and len(clean_name) > len(key):
+                continue
             return url
+
     return ""
 
 
