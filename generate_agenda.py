@@ -27,7 +27,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Mapeo ajustado de canales a sus URLs directas
+# Diccionario de canales y sus URLs exactas
 CHANNEL_URLS = {
     "la 1": "https://dlive.sx/stream/stream-533.php",
     "la 2": "https://dlive.sx/stream/stream-536.php",
@@ -64,30 +64,50 @@ CHANNEL_URLS = {
     "m+ liga de campeones 2": "https://dlive.sx/",
     "m+ liga de campeones 3": "https://dlive.sx/",
     "m+ liga de campeones 4": "https://dlive.sx/",
-    "primera federacion": "https://dlive.sx/",
+    "primera federación": "https://dlive.sx/"
 }
 
 
+def strip_accents(text: str) -> str:
+    """Elimina acentos para hacer coincidencias insensibles a tildes."""
+    return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+
+
 def get_channel_url(channel_name: str) -> str:
-    """Busca la URL correspondiente a un canal asegurando coincidencias precisas."""
+    """Busca la URL correspondiente a un canal gestionando variaciones de texto, diales y acentos."""
     norm = normalize_search_text(channel_name)
     
-    # 1. Coincidencia exacta
+    # 1. Coincidencia directa
     if norm in CHANNEL_URLS:
         return CHANNEL_URLS[norm]
     
-    # Limpieza de diales tipo (64), (M66), etc.
-    clean_name = re.sub(r"\(\s*[a-z0-9]+\s*\)", "", norm).strip()
+    # 2. Limpieza de diales entre paréntesis: "M+ Liga de Campeones 2(M61 O117)" -> "m+ liga de campeones 2"
+    clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
+    clean_name = normalize_search_text(clean_name)
     if clean_name in CHANNEL_URLS:
         return CHANNEL_URLS[clean_name]
 
-    # 2. Búsqueda por subcadena exacta si no es ambiguo
-    for key, url in CHANNEL_URLS.items():
-        if len(key) > 3 and key in clean_name:
-            # Prevenir falsos positivos con 'm+' o 'dazn' genéricos
-            if key in {"m+", "movistar+", "dazn"} and len(clean_name) > len(key):
-                continue
-            return url
+    # Coincidencia ignorando acentos
+    clean_no_acc = strip_accents(clean_name)
+    for k, v in CHANNEL_URLS.items():
+        if strip_accents(k) == clean_no_acc:
+            return v
+
+    # 3. Mapeos de alias habituales
+    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
+        return CHANNEL_URLS["m+ vamos"]
+    if clean_name in {"movistar plus", "movistar+"}:
+        return CHANNEL_URLS["movistar plus+"]
+    if clean_name in {"tennis channel", "tennis channel orange tv"}:
+        return CHANNEL_URLS["tennis channel - orange tv"]
+    if clean_name in {"tdp", "teledeporte spain (tdp)"}:
+        return CHANNEL_URLS["teledeporte"]
+
+    # 4. Coincidencia por subcadena exacta (ordenada por longitud descendente para dar prioridad a los canales más específicos)
+    for key in sorted(CHANNEL_URLS.keys(), key=len, reverse=True):
+        key_no_acc = strip_accents(key)
+        if len(key) > 3 and key_no_acc in clean_no_acc:
+            return CHANNEL_URLS[key]
 
     return ""
 
