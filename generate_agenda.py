@@ -59,6 +59,7 @@ EXCLUDED_CHANNELS = {
     "onefootball",
     "orange fútbol 1(107)",
     "orange fútbol 2(108)",
+    "orange fútbol 3(109)",
     "prosieben maxx(m+ astra)",
     "rcdeportivo tv youtube",
     "rcd deportivo tv youtube",
@@ -177,7 +178,8 @@ NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
 FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
     r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
-    r"\bnations\s+league\b", r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"
+    r"\bnations\s+league\b", r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b",
+    r"\beredivisie\b", r"\bligue 1\b"
 )
 
 PRIMERA_RFEF_RE = rx(
@@ -250,7 +252,13 @@ EXCLUDED_BLOB_RE = rx(
     r"\bgallagher\b",
     r"\bpremiership\b",
     r"\buci\b",
-    r"\behf\b"
+    r"\behf\b",
+    r"\bboxeo\b",
+    r"\bboxing\b",
+    r"\bpadel\b",
+    r"\bpádel\b",
+    r"\bchallenger\b",
+    r"\bvillena\b"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -263,6 +271,8 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bpremier league\b"), "Premier League"),
     (rx(r"\bserie a\b"), "Serie A"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
+    (rx(r"\bligue 1\b", r"\bligue1\b"), "Ligue 1"),
+    (rx(r"\beredivisie\b"), "Eredivisie"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (NATIONS_LEAGUE_RE, "UEFA Nations League"),
     (rx(r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"), "Europeo Sub-21"),
