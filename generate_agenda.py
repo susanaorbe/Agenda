@@ -1,5 +1,6 @@
 from collections import Counter
 from datetime import datetime
+from html import escape
 import zoneinfo
 import re
 from typing import Iterable
@@ -77,6 +78,11 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
     
+    # Estos canales no tienen URL específica, aunque compartan nombre con
+    # canales oficiales. Deben conservar el enlace alternativo azul/morado.
+    if clean_name in {"m+ deportes 5", "m+ vamos 2"}:
+        return "https://hubu.ru/fctvlink", False
+
     # 1. Coincidencia exacta limpia
     if clean_name in CHANNEL_URLS:
         return CHANNEL_URLS[clean_name], True
@@ -98,7 +104,7 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
         return CHANNEL_URLS["teledeporte"], True
 
     # 3. Coincidencia por subcadena exacta ordenada por longitud
-    for key in sorted(CHANNEL_URLS.keys(), key=len, reverse=True):
+    for key in CHANNEL_SUBSTRING_KEYS:
         key_no_acc = strip_accents(key)
         if len(key) > 3 and key_no_acc in clean_no_acc:
             return CHANNEL_URLS[key], True
@@ -270,12 +276,22 @@ PRIMERA_RFEF_RE = rx(
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
 SPACES_RE = re.compile(r"\s+")
+SEPARATORS_RE = re.compile(r"[|,;:/]+")
+EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]")
+MOTOR_GROUP_CLEAN_RE = re.compile(
+    r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
+    re.IGNORECASE,
+)
+MOTOR_EVENT_SUFFIX_RE = re.compile(
+    r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
+    re.IGNORECASE,
+)
 
 
 def normalize_search_text(text: str) -> str:
     value = (text or "").lower()
     value = value.replace("º", "ª")
-    value = re.sub(r"[|,;:/]+", " ", value)
+    value = SEPARATORS_RE.sub(" ", value)
     return SPACES_RE.sub(" ", value).strip()
 
 
@@ -389,6 +405,7 @@ GENERIC_TOURNAMENTS = frozenset({
 })
 
 EXCLUDED_CHANNELS_RE = rx(*(re.escape(channel) for channel in EXCLUDED_CHANNELS))
+CHANNEL_SUBSTRING_KEYS = tuple(sorted(CHANNEL_URLS, key=len, reverse=True))
 
 
 def contains(pattern: re.Pattern, text: str) -> bool:
@@ -422,12 +439,13 @@ def time_to_minutes(time_str: str) -> int:
     try:
         parts = time_str.strip().split(":")
         return int(parts[0]) * 60 + int(parts[1])
-    except Exception:
+    except (AttributeError, ValueError, IndexError):
         return 0
 
 
 def classify_motor_sessions(events_list: list[dict]):
     groups = {}
+    current_weekday = datetime.now().weekday()
     for ev in events_list:
         if ev["deporte"] != "Motor":
             continue
@@ -437,10 +455,7 @@ def classify_motor_sessions(events_list: list[dict]):
                 base_comp = key_prefix
                 break
         
-        clean_gp_name = re.sub(
-            r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$", 
-            "", ev["evento"], flags=re.IGNORECASE
-        ).strip()
+        clean_gp_name = MOTOR_GROUP_CLEAN_RE.sub("", ev["evento"]).strip()
         if not clean_gp_name:
             clean_gp_name = ev["evento"]
 
@@ -453,8 +468,6 @@ def classify_motor_sessions(events_list: list[dict]):
         comp_base, _ = key
         group.sort(key=lambda x: time_to_minutes(x["hora"]))
         total_sessions = len(group)
-        current_weekday = datetime.now().weekday()
-
         for idx, ev in enumerate(group):
             session_name = ""
             ev_lower = ev["evento"].lower()
@@ -507,10 +520,7 @@ def classify_motor_sessions(events_list: list[dict]):
             ev["competicion"] = comp_base
             
             if session_name:
-                clean_base_event = re.sub(
-                    r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$", 
-                    "", ev["evento"], flags=re.IGNORECASE
-                ).strip()
+                clean_base_event = MOTOR_EVENT_SUFFIX_RE.sub("", ev["evento"]).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
             final_ev_lower = ev["evento"].lower()
@@ -701,7 +711,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
 
-                if not re.search(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]", event_str):
+                if not EVENT_TEXT_RE.search(event_str):
                     continue
 
                 if not channels:
@@ -771,24 +781,43 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 url, is_official = get_channel_info(channel)
-                # Si está estrictamente en la lista, muestra verde con enlace 🔗
+                safe_channel = escape(str(channel), quote=True)
+                safe_url = escape(url, quote=True)
+                # Los canales oficiales mantienen el estilo verde y el icono 🔗.
                 if is_official:
-                    tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
+                    tv_badges_list.append(
+                        f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
+                        f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
+                        f'{safe_channel} 🔗</a>'
+                    )
                 else:
-                    # Si no está en la lista (como M+ Deportes 5 o M+ Vamos 2), muestra morado/azul con icono de mundo 🌐
-                    tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
-            
+                    # Los canales sin URL específica mantienen el estilo morado/azul y 🌐.
+                    tv_badges_list.append(
+                        f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
+                        f'class="tv-badge tv-link alt-link" title="Canal alternativo para {safe_channel}">'
+                        f'{safe_channel} 🌐</a>'
+                    )
+
             tv_badges = "".join(tv_badges_list)
-            search_text = " ".join([ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]).lower()
+            search_text = " ".join(
+                [ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+            ).lower()
+            safe_search = escape(search_text, quote=True)
+            safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
+            safe_time = escape(str(ev["hora"]))
+            safe_icon = escape(str(ev["icono"]))
+            safe_sport = escape(str(ev["deporte"]))
+            safe_competition = escape(str(ev["competicion"]))
+            safe_event = escape(str(ev["evento"]))
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-sport="{clean_key(ev['deporte'])}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{search_text}">
+                <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{safe_search}">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">{ev['hora']}</span></td>
-                    <td class="sport-col"><span class="sport-tag">{ev['icono']} {ev['deporte']}</span></td>
-                    <td class="comp-col"><div class="comp-title">{ev['competicion']}</div></td>
-                    <td class="event-col"><div class="event-title">{ev['evento']}</div></td>
+                    <td class="time-col"><span class="time-badge">{safe_time}</span></td>
+                    <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
+                    <td class="comp-col"><div class="comp-title">{safe_competition}</div></td>
+                    <td class="event-col"><div class="event-title">{safe_event}</div></td>
                     <td class="tv-col"><div class="tv-container">{tv_badges}</div></td>
                 </tr>
                 """
