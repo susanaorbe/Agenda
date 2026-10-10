@@ -228,8 +228,7 @@ MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
 MOTOR_SERIES_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b",
     r"\bmotogp\b(?![\s\-]*(?:2|3|moto2|moto3|rookies))\b",
-    r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b", r"\bindy car\b",
-    r"\bsuperbike\b", r"\bdtm\b", r"\bsupersport\b"
+    r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b", r"\bindy car\b"
 )
 
 MOTOR_GENERAL_RE = rx(
@@ -528,6 +527,8 @@ def classify_motor_sessions(events_list: list[dict]):
                 ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
             elif comp_base == "Fórmula 1":
                 ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
+            else:
+                ev["is_filtered"] = False
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
@@ -604,7 +605,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    if competition in {"Fórmula 1", "MotoGP"}:
+    if competition in {"Fórmula 1", "MotoGP", "Superbike", "DTM", "Supersport"}:
         return False
 
     if contains(NATIONS_LEAGUE_RE, blob):
@@ -652,13 +653,11 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
-        # 1. Comprobar primero si es un enfrentamiento (partido/evento) para evitar que nombres de equipos con "Movistar" se confundan con canales
         if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
             if not matchup:
                 matchup = part
             continue
 
-        # 2. Comprobar canales de TV
         if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
