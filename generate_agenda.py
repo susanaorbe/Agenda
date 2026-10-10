@@ -27,7 +27,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario de canales con URL específica
+# Diccionario estricto de canales oficiales con URL específica
 CHANNEL_URLS = {
     "la 1": "https://dlive.sx/watch.php?id=533",
     "la 2": "https://dlive.sx/watch.php?id=536",
@@ -70,14 +70,14 @@ def strip_accents(text: str) -> str:
 
 
 def get_channel_info(channel_name: str) -> tuple[str, bool]:
-    """Busca la URL del canal y determina si es oficial (DLive) o alternativo."""
+    """Busca si el canal está estrictamente en la lista y gestiona limpiezas de paréntesis/alias."""
     norm = normalize_search_text(channel_name)
     
-    # 1. Limpiar diales y paréntesis (ej: "m+ deportes 5(192)" -> "m+ deportes 5")
+    # Limpiar diales y paréntesis (ej: "m+ deportes 5(192)" -> "m+ deportes 5" o "movistar plus+(m7)" -> "movistar plus+")
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
     
-    # Coincidencia exacta limpia
+    # 1. Coincidencia exacta limpia
     if clean_name in CHANNEL_URLS:
         return CHANNEL_URLS[clean_name], True
 
@@ -87,7 +87,7 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
         if strip_accents(k) == clean_no_acc:
             return v, True
 
-    # 2. Mapeos de alias habituales
+    # 2. Mapeos de alias habituales permitidos
     if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
         return CHANNEL_URLS["m+ vamos"], True
     if clean_name in {"movistar plus", "movistar+"}:
@@ -97,31 +97,13 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     if clean_name in {"tdp", "teledeporte spain (tdp)"}:
         return CHANNEL_URLS["teledeporte"], True
 
-    # 3. Canales numerados adicionales que heredan del canal base (ej: M+ Deportes 5 -> M+ Deportes, M+ Vamos 2 -> M+ Vamos)
-    if "m+ deportes" in clean_name:
-        return CHANNEL_URLS["m+ deportes"], True
-    if "m+ vamos" in clean_name or "vamos" in clean_name:
-        return CHANNEL_URLS["m+ vamos"], True
-    if "m+ laliga" in clean_name:
-        return CHANNEL_URLS["m+ laliga"], True
-    if "m+ liga de campeones" in clean_name:
-        return CHANNEL_URLS["m+ liga de campeones"], True
-    if "dazn" in clean_name and "1" in clean_name:
-        return CHANNEL_URLS["dazn 1"], True
-    if "dazn" in clean_name and "2" in clean_name:
-        return CHANNEL_URLS["dazn 2"], True
-    if "dazn" in clean_name and "3" in clean_name:
-        return CHANNEL_URLS["dazn 3"], True
-    if "dazn" in clean_name and "4" in clean_name:
-        return CHANNEL_URLS["dazn 4"], True
-
-    # 4. Coincidencia por subcadena exacta ordenada por longitud
+    # 3. Coincidencia por subcadena exacta ordenada por longitud
     for key in sorted(CHANNEL_URLS.keys(), key=len, reverse=True):
         key_no_acc = strip_accents(key)
         if len(key) > 3 and key_no_acc in clean_no_acc:
             return CHANNEL_URLS[key], True
 
-    # Si no se encuentra ninguna coincidencia, se asigna el enlace alternativo
+    # Si no está estrictamente en la lista, devuelve la URL genérica y marca como no oficial (morado/azul)
     return "https://hubu.ru/fctvlink", False
 
 
@@ -789,11 +771,11 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 url, is_official = get_channel_info(channel)
-                # Si se reconoce como oficial (o hereda base), se muestra en verde con enlace 🔗
+                # Si está estrictamente en la lista, muestra verde con enlace 🔗
                 if is_official:
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
                 else:
-                    # Si no, se muestra en morado/azul con el icono de mundo 🌐
+                    # Si no está en la lista (como M+ Deportes 5 o M+ Vamos 2), muestra morado/azul con icono de mundo 🌐
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
             
             tv_badges = "".join(tv_badges_list)
@@ -860,7 +842,7 @@ def generate_html(events):
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
         
-        /* Estilo Verde para enlaces oficiales y heredados */
+        /* Estilo Verde para enlaces oficiales exactos */
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
 
