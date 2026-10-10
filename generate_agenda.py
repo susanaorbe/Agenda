@@ -51,7 +51,6 @@ CHANNEL_URLS = {
     "m+ deportes 2": "https://dlive.sx/watch.php?id=438",
     "m+ deportes 3": "https://dlive.sx/watch.php?id=526",
     "m+ deportes 4": "https://dlive.sx/watch.php?id=527",
-    "m+ deportes 5": "https://dlive.sx/watch.php?id=436",
     "tennis channel - orange tv": "https://dlive.sx/watch.php?id=40",
     "real madrid tv": "https://dlive.sx/watch.php?id=523",
     "replay": "https://dlive.sx/watch.php?id=530",
@@ -71,18 +70,18 @@ def strip_accents(text: str) -> str:
 
 
 def get_channel_info(channel_name: str) -> tuple[str, bool]:
-    """Devuelve la URL del canal y un booleano indicando si es oficial (DLive) o alternativo."""
+    """Busca la URL del canal y determina si es oficial (DLive) o alternativo."""
     norm = normalize_search_text(channel_name)
     
-    # Limpiar diales y paréntesis para matchear correctamente con el diccionario (ej: "m+ deportes 2(64)" -> "m+ deportes 2")
+    # 1. Limpiar diales y paréntesis (ej: "m+ deportes 5(192)" -> "m+ deportes 5")
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
     
-    # 1. Coincidencia directa con limpieza
+    # Coincidencia exacta limpia
     if clean_name in CHANNEL_URLS:
         return CHANNEL_URLS[clean_name], True
 
-    # Coincidencia ignorando acentos
+    # Coincidencia sin tildes
     clean_no_acc = strip_accents(clean_name)
     for k, v in CHANNEL_URLS.items():
         if strip_accents(k) == clean_no_acc:
@@ -98,13 +97,31 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     if clean_name in {"tdp", "teledeporte spain (tdp)"}:
         return CHANNEL_URLS["teledeporte"], True
 
-    # 3. Coincidencia por subcadena exacta ordenada por longitud
+    # 3. Canales numerados adicionales que heredan del canal base (ej: M+ Deportes 5 -> M+ Deportes, M+ Vamos 2 -> M+ Vamos)
+    if "m+ deportes" in clean_name:
+        return CHANNEL_URLS["m+ deportes"], True
+    if "m+ vamos" in clean_name or "vamos" in clean_name:
+        return CHANNEL_URLS["m+ vamos"], True
+    if "m+ laliga" in clean_name:
+        return CHANNEL_URLS["m+ laliga"], True
+    if "m+ liga de campeones" in clean_name:
+        return CHANNEL_URLS["m+ liga de campeones"], True
+    if "dazn" in clean_name and "1" in clean_name:
+        return CHANNEL_URLS["dazn 1"], True
+    if "dazn" in clean_name and "2" in clean_name:
+        return CHANNEL_URLS["dazn 2"], True
+    if "dazn" in clean_name and "3" in clean_name:
+        return CHANNEL_URLS["dazn 3"], True
+    if "dazn" in clean_name and "4" in clean_name:
+        return CHANNEL_URLS["dazn 4"], True
+
+    # 4. Coincidencia por subcadena exacta ordenada por longitud
     for key in sorted(CHANNEL_URLS.keys(), key=len, reverse=True):
         key_no_acc = strip_accents(key)
         if len(key) > 3 and key_no_acc in clean_no_acc:
             return CHANNEL_URLS[key], True
 
-    # Si no está en el diccionario, usa el enlace alternativo
+    # Si no se encuentra ninguna coincidencia, se asigna el enlace alternativo
     return "https://hubu.ru/fctvlink", False
 
 
@@ -772,11 +789,11 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 url, is_official = get_channel_info(channel)
-                # Si es oficial (está en CHANNEL_URLS tras limpiar paréntesis), usa verde y enlace 🔗
+                # Si se reconoce como oficial (o hereda base), se muestra en verde con enlace 🔗
                 if is_official:
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
                 else:
-                    # Si no está, usa morado/azul con el icono de mundo 🌐
+                    # Si no, se muestra en morado/azul con el icono de mundo 🌐
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
             
             tv_badges = "".join(tv_badges_list)
@@ -843,7 +860,7 @@ def generate_html(events):
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
         
-        /* Estilo Verde para enlaces oficiales */
+        /* Estilo Verde para enlaces oficiales y heredados */
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
 
