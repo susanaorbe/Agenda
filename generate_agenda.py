@@ -652,6 +652,13 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
+        # 1. Comprobar primero si es un enfrentamiento (partido/evento) para evitar que nombres de equipos con "Movistar" se confundan con canales
+        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
+            if not matchup:
+                matchup = part
+            continue
+
+        # 2. Comprobar canales de TV
         if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
@@ -664,11 +671,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
             if not tournament:
                 tournament = part
-            continue
-
-        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
-            if not matchup:
-                matchup = part
             continue
 
         if not tournament and len(part) < 35:
