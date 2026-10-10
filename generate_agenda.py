@@ -55,6 +55,7 @@ CHANNEL_URLS = {
     "real madrid tv": "https://dlive.sx/stream/stream-523.php",
     "replay": "https://dlive.sx/stream/stream-530.php",
     "teledeporte": "https://dlive.sx/stream/stream-529.php",
+    "laliga hypermotion": "https://dlive.sx/stream/stream-539.php",
     "dazn": "https://dlive.sx/",
     "dazn app gratis": "https://dlive.sx/",
     "dazn motogp": "https://dlive.sx/",
@@ -158,6 +159,7 @@ EXCLUDED_CHANNELS = {
     "tv canaria",
     "tv3(cataluña)",
     "tvg(galicia)",
+    "tv5monde",
     "uefa tv",
     "uefa youtube",
     "wta tv",
@@ -298,7 +300,8 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bnfl\b",
     r"\bwnba\b",
     r"\bprimera\s+feb\b",
-    r"\bliga\s*u\b"
+    r"\bliga\s*u\b",
+    r"\bliga\s+futve\b"
 )
 
 EXCLUDED_BLOB_RE = rx(
@@ -343,7 +346,8 @@ EXCLUDED_BLOB_RE = rx(
     r"\bpádel\b",
     r"\balemania\s+open\b",
     r"\bchallenger\b",
-    r"\bvillena\b"
+    r"\bvillena\b",
+    r"liga\s+guerreras\s+iberdrola"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -549,7 +553,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
     if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
-    if contains(HANDBALL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
+    if contains(HANDBALL_RE, blob):
+        if contains(WOMEN_RE, blob):
+            return ("__EXCLUDED__", "", "")
+        return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
 
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
 
