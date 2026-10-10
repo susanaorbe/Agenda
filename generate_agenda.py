@@ -105,7 +105,7 @@ def get_channel_url(channel_name: str) -> str:
         if len(key) > 3 and key_no_acc in clean_no_acc:
             return CHANNEL_URLS[key]
 
-    # Si no está en el diccionario, devuelve la URL alternativa por defecto
+    # Si no está en el diccionario, devuelve la URL alternativa
     return "https://hubu.ru/fctvlink"
 
 
@@ -773,11 +773,11 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 url = get_channel_url(channel)
-                # Si el canal está en el diccionario y tiene URL válida, usa esa URL con 🔗.
-                # Si no está en el diccionario, get_channel_url devuelve la alternativa y se muestra con 🌐.
+                # Si está en el diccionario CHANNEL_URLS, usa formato verde con enlace 🔗
                 if channel.lower() in CHANNEL_URLS or normalize_search_text(channel) in CHANNEL_URLS:
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
                 else:
+                    # Si no está, usa formato morado/azul con el icono de mundo 🌐 apuntando a la alternativa
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
             
             tv_badges = "".join(tv_badges_list)
@@ -843,11 +843,15 @@ def generate_html(events):
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
-        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; }}
+        
+        /* Estilo Verde para enlaces de DLive (igual que LaLiga Hypermotion) */
+        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
+        .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
+
+        /* Estilo Morado/Azulado con icono de mundo para la alternativa (igual que DAZN) */
         .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
-        .tv-link {{ transition: all 0.2s ease; cursor: pointer; }}
-        .tv-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
-        .alt-link:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; }}
+        .alt-link:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
+
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
