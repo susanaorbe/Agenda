@@ -56,6 +56,8 @@ CHANNEL_URLS = {
     "replay": "https://dlive.sx/stream/stream-530.php",
     "teledeporte": "https://dlive.sx/stream/stream-529.php",
     "laliga hypermotion": "https://dlive.sx/stream/stream-539.php",
+    "laliga tv hypermotion": "https://dlive.sx/stream/stream-539.php",
+    "m+ deportes 5": "https://dlive.sx/",
     "dazn": "https://dlive.sx/",
     "dazn app gratis": "https://dlive.sx/",
     "dazn motogp": "https://dlive.sx/",
@@ -226,13 +228,15 @@ MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
 MOTOR_SERIES_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b",
     r"\bmotogp\b(?![\s\-]*(?:2|3|moto2|moto3|rookies))\b",
-    r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b", r"\bindy car\b"
+    r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b", r"\bindy car\b",
+    r"\bsuperbike\b", r"\bdtm\b", r"\bsupersport\b"
 )
 
 MOTOR_GENERAL_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bfórmula 2\b", r"\bfórmula 3\b",
     r"\bf2\b", r"\bf3\b", r"\bmotogp\b", r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b",
-    r"\bindy car\b", r"\bmoto2\b", r"\bmoto3\b", r"\brally\b", r"\bautomovilismo\b", r"\bmotor\b"
+    r"\bindy car\b", r"\bmoto2\b", r"\bmoto3\b", r"\brally\b", r"\bautomovilismo\b", r"\bmotor\b",
+    r"\bsuperbike\b", r"\bdtm\b", r"\bsupersport\b"
 )
 
 MOTO_STRICT_EXCLUDE_RE = rx(
@@ -254,7 +258,7 @@ BASKET_RE = rx(
 
 HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
 FUTSAL_RE = rx(r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b")
-RUGBY_RE = rx(r"\brugby\b", r"\bdivisi[oó]n\s+de\s+honor\b", r"\bgallagher\b", r"\bpremiership\b")
+RUGBY_RE = rx(r"\brugby\b", r"\bdivisi[oó]n\s+de\s+honor\b", r"\bgallagher\b", r"\bpremiership\b", r"\btest\s+match\b")
 HANDBALL_RE = rx(r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b")
 CYCLING_RE = rx(r"\bciclismo\b")
 GOLF_RE = rx(r"\bgolf\b")
@@ -264,7 +268,7 @@ FOOTBALL_RE = rx(
     r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
     r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
     r"\bnations\s+league\b", r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b",
-    r"\beredivisie\b", r"\bligue 1\b"
+    r"\beredivisie\b", r"\bligue 1\b", r"\bjupiler\s+pro\s+league\b"
 )
 
 PRIMERA_RFEF_RE = rx(
@@ -347,7 +351,8 @@ EXCLUDED_BLOB_RE = rx(
     r"\balemania\s+open\b",
     r"\bchallenger\b",
     r"\bvillena\b",
-    r"liga\s+guerreras\s+iberdrola"
+    r"liga\s+guerreras\s+iberdrola",
+    r"test\s+match"
 )
 
 FOOTBALL_COMPETITIONS = (
@@ -362,6 +367,7 @@ FOOTBALL_COMPETITIONS = (
     (rx(r"\bbundesliga\b"), "Bundesliga"),
     (rx(r"\bligue 1\b", r"\bligue1\b"), "Ligue 1"),
     (rx(r"\beredivisie\b"), "Eredivisie"),
+    (rx(r"\bjupiler pro league\b"), "Jupiler Pro League"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (NATIONS_LEAGUE_RE, "UEFA Nations League"),
     (rx(r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"), "Europeo Sub-21"),
@@ -436,7 +442,7 @@ def classify_motor_sessions(events_list: list[dict]):
         if ev["deporte"] != "Motor":
             continue
         base_comp = ev["competicion"]
-        for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3"]:
+        for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3", "Superbike", "DTM", "Supersport"]:
             if base_comp.startswith(key_prefix):
                 base_comp = key_prefix
                 break
@@ -482,7 +488,7 @@ def classify_motor_sessions(events_list: list[dict]):
                             session_name = "Carrera Principal"
                     elif current_weekday == 5:
                         if idx == 0 and total_sessions > 2: session_name = "Libres 2 (FP2)"
-                        elif idx == 1 or (idx == 0 and total_sessions == 2): session_name = "Clasificación (Q1 y Q2)"
+                        elif idx == 1 or (idx == 0 and total_sessions == 2): session_name = "Clasificación / Clasificación Sprint"
                         else: session_name = "Carrera Sprint"
                     else:
                         session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
@@ -491,7 +497,7 @@ def classify_motor_sessions(events_list: list[dict]):
                     if current_weekday == 6:
                         session_name = "Carrera Principal"
                     elif current_weekday == 5:
-                        if idx == 0 and total_sessions > 1: session_name = "Libres 3 (FP3)"
+                        if idx == 0 and total_sessions > 1: session_name = "Libres 3 / Carrera Sprint"
                         else: session_name = "Clasificación"
                     else:
                         if total_sessions == 1:
@@ -562,16 +568,22 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
     
-    if contains(MOTOR_GENERAL_RE, blob):
+    if contains(MOTOR_GENERAL_RE, blob) or "superbike" in blob or "dtm" in blob or "supersport" in blob:
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
         is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
+        is_superbike = "superbike" in blob
+        is_dtm = "dtm" in blob
+        is_supersport = "supersport" in blob
 
         if is_f1: comp = "Fórmula 1"
         elif is_motogp: comp = "MotoGP"
         elif is_f2: comp = "Fórmula 2"
         elif is_f3: comp = "Fórmula 3"
+        elif is_superbike: comp = "Superbike"
+        elif is_dtm: comp = "DTM"
+        elif is_supersport: comp = "Supersport"
         else: comp = clean_tournament(raw_tournament, "Motor")
 
         return ("Motor", "🏎️", comp)
