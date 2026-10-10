@@ -524,7 +524,11 @@ def classify_motor_sessions(events_list: list[dict]):
 
             final_ev_lower = ev["evento"].lower()
             if comp_base == "MotoGP":
-                ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
+                is_moto_classification = any(term in final_ev_lower for term in ["clasificación", "clasificacion"])
+                ev["is_filtered"] = (
+                    any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
+                    and not is_moto_classification
+                )
             elif comp_base == "Fórmula 1":
                 ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
             else:
@@ -605,7 +609,11 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    if competition in {"Fórmula 1", "MotoGP", "Superbike", "DTM", "Supersport"}:
+    if competition in {"Fórmula 1", "MotoGP", "Superbike", "DTM", "Supersport", "Serie A", "Premier League", "Bundesliga", "Ligue 1", "Liga portuguesa"}:
+        return False
+
+    # Excluir explícitamente ligas extranjeras de favoritos por texto en el blob
+    if any(league in blob for league in ["serie a", "premier league", "bundesliga", "ligue 1", "liga portuguesa", "sporting cp", "benfica", "porto"]):
         return False
 
     if contains(NATIONS_LEAGUE_RE, blob):
@@ -622,7 +630,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
         return contains(TENNIS_FAVORITES_RE, blob) or ("españa" in blob)
 
     if sport == "Fútbol":
-        return contains(SPANISH_BIG_THREE_RE, blob) or contains(TOP3_FOREIGN_RE, blob)
+        return contains(SPANISH_BIG_THREE_RE, blob)
 
     return contains(MOTOR_SERIES_RE, blob)
 
