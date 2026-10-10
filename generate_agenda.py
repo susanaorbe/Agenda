@@ -27,36 +27,36 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario de canales y sus URLs exactas
+# Diccionario de canales y sus URLs actualizadas
 CHANNEL_URLS = {
-    "la 1": "https://dlive.sx/stream/stream-533.php",
-    "la 2": "https://dlive.sx/stream/stream-536.php",
-    "antena 3": "https://dlive.sx/stream/stream-531.php",
-    "cuatro": "https://dlive.sx/stream/stream-535.php",
-    "telecinco": "https://dlive.sx/stream/stream-532.php",
-    "la sexta": "https://dlive.sx/stream/stream-534.php",
-    "movistar plus+": "https://dlive.sx/stream/stream-437.php",
-    "m+ vamos": "https://dlive.sx/stream/stream-521.php",
-    "dazn laliga": "https://dlive.sx/stream/stream-538.php",
-    "m+ laliga": "https://dlive.sx/stream/stream-84.php",
-    "m+ liga de campeones": "https://dlive.sx/stream/stream-435.php",
-    "dazn 1": "https://dlive.sx/stream/stream-445.php",
-    "dazn 2": "https://dlive.sx/stream/stream-446.php",
-    "dazn 3": "https://dlive.sx/stream/stream-447.php",
-    "dazn 4": "https://dlive.sx/stream/stream-448.php",
-    "dazn f1": "https://dlive.sx/stream/stream-537.php",
-    "eurosport 1": "https://dlive.sx/stream/stream-524.php",
-    "eurosport 2": "https://dlive.sx/stream/stream-525.php",
-    "m+ deportes": "https://dlive.sx/stream/stream-436.php",
-    "m+ deportes 2": "https://dlive.sx/stream/stream-438.php",
-    "m+ deportes 3": "https://dlive.sx/stream/stream-526.php",
-    "m+ deportes 4": "https://dlive.sx/stream/stream-527.php",
-    "tennis channel - orange tv": "https://dlive.sx/stream/stream-40.php",
-    "real madrid tv": "https://dlive.sx/stream/stream-523.php",
-    "replay": "https://dlive.sx/stream/stream-530.php",
-    "teledeporte": "https://dlive.sx/stream/stream-529.php",
-    "laliga hypermotion": "https://dlive.sx/stream/stream-539.php",
-    "laliga tv hypermotion": "https://dlive.sx/stream/stream-539.php",
+    "la 1": "https://dlive.sx/watch.php?id=533",
+    "la 2": "https://dlive.sx/watch.php?id=536",
+    "antena 3": "https://dlive.sx/watch.php?id=531",
+    "cuatro": "https://dlive.sx/watch.php?id=535",
+    "telecinco": "https://dlive.sx/watch.php?id=532",
+    "la sexta": "https://dlive.sx/watch.php?id=534",
+    "movistar plus+": "https://dlive.sx/watch.php?id=437",
+    "m+ vamos": "https://dlive.sx/watch.php?id=521",
+    "dazn laliga": "https://dlive.sx/watch.php?id=538",
+    "m+ laliga": "https://dlive.sx/watch.php?id=84",
+    "m+ liga de campeones": "https://dlive.sx/watch.php?id=435",
+    "dazn 1": "https://dlive.sx/watch.php?id=445",
+    "dazn 2": "https://dlive.sx/watch.php?id=446",
+    "dazn 3": "https://dlive.sx/watch.php?id=447",
+    "dazn 4": "https://dlive.sx/watch.php?id=448",
+    "dazn f1": "https://dlive.sx/watch.php?id=537",
+    "eurosport 1": "https://dlive.sx/watch.php?id=524",
+    "eurosport 2": "https://dlive.sx/watch.php?id=525",
+    "m+ deportes": "https://dlive.sx/watch.php?id=436",
+    "m+ deportes 2": "https://dlive.sx/watch.php?id=438",
+    "m+ deportes 3": "https://dlive.sx/watch.php?id=526",
+    "m+ deportes 4": "https://dlive.sx/watch.php?id=527",
+    "tennis channel - orange tv": "https://dlive.sx/watch.php?id=40",
+    "real madrid tv": "https://dlive.sx/watch.php?id=523",
+    "replay": "https://dlive.sx/watch.php?id=530",
+    "teledeporte": "https://dlive.sx/watch.php?id=529",
+    "laliga hypermotion": "https://dlive.sx/watch.php?id=539",
+    "laliga tv hypermotion": "https://dlive.sx/watch.php?id=539",
     "m+ deportes 5": "https://dlive.sx/",
     "dazn": "https://dlive.sx/",
     "dazn app gratis": "https://dlive.sx/",
@@ -612,7 +612,6 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
     if competition in {"Fórmula 1", "MotoGP", "Superbike", "DTM", "Supersport", "Serie A", "Premier League", "Bundesliga", "Ligue 1", "Liga portuguesa"}:
         return False
 
-    # Excluir explícitamente ligas extranjeras de favoritos por texto en el blob
     if any(league in blob for league in ["serie a", "premier league", "bundesliga", "ligue 1", "liga portuguesa", "sporting cp", "benfica", "porto"]):
         return False
 
