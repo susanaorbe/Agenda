@@ -27,7 +27,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario de canales y sus URLs actualizadas
+# Diccionario de canales con URL específica
 CHANNEL_URLS = {
     "la 1": "https://dlive.sx/watch.php?id=533",
     "la 2": "https://dlive.sx/watch.php?id=536",
@@ -105,7 +105,8 @@ def get_channel_url(channel_name: str) -> str:
         if len(key) > 3 and key_no_acc in clean_no_acc:
             return CHANNEL_URLS[key]
 
-    return ""
+    # Si no está en el diccionario, devuelve la URL alternativa por defecto
+    return "https://hubu.ru/fctvlink"
 
 
 EXCLUDED_CHANNELS = {
@@ -772,11 +773,12 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 url = get_channel_url(channel)
-                if url and url != "https://dlive.sx/":
+                # Si el canal está en el diccionario y tiene URL válida, usa esa URL con 🔗.
+                # Si no está en el diccionario, get_channel_url devuelve la alternativa y se muestra con 🌐.
+                if channel.lower() in CHANNEL_URLS or normalize_search_text(channel) in CHANNEL_URLS:
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
                 else:
-                    # Enlace alternativo si la URL no está disponible o es genérica
-                    tv_badges_list.append(f'<a href="https://hubu.ru/fctvlink" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
+                    tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
             
             tv_badges = "".join(tv_badges_list)
             search_text = " ".join([ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]).lower()
