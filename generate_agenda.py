@@ -57,18 +57,10 @@ CHANNEL_URLS = {
     "teledeporte": "https://dlive.sx/watch.php?id=529",
     "laliga hypermotion": "https://dlive.sx/watch.php?id=539",
     "laliga tv hypermotion": "https://dlive.sx/watch.php?id=539",
-    "m+ deportes 5": "https://dlive.sx/",
-    "dazn": "https://dlive.sx/",
-    "dazn app gratis": "https://dlive.sx/",
-    "dazn motogp": "https://dlive.sx/",
-    "m+ vamos 2": "https://dlive.sx/",
-    "m+ baloncesto": "https://dlive.sx/",
-    "m+ baloncesto 2": "https://dlive.sx/",
-    "m+ baloncesto 3": "https://dlive.sx/",
-    "m+ liga de campeones 2": "https://dlive.sx/",
-    "m+ liga de campeones 3": "https://dlive.sx/",
-    "m+ liga de campeones 4": "https://dlive.sx/",
-    "primera federación": "https://dlive.sx/"
+    "dazn motogp": "https://dlive.sx/watch.php?id=918",
+    "m+ baloncesto": "https://dlive.sx/watch.php?id=194",
+    "m+ baloncesto 2": "https://dlive.sx/watch.php?id=183",
+    "m+ baloncesto 3": "https://dlive.sx/watch.php?id=168"
 }
 
 
@@ -780,10 +772,11 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 url = get_channel_url(channel)
-                if url:
+                if url and url != "https://dlive.sx/":
                     tv_badges_list.append(f'<a href="{url}" target="_blank" class="tv-badge tv-link" title="Abrir canal {channel}">{channel} 🔗</a>')
                 else:
-                    tv_badges_list.append(f'<span class="tv-badge">{channel}</span>')
+                    # Enlace alternativo si la URL no está disponible o es genérica
+                    tv_badges_list.append(f'<a href="https://hubu.ru/fctvlink" target="_blank" class="tv-badge tv-link alt-link" title="Canal alternativo para {channel}">{channel} 🌐</a>')
             
             tv_badges = "".join(tv_badges_list)
             search_text = " ".join([ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]).lower()
@@ -817,8 +810,10 @@ def generate_html(events):
         .container {{ width: 100%; max-width: 1150px; }}
         header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
         h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
-        .header-controls {{ display: flex; gap: 10px; align-items: center; }}
+        .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
         .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
+        .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }}
+        .btn-alt:hover {{ background: #4f46e5; }}
         .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
         
         .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
@@ -847,8 +842,10 @@ def generate_html(events):
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; }}
+        .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
         .tv-link {{ transition: all 0.2s ease; cursor: pointer; }}
         .tv-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
+        .alt-link:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; }}
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
         @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
@@ -889,7 +886,10 @@ def generate_html(events):
 <div class="container">
     <header>
         <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
-        <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
+        <div class="header-controls">
+            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">🌐 Hub Alternativo</a>
+            <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
+        </div>
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
     </header>
     <div class="stats-grid">
