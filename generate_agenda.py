@@ -59,9 +59,9 @@ CHANNEL_URLS = {
     "laliga hypermotion": "https://dlive.sx/watch.php?id=539",
     "laliga tv hypermotion": "https://dlive.sx/watch.php?id=539",
     "dazn motogp": "https://dlive.sx/watch.php?id=918",
-    "m+ baloncesto": "https://dlive.sx/watch.php?id=194",
-    "m+ baloncesto 2": "https://dlive.sx/watch.php?id=183",
-    "m+ baloncesto 3": "https://dlive.sx/watch.php?id=168"
+    "dazn baloncesto": "https://dlive.sx/watch.php?id=194",
+    "dazn baloncesto 2": "https://dlive.sx/watch.php?id=183",
+    "dazn baloncesto 3": "https://dlive.sx/watch.php?id=168"
 }
 
 
