@@ -85,29 +85,29 @@
     <header>
         <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls"><button class="btn-update" onclick="location.reload()">🔄 Actualizar</button></div>
-        <div class="last-update">Última actualización: <strong>09/10/2026 - 23:03 (España)</strong></div>
+        <div class="last-update">Última actualización: <strong>10/10/2026 - 02:44 (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">35</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Todos</div><div class="val">70</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
-            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">8</div></div><div style="font-size:1.1rem">⭐</div>
+            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">13</div></div><div style="font-size:1.1rem">⭐</div>
         </div>
         <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">9</div></div><div style="font-size:1.1rem">⚽</div>
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">34</div></div><div style="font-size:1.1rem">⚽</div>
         </div>
         <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
             <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">3</div></div><div style="font-size:1.1rem">🏀</div>
         </div>
         <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">14</div></div><div style="font-size:1.1rem">🎾</div>
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">16</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">4</div></div><div style="font-size:1.1rem">🏎</div>
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">5</div></div><div style="font-size:1.1rem">🏎</div>
         </div>
         <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
-            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">5</div></div><div style="font-size:1.1rem">🎯</div>
+            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">12</div></div><div style="font-size:1.1rem">🎯</div>
         </div>
     </div>
     <div class="filter-container">
@@ -127,319 +127,634 @@
             </thead>
             <tbody id="agendaTable">
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="0:30 fútbol serie a santos - cr flamengo m+ liga de campeones(m60 o115) m+ vamos(8 y 50)">
+                <tr class="event-row" data-sport="motor" data-filtered="false" data-search="4:10 motor motogp g.p. indonesia (mandalika) - libres 2 (fp2) dazn dazn motogp(m71 o105)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">0:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Serie A</div></td>
-                    <td class="event-col"><div class="event-title">Santos - CR Flamengo</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-435.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Liga de Campeones(M60 O115)">M+ Liga de Campeones(M60 O115) 🔗</a><a href="https://dlive.sx/stream/stream-521.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Vamos(8 y 50)">M+ Vamos(8 y 50) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="motor" data-filtered="false" data-search="4:45 motor motogp g.p. indonesia (mandalika) - sesión 1 dazn dazn motogp(m71 o105)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">4:45</span></td>
+                    <td class="time-col"><span class="time-badge">4:10</span></td>
                     <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
                     <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">G.P. Indonesia (Mandalika) - Sesión 1</div></td>
+                    <td class="event-col"><div class="event-title">G.P. Indonesia (Mandalika) - Libres 2 (FP2)</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN MotoGP(M71 O105)">DAZN MotoGP(M71 O105) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:10 tenis masters shanghai a. gea - u. humbert m+ deportes 3(65)">
+                <tr class="event-row" data-sport="motor" data-filtered="false" data-search="4:50 motor motogp g.p. indonesia (mandalika) - clasificación (q1 y q2) dazn dazn motogp(m71 o105)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">6:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Gea - U. Humbert</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-526.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 3(65)">M+ Deportes 3(65) 🔗</a></div></td>
+                    <td class="time-col"><span class="time-badge">4:50</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
+                    <td class="event-col"><div class="event-title">G.P. Indonesia (Mandalika) - Clasificación (Q1 y Q2)</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN MotoGP(M71 O105)">DAZN MotoGP(M71 O105) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:10 tenis masters shanghai a. mannarino - f. cobolli m+ deportes 4(191)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:00 tenis masters shanghai d. medvedev - jl. struff m+ deportes 4(191)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">6:10</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Mannarino - F. Cobolli</div></td>
+                    <td class="event-col"><div class="event-title">D. Medvedev - JL. Struff</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-527.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 4(191)">M+ Deportes 4(191) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:10 tenis masters shanghai b. shelton - d. altmaier m+ deportes 2(64)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:00 tenis masters shanghai j. lehecka - n. borges m+ deportes 3(65)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">6:10</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">B. Shelton - D. Altmaier</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-438.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 2(64)">M+ Deportes 2(64) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="8:15 tenis masters shanghai q. halys - a. blockx m+ deportes 3(65)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">8:15</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Q. Halys - A. Blockx</div></td>
+                    <td class="event-col"><div class="event-title">J. Lehecka - N. Borges</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-526.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 3(65)">M+ Deportes 3(65) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="8:30 tenis masters shanghai a. zverev - y. wu m+ deportes 2(64)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="6:00 tenis masters shanghai c. ugo carabelli - f. auger-aliassime m+ deportes 5(192)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">8:30</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Zverev - Y. Wu</div></td>
+                    <td class="event-col"><div class="event-title">C. Ugo Carabelli - F. Auger-Aliassime</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-436.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 5(192)">M+ Deportes 5(192) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="6:00 tenis masters shanghai ta. tirante - r. jódar m+ deportes 2(64)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">6:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">TA. Tirante - R. Jódar</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-438.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 2(64)">M+ Deportes 2(64) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="8:55 tenis masters shanghai y. hanfmann - f. tiafoe m+ deportes 4(191)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="7:30 tenis masters shanghai m. arnaldi - t. fritz m+ deportes 4(191)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">8:55</span></td>
+                    <td class="time-col"><span class="time-badge">7:30</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Y. Hanfmann - F. Tiafoe</div></td>
+                    <td class="event-col"><div class="event-title">M. Arnaldi - T. Fritz</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-527.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 4(191)">M+ Deportes 4(191) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis wta pekín q. zheng - e. svitolina tennis channel - orange tv(131)">
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="7:30 tenis masters shanghai a. tabilo - p. carreño m+ deportes 3(65)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">7:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">A. Tabilo - P. Carreño</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-526.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 3(65)">M+ Deportes 3(65) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="7:30 tenis masters shanghai y. bu - c. ruud m+ deportes 5(192) m+ deportes 2(64)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">7:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">Y. Bu - C. Ruud</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-436.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 5(192)">M+ Deportes 5(192) 🔗</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 2(64)">M+ Deportes 2(64) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="8:10 otros test match nueva zelanda - australia m+ deportes(63) m+ vamos(8 y 50)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">8:10</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Test Match</div></td>
+                    <td class="event-col"><div class="event-title">Nueva Zelanda - Australia</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-436.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes(63)">M+ Deportes(63) 🔗</a><a href="https://dlive.sx/stream/stream-521.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Vamos(8 y 50)">M+ Vamos(8 y 50) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis masters shanghai a. fils - p. kotov m+ deportes 4(191)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">9:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">A. Fils - P. Kotov</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-527.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 4(191)">M+ Deportes 4(191) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis masters shanghai l. tien - z. svajda m+ deportes 3(65)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">9:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">L. Tien - Z. Svajda</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-526.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 3(65)">M+ Deportes 3(65) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="motor" data-filtered="true" data-search="9:00 motor motogp g.p. indonesia (mandalika) - carrera sprint dazn dazn motogp(m71 o105)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">9:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
+                    <td class="event-col"><div class="event-title">G.P. Indonesia (Mandalika) - Carrera Sprint</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN MotoGP(M71 O105)">DAZN MotoGP(M71 O105) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="9:00 tenis wta pekín m. andreeva - n. bartunkova tennis channel - orange tv(131)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">9:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Pekín</div></td>
-                    <td class="event-col"><div class="event-title">Q. Zheng - E. Svitolina</div></td>
+                    <td class="event-col"><div class="event-title">M. Andreeva - N. Bartunkova</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-40.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Tennis Channel - Orange TV(131)">Tennis Channel - Orange TV(131) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="motor" data-filtered="false" data-search="9:00 motor motogp g.p. indonesia (mandalika) - sesión 2 dazn dazn motogp(m71 o105)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="10:30 tenis masters shanghai t. paul - a.d. vallejo m+ deportes 3(65)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">9:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">G.P. Indonesia (Mandalika) - Sesión 2</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN MotoGP(M71 O105)">DAZN MotoGP(M71 O105) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="10:00 tenis masters shanghai a. davidovich - j. brooksby m+ deportes 3(65)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:00</span></td>
+                    <td class="time-col"><span class="time-badge">10:30</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Davidovich - J. Brooksby</div></td>
+                    <td class="event-col"><div class="event-title">T. Paul - A.D. Vallejo</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-526.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 3(65)">M+ Deportes 3(65) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="motor" data-filtered="false" data-search="10:30 motor fórmula 1 g.p. singapur (singapur) - sesión 1 dazn f1(m70 o104) dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="10:30 tenis masters shanghai l. darderi - s. tsitsipas m+ deportes 4(191)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">10:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">G.P. Singapur (Singapur) - Sesión 1</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-537.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN F1(M70 O104)">DAZN F1(M70 O104) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="10:50 tenis masters shanghai k. khachanov - a. fery m+ deportes 4(191)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:50</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">K. Khachanov - A. Fery</div></td>
+                    <td class="event-col"><div class="event-title">L. Darderi - S. Tsitsipas</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-527.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 4(191)">M+ Deportes 4(191) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="11:10 tenis masters shanghai f. cerúndolo - r. safiullin m+ deportes 3(65)">
+                <tr class="event-row" data-sport="motor" data-filtered="false" data-search="11:00 motor fórmula 1 g.p. singapur (singapur) - libres 3 (fp3) dazn f1(m70 o104) dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">11:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">F. Cerúndolo - R. Safiullin</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-526.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 3(65)">M+ Deportes 3(65) 🔗</a></div></td>
+                    <td class="time-col"><span class="time-badge">11:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
+                    <td class="event-col"><div class="event-title">G.P. Singapur (Singapur) - Libres 3 (FP3)</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-537.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN F1(M70 O104)">DAZN F1(M70 O104) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="12:10 tenis masters shanghai n. djokovic - h. hurkacz m+ deportes 2(64) movistar plus+(m7)">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="11:00 tenis masters shanghai b. van de zandschulp - a. michelsen m+ deportes 5(192)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">12:10</span></td>
+                    <td class="time-col"><span class="time-badge">11:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">N. Djokovic - H. Hurkacz</div></td>
+                    <td class="event-col"><div class="event-title">B. Van de Zandschulp - A. Michelsen</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-436.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 5(192)">M+ Deportes 5(192) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="12:00 tenis masters shanghai jm. cerúndolo	 - c. alcaraz m+ deportes 2(64) movistar plus+(m7)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">12:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
+                    <td class="event-col"><div class="event-title">JM. Cerúndolo	 - C. Alcaraz</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-438.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 2(64)">M+ Deportes 2(64) 🔗</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Movistar Plus+(M7)">Movistar Plus+(M7) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="true" data-search="13:10 tenis wta pekín e. mertens - i. swiatek tennis channel - orange tv(131)">
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="12:15 otros superbike tissot estoril round (portugal) dazn dazn 4(m197) dazn app gratis(ver gratis)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">13:10</span></td>
+                    <td class="time-col"><span class="time-badge">12:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Superbike</div></td>
+                    <td class="event-col"><div class="event-title">Tissot Estoril Round (Portugal)</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-448.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 4(M197)">DAZN 4(M197) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN App Gratis(Ver gratis)">DAZN App Gratis(Ver gratis) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="13:00 tenis wta pekín q. zheng - e. mertens tennis channel - orange tv(131)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">13:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Pekín</div></td>
-                    <td class="event-col"><div class="event-title">E. Mertens - I. Swiatek</div></td>
+                    <td class="event-col"><div class="event-title">Q. Zheng - E. Mertens</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-40.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Tennis Channel - Orange TV(131)">Tennis Channel - Orange TV(131) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="13:55 tenis masters shanghai y. zhou - l. musetti m+ deportes 2(64)">
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="13:00 otros liga prime liga prime ad sala 10 zaragoza - movistar inter teledeporte dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">13:55</span></td>
+                    <td class="time-col"><span class="time-badge">13:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
+                    <td class="event-col"><div class="event-title">Liga Prime</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-533.php" target="_blank" class="tv-badge tv-link" title="Abrir canal AD Sala 10 Zaragoza - Movistar Inter">AD Sala 10 Zaragoza - Movistar Inter 🔗</a><a href="https://dlive.sx/stream/stream-529.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Teledeporte">Teledeporte 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="13:30 otros dtm hockenheimring baden-württemberg dazn dazn 2(m73) dazn app gratis(ver gratis)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">13:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">DTM</div></td>
+                    <td class="event-col"><div class="event-title">Hockenheimring Baden-Württemberg</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-446.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 2(M73)">DAZN 2(M73) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN App Gratis(Ver gratis)">DAZN App Gratis(Ver gratis) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="13:30 tenis masters shanghai s. báez - v. vacherot m+ deportes 2(64)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">13:30</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">Y. Zhou - L. Musetti</div></td>
+                    <td class="event-col"><div class="event-title">S. Báez - V. Vacherot</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-438.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 2(64)">M+ Deportes 2(64) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="motor" data-filtered="true" data-search="14:30 motor fórmula 1 g.p. singapur (singapur) - sesión 2 / clasificación sprint dazn f1(m70 o104) dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="13:30 fútbol premier league arsenal - leeds utd dazn dazn 1(m72)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">14:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">G.P. Singapur (Singapur) - Sesión 2 / Clasificación Sprint</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-537.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN F1(M70 O104)">DAZN F1(M70 O104) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-search="14:40 tenis masters shanghai a. bublik - t. machac m+ deportes 4(191)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">14:40</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">Masters Shanghai</div></td>
-                    <td class="event-col"><div class="event-title">A. Bublik - T. Machac</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-527.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Deportes 4(191)">M+ Deportes 4(191) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="15:50 fútbol saudi pro league al kholood - al qadisiya m+ liga de campeones(m60 o115) m+ vamos 2(51)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">15:50</span></td>
+                    <td class="time-col"><span class="time-badge">13:30</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Saudi Pro League</div></td>
-                    <td class="event-col"><div class="event-title">Al Kholood - Al Qadisiya</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-435.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Liga de Campeones(M60 O115)">M+ Liga de Campeones(M60 O115) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Vamos 2(51)">M+ Vamos 2(51) 🔗</a></div></td>
+                    <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Arsenal - Leeds Utd</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-445.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 1(M72)">DAZN 1(M72) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="17:00 otros supersport tissot estoril round (portugal) dazn dazn app gratis(ver gratis)">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="14:00 fútbol la liga ea sports rayo vallecano - athletic club dazn dazn laliga(m55 o113) dazn app gratis(ver gratis)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">17:00</span></td>
+                    <td class="time-col"><span class="time-badge">14:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">La Liga EA Sports</div></td>
+                    <td class="event-col"><div class="event-title">Rayo Vallecano - Athletic Club</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-538.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN LaLiga(M55 O113)">DAZN LaLiga(M55 O113) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN App Gratis(Ver gratis)">DAZN App Gratis(Ver gratis) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="15:00 otros supersport tissot estoril round (portugal) dazn dazn app gratis(ver gratis)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
                     <td class="comp-col"><div class="comp-title">Supersport</div></td>
                     <td class="event-col"><div class="event-title">Tissot Estoril Round (Portugal)</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN App Gratis(Ver gratis)">DAZN App Gratis(Ver gratis) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="19:00 otros liga asobal bm puerto sagunto - eón balonmano alicante teledeporte">
+                <tr class="event-row" data-sport="motor" data-filtered="true" data-search="15:00 motor fórmula 1 g.p. singapur (singapur) - clasificación dazn f1(m70 o104) dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏎️ Motor</span></td>
+                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
+                    <td class="event-col"><div class="event-title">G.P. Singapur (Singapur) - Clasificación</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-537.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN F1(M70 O104)">DAZN F1(M70 O104) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="15:00 fútbol serie a genoa - fiorentina dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Genoa - Fiorentina</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="15:30 fútbol bundesliga augsburg - fc bayern dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                    <td class="event-col"><div class="event-title">Augsburg - FC Bayern</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="15:30 fútbol bundesliga mainz 05 - bayer leverkusen dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                    <td class="event-col"><div class="event-title">Mainz 05 - Bayer Leverkusen</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="15:30 fútbol bundesliga 1. fc union berlin - sv elversberg dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                    <td class="event-col"><div class="event-title">1. FC Union Berlin - SV Elversberg</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="15:30 fútbol bundesliga hoffenheim - hamburger sv dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                    <td class="event-col"><div class="event-title">Hoffenheim - Hamburger SV</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="15:30 fútbol bundesliga paderborn 07 - stuttgart dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                    <td class="event-col"><div class="event-title">Paderborn 07 - Stuttgart</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="16:00 otros liga prime jaén fs - cd el ejido futsal dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
+                    <td class="event-col"><div class="event-title">Jaén FS - CD El Ejido Futsal</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="16:00 fútbol premier league aston villa - brentford dazn dazn 2(m73)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Aston Villa - Brentford</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-446.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 2(M73)">DAZN 2(M73) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="16:00 fútbol premier league chelsea - bournemouth dazn dazn 1(m72)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Chelsea - Bournemouth</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-445.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 1(M72)">DAZN 1(M72) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="16:00 fútbol premier league ipswich town - fulham dazn dazn 3(m196)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Ipswich Town - Fulham</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-447.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 3(M196)">DAZN 3(M196) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="16:00 fútbol premier league sunderland - brighton dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Sunderland - Brighton</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="16:00 otros jupiler pro league cercle brugge - anderlecht dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Jupiler Pro League</div></td>
+                    <td class="event-col"><div class="event-title">Cercle Brugge - Anderlecht</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="16:15 fútbol laliga hypermotion ad ceuta - sabadell laliga hypermotion dazn laliga tv hypermotion(m56 o120)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                    <td class="event-col"><div class="event-title">AD Ceuta - Sabadell</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="16:15 fútbol la liga ea sports alavés - at. madrid m+ laliga(m54 o110)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">La Liga EA Sports</div></td>
+                    <td class="event-col"><div class="event-title">Alavés - At. Madrid</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-84.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ LALIGA(M54 O110)">M+ LALIGA(M54 O110) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="16:30 otros superbike tissot estoril round (portugal) dazn dazn 4(m197) dazn app gratis(ver gratis)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Superbike</div></td>
+                    <td class="event-col"><div class="event-title">Tissot Estoril Round (Portugal)</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-448.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 4(M197)">DAZN 4(M197) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN App Gratis(Ver gratis)">DAZN App Gratis(Ver gratis) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="17:15 fútbol ligue 1 lille - le havre ac dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">17:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                    <td class="event-col"><div class="event-title">Lille - Le Havre AC</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="18:00 fútbol liga guerreras iberdrola bm granollers - zonzamas plus car lanzarote teledeporte">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Guerreras Iberdrola</div></td>
+                    <td class="event-col"><div class="event-title">BM Granollers - Zonzamas Plus Car Lanzarote</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-529.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Teledeporte">Teledeporte 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="18:00 baloncesto liga endesa básquet coruña - casademont zaragoza dazn movistar plus+(m7) dazn baloncesto(m74 o126)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Endesa</div></td>
+                    <td class="event-col"><div class="event-title">Básquet Coruña - Casademont Zaragoza</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Movistar Plus+(M7)">Movistar Plus+(M7) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN Baloncesto(M74 O126)">DAZN Baloncesto(M74 O126) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="18:00 fútbol serie a inter milan - parma dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Inter Milan - Parma</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="18:15 otros jupiler pro league raal la louvière - club brugge dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Jupiler Pro League</div></td>
+                    <td class="event-col"><div class="event-title">RAAL La Louvière - Club Brugge</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="18:30 otros liga prime elpozo murcia - manzanares fs dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
+                    <td class="event-col"><div class="event-title">ElPozo Murcia - Manzanares FS</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="18:30 fútbol la liga ea sports fc barcelona - getafe dazn dazn laliga(m55 o113)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">La Liga EA Sports</div></td>
+                    <td class="event-col"><div class="event-title">FC Barcelona - Getafe</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-538.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN LaLiga(M55 O113)">DAZN LaLiga(M55 O113) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="18:30 fútbol laliga hypermotion eldense - córdoba laliga hypermotion dazn laliga tv hypermotion(m56 o120)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                    <td class="event-col"><div class="event-title">Eldense - Córdoba</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="18:30 fútbol premier league manchester utd. - tottenham dazn dazn 1(m72)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Manchester Utd. - Tottenham</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-445.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN 1(M72)">DAZN 1(M72) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="18:30 fútbol bundesliga rb leipzig - eintracht frankfurt dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
+                    <td class="event-col"><div class="event-title">RB Leipzig - Eintracht Frankfurt</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="18:45 fútbol eredivisie feyenoord - az alkmaar dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Eredivisie</div></td>
+                    <td class="event-col"><div class="event-title">Feyenoord - AZ Alkmaar</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="19:00 fútbol liga portuguesa marítimo - fc porto dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">19:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga portuguesa</div></td>
+                    <td class="event-col"><div class="event-title">Marítimo - FC Porto</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="19:00 otros liga asobal bidasoa irún - balonmano proin sevilla eurosport 2 dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">19:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
                     <td class="comp-col"><div class="comp-title">Liga ASOBAL</div></td>
-                    <td class="event-col"><div class="event-title">BM Puerto Sagunto - EÓN Balonmano Alicante</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-529.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Teledeporte">Teledeporte 🔗</a></div></td>
+                    <td class="event-col"><div class="event-title">Bidasoa Irún - Balonmano Proin Sevilla</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-525.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Eurosport 2">Eurosport 2 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="19:30 otros liga prime palma futsal - o parrulo ferrol dazn">
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="19:30 baloncesto liga endesa unicaja málaga - morabanc andorra dazn dazn baloncesto 2(m75 o127)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">19:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
-                    <td class="event-col"><div class="event-title">Palma Futsal - O Parrulo Ferrol</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Endesa</div></td>
+                    <td class="event-col"><div class="event-title">Unicaja Málaga - MoraBanc Andorra</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN Baloncesto 2(M75 O127)">DAZN Baloncesto 2(M75 O127) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:00 fútbol saudi pro league al nassr - al draih m+ liga de campeones(m60 o115) m+ vamos(8 y 50)">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:00 fútbol saudi pro league al hilal - al-ittihad jeddah club m+ liga de campeones(m60 o115) m+ vamos 2(51)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">20:00</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
                     <td class="comp-col"><div class="comp-title">Saudi Pro League</div></td>
-                    <td class="event-col"><div class="event-title">Al Nassr - Al Draih</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-435.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Liga de Campeones(M60 O115)">M+ Liga de Campeones(M60 O115) 🔗</a><a href="https://dlive.sx/stream/stream-521.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Vamos(8 y 50)">M+ Vamos(8 y 50) 🔗</a></div></td>
+                    <td class="event-col"><div class="event-title">Al Hilal - Al-Ittihad Jeddah Club</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-435.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Liga de Campeones(M60 O115)">M+ Liga de Campeones(M60 O115) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Vamos 2(51)">M+ Vamos 2(51) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:00 fútbol eredivisie psv eindhoven - heerenveen dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Eredivisie</div></td>
-                    <td class="event-col"><div class="event-title">PSV Eindhoven - Heerenveen</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="20:15 otros liga asobal balonmano caserío ciudad real - bm granollers eurosport 2 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:15</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga ASOBAL</div></td>
-                    <td class="event-col"><div class="event-title">Balonmano Caserío Ciudad Real - BM Granollers</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-525.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Eurosport 2">Eurosport 2 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:15 baloncesto euroliga olympiacos piraeus - anadolu efes istanbul m+ baloncesto 3(m194)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:15</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                    <td class="event-col"><div class="event-title">Olympiacos Piraeus - Anadolu Efes Istanbul</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Baloncesto 3(M194)">M+ Baloncesto 3(M194) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:30 baloncesto euroliga baskonia - besiktas jk istanbul m+ baloncesto 2(m67)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                    <td class="event-col"><div class="event-title">Baskonia - Besiktas JK Istanbul</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Baloncesto 2(M67)">M+ Baloncesto 2(M67) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="20:30 baloncesto euroliga barça basket - zalgiris kaunas movistar plus+(m7) m+ baloncesto(m66)">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
-                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
-                    <td class="event-col"><div class="event-title">Barça Basket - Zalgiris Kaunas</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-437.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Movistar Plus+(M7)">Movistar Plus+(M7) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Baloncesto(M66)">M+ Baloncesto(M66) 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="20:30 fútbol bundesliga borussia dortmund - werder bremen m+ liga de campeones 2(m61 o117) dazn m+ vamos 2(51)">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:30 fútbol bundesliga nürnberg - vfl wolfsburg dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">20:30</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
                     <td class="comp-col"><div class="comp-title">Bundesliga</div></td>
-                    <td class="event-col"><div class="event-title">Borussia Dortmund - Werder Bremen</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Liga de Campeones 2(M61 O117)">M+ Liga de Campeones 2(M61 O117) 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ Vamos 2(51)">M+ Vamos 2(51) 🔗</a></div></td>
+                    <td class="event-col"><div class="event-title">Nürnberg - VfL Wolfsburg</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="20:45 fútbol ligue 1 lens - o. lyonnais dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:45 fútbol serie a napoli - frosinone dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Napoli - Frosinone</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:45 fútbol ligue 1 lorient - paris fc dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">20:45</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
                     <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
-                    <td class="event-col"><div class="event-title">Lens - O. Lyonnais</div></td>
+                    <td class="event-col"><div class="event-title">Lorient - Paris FC</div></td>
                     <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="21:00 fútbol la liga ea sports málaga - espanyol dazn dazn laliga(m55 o113)">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:45 fútbol ligue 1 as monaco - toulouse dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                    <td class="event-col"><div class="event-title">AS Monaco - Toulouse</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="20:45 fútbol ligue 1 stade brestois - angers dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                    <td class="event-col"><div class="event-title">Stade Brestois - Angers</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="20:45 fútbol ligue 1 psg - le mans tv5monde dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Ligue 1</div></td>
+                    <td class="event-col"><div class="event-title">PSG - Le Mans</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">TV5MONDE</span><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="21:00 fútbol laliga hypermotion celta b - real sociedad b laliga hypermotion dazn laliga tv hypermotion(m56 o120)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">LaLiga Hypermotion</div></td>
+                    <td class="event-col"><div class="event-title">Celta B - Real Sociedad B</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">LaLiga Hypermotion</span><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><span class="tv-badge">LALIGA TV Hypermotion(M56 O120)</span></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="21:00 fútbol la liga ea sports real madrid - villarreal m+ laliga(m54 o110) movistar plus+(m7)">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">21:00</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
                     <td class="comp-col"><div class="comp-title">La Liga EA Sports</div></td>
-                    <td class="event-col"><div class="event-title">Málaga - Espanyol</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/stream/stream-538.php" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN LaLiga(M55 O113)">DAZN LaLiga(M55 O113) 🔗</a></div></td>
+                    <td class="event-col"><div class="event-title">Real Madrid - Villarreal</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/stream/stream-84.php" target="_blank" class="tv-badge tv-link" title="Abrir canal M+ LALIGA(M54 O110)">M+ LALIGA(M54 O110) 🔗</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" class="tv-badge tv-link" title="Abrir canal Movistar Plus+(M7)">Movistar Plus+(M7) 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="21:00 fútbol primera federación ud ibiza - rm castilla dazn primera federación(m53 o125)">
+                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="21:00 otros liga prime barça fs - osasuna magna dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
+                    <td class="event-col"><div class="event-title">Barça FS - Osasuna Magna</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-search="21:00 baloncesto liga endesa río breogán - basquet girona dazn dazn baloncesto 3(m76 o128)">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Endesa</div></td>
+                    <td class="event-col"><div class="event-title">Río Breogán - Basquet Girona</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN Baloncesto 3(M76 O128)">DAZN Baloncesto 3(M76 O128) 🔗</a></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="21:00 fútbol eredivisie ajax - nec nijmegen dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">21:00</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Primera Federación</div></td>
-                    <td class="event-col"><div class="event-title">UD Ibiza - RM Castilla</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal Primera Federación(M53 O125)">Primera Federación(M53 O125) 🔗</a></div></td>
+                    <td class="comp-col"><div class="comp-title">Eredivisie</div></td>
+                    <td class="event-col"><div class="event-title">Ajax - NEC Nijmegen</div></td>
+                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="true" data-search="21:15 fútbol liga portuguesa sc braga - sporting cp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-search="23:00 fútbol fútbol portuguesa fc - la guaira liga futve ligafutve app liga futve youtube">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">21:15</span></td>
+                    <td class="time-col"><span class="time-badge">23:00</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga portuguesa</div></td>
-                    <td class="event-col"><div class="event-title">SC Braga - Sporting CP</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="otros" data-filtered="false" data-search="21:30 otros liga prime jimbee cartagena fs - noia portus apostoli fs dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">21:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎯 Otros</span></td>
-                    <td class="comp-col"><div class="comp-title">Liga Prime</div></td>
-                    <td class="event-col"><div class="event-title">Jimbee Cartagena FS - Noia Portus Apostoli FS</div></td>
-                    <td class="tv-col"><div class="tv-container"><a href="https://dlive.sx/" target="_blank" class="tv-badge tv-link" title="Abrir canal DAZN">DAZN 🔗</a></div></td>
+                    <td class="comp-col"><div class="comp-title">Fútbol</div></td>
+                    <td class="event-col"><div class="event-title">Portuguesa FC - La Guaira</div></td>
+                    <td class="tv-col"><div class="tv-container"><span class="tv-badge">Liga Futve</span><span class="tv-badge">LigaFUTVE App</span><span class="tv-badge">Liga Futve YouTube</span></div></td>
                 </tr>
                 
             </tbody>
