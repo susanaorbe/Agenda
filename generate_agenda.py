@@ -63,7 +63,7 @@ CHANNEL_URLS = {
     "laliga hypermotion 2": "https://ver.movistarplus.es/",
     "laliga hypermotion 3": "https://ver.movistarplus.es/",
     "laliga tv hypermotion": "https://www.dazn.com/es-ES/home",
-    "primera federación": https://ver.movistarplus.es/"
+    "primera federación": "https://ver.movistarplus.es/"
 }
 
 
