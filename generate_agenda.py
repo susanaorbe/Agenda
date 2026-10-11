@@ -3,7 +3,6 @@ from datetime import datetime
 from html import escape
 import zoneinfo
 import re
-from typing import Iterable
 
 import requests
 from bs4 import BeautifulSoup
@@ -71,29 +70,21 @@ def strip_accents(text: str) -> str:
 
 
 def get_channel_info(channel_name: str) -> tuple[str, bool]:
-    """Busca si el canal está estrictamente en la lista y gestiona limpiezas de paréntesis/alias."""
     norm = normalize_search_text(channel_name)
-    
-    # Limpiar diales y paréntesis (ej: "m+ deportes 5(192)" -> "m+ deportes 5" o "movistar plus+(m7)" -> "movistar plus+")
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
-    
-    # Estos canales no tienen URL específica, aunque compartan nombre con
-    # canales oficiales. Deben conservar el enlace alternativo azul/morado.
-    if clean_name in {"m+ deportes 5", "m+ vamos 2"}:
-        return "https://hubu.ru/fctvlink", False
 
     # 1. Coincidencia exacta limpia
     if clean_name in CHANNEL_URLS:
         return CHANNEL_URLS[clean_name], True
 
-    # Coincidencia sin tildes
+    # Coincidencia exacta sin tildes
     clean_no_acc = strip_accents(clean_name)
     for k, v in CHANNEL_URLS.items():
         if strip_accents(k) == clean_no_acc:
             return v, True
 
-    # 2. Mapeos de alias habituales permitidos
+    # 2. Mapeos de alias habituales permitidos estrictos
     if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
         return CHANNEL_URLS["m+ vamos"], True
     if clean_name in {"movistar plus", "movistar+"}:
@@ -103,13 +94,7 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     if clean_name in {"tdp", "teledeporte spain (tdp)"}:
         return CHANNEL_URLS["teledeporte"], True
 
-    # 3. Coincidencia por subcadena exacta ordenada por longitud
-    for key in CHANNEL_SUBSTRING_KEYS:
-        key_no_acc = strip_accents(key)
-        if len(key) > 3 and key_no_acc in clean_no_acc:
-            return CHANNEL_URLS[key], True
-
-    # Si no está estrictamente en la lista, devuelve la URL genérica y marca como no oficial (morado/azul)
+    # Sin extrapolación: si el canal no está en la lista estricta, devuelve directamente el genérico
     return "https://hubu.ru/fctvlink", False
 
 
@@ -180,27 +165,13 @@ SPAIN_RE = rx(
     r"\bsefutbol\b"
 )
 
-SPANISH_BIG_THREE_RE = rx(
-    r"\breal madrid\b", r"\brm castilla\b", r"\bbarcelona\b",
-    r"\bbarça\b", r"\batletico de madrid\b", r"\batlético de madrid\b"
-)
-
-TOP3_FOREIGN_RE = rx(
-    r"\bmanchester city\b", r"\barsenal\b", r"\bliverpool\b", r"\binter de milán\b",
-    r"\binter milan\b", r"\bnapoles\b", r"\bjuventus\b", r"\bbayern de múnich\b",
-    r"\bbayern munich\b", r"\bbayern\b", r"\bborussia dortmund\b", r"\bdortmund\b",
-    r"\brb leipzig\b", r"\bleipzig\b", r"\bparis saint-germain\b", r"\bpsg\b",
-    r"\bolympique de marsella\b", r"\bmarsella\b", r"\brc lens\b", r"\blens\b",
-    r"\bsporting cp\b", r"\bsporting de portugal\b", r"\bbenfica\b", r"\bporto\b"
-)
-
+# Tenistas favoritos reducidos exclusivamente a españoles
 TENNIS_FAVORITES_RE = rx(
-    r"\bsinner\b", r"\bzverev\b", r"\balcaraz\b",
-    r"\bsabalenka\b", r"\bswiatek\b", r"\bgauff\b", r"\brybakina\b", r"\bpegula\b",
-    r"\bnadal\b", r"\bmunar\b", r"\bjódar\b", r"\bdavidovich\b", r"\bmérida\b",
-    r"\blandaluce\b", r"\bcarreño\b", r"\bbucsa\b", r"\bbouzas\b", r"\bbadosa\b",
-    r"\bquevedo\b", r"\bselekhmeteva\b", r"\bramos\b", r"\btabener\b", r"\bmachado\b",
-    r"\bmasarova\b", r"\bparrizas\b", r"\bosorio\b"
+    r"\balcaraz\b", r"\bnadal\b", r"\bmunar\b", r"\bjódar\b", 
+    r"\bdavidovich\b", r"\bmérida\b", r"\blandaluce\b", r"\bcarreño\b", 
+    r"\bbucsa\b", r"\bbouzas\b", r"\bbadosa\b", r"\bquevedo\b", 
+    r"\bselekhmeteva\b", r"\bramos\b", r"\btabener\b", r"\bmachado\b", 
+    r"\bmasarova\b", r"\bparrizas\b"
 )
 
 TENNIS_RE = rx(
@@ -217,8 +188,6 @@ ATP_RE = re.compile(r"\batp\b", re.IGNORECASE)
 WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b")
 
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
-F2_RE = re.compile(r"\bf2\b", re.IGNORECASE)
-F3_RE = re.compile(r"\bf3\b")
 MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
 MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
 
@@ -229,10 +198,9 @@ MOTOR_SERIES_RE = rx(
 )
 
 MOTOR_GENERAL_RE = rx(
-    r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bfórmula 2\b", r"\bfórmula 3\b",
-    r"\bf2\b", r"\bf3\b", r"\bmotogp\b", r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b",
-    r"\bindy car\b", r"\bmoto2\b", r"\bmoto3\b", r"\brally\b", r"\bautomovilismo\b", r"\bmotor\b",
-    r"\bsuperbike\b", r"\bdtm\b", r"\bsupersport\b"
+    r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bmotogp\b",
+    r"\bmoto2\b", r"\bmoto3\b", r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b",
+    r"\bsuperbike\b", r"\bsupersport\b", r"\bdtm\b"
 )
 
 MOTO_STRICT_EXCLUDE_RE = rx(
@@ -405,7 +373,6 @@ GENERIC_TOURNAMENTS = frozenset({
 })
 
 EXCLUDED_CHANNELS_RE = rx(*(re.escape(channel) for channel in EXCLUDED_CHANNELS))
-CHANNEL_SUBSTRING_KEYS = tuple(sorted(CHANNEL_URLS, key=len, reverse=True))
 
 
 def contains(pattern: re.Pattern, text: str) -> bool:
@@ -450,7 +417,7 @@ def classify_motor_sessions(events_list: list[dict]):
         if ev["deporte"] != "Motor":
             continue
         base_comp = ev["competicion"]
-        for key_prefix in ["Fórmula 1", "MotoGP", "Moto2", "Moto3", "Fórmula 2", "Fórmula 3", "Superbike", "DTM", "Supersport"]:
+        for key_prefix in ["Fórmula 1", "MotoGP"]:
             if base_comp.startswith(key_prefix):
                 base_comp = key_prefix
                 break
@@ -494,7 +461,7 @@ def classify_motor_sessions(events_list: list[dict]):
                         elif idx == 1 or (idx == 0 and total_sessions == 2): session_name = "Clasificación / Clasificación Sprint"
                         else: session_name = "Carrera Sprint"
                     else:
-                        session_name = "Carrera Principal" if total_sessions == 1 else f"Sesión {idx + 1}"
+                        session_name = "Carrera Principal"
 
                 elif comp_base == "Fórmula 1":
                     if current_weekday == 6:
@@ -563,54 +530,41 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     for pattern, comp_name in FOOTBALL_COMPETITIONS:
         if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
 
-    if contains(HOCKEY_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Hockey"))
-    if contains(FUTSAL_RE, blob): return ("Otros", "🎯", clean_tournament(raw_tournament, "Fútbol Sala"))
-    if contains(HANDBALL_RE, blob):
-        if contains(WOMEN_RE, blob):
-            return ("__EXCLUDED__", "", "")
-        return ("Otros", "🎯", clean_tournament(raw_tournament, "Balonmano"))
+    if contains(HOCKEY_RE, blob): return ("__EXCLUDED__", "", "")
+    if contains(FUTSAL_RE, blob): return ("__EXCLUDED__", "", "")
+    if contains(HANDBALL_RE, blob): return ("__EXCLUDED__", "", "")
+    if contains(CYCLING_RE, blob): return ("__EXCLUDED__", "", "")
 
     if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
-
-    if contains(CYCLING_RE, blob): return ("Ciclismo", "🚴‍♂️", clean_tournament(raw_tournament, "Ciclismo"))
     
     if contains(MOTOR_GENERAL_RE, blob) or "superbike" in blob or "dtm" in blob or "supersport" in blob:
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        is_f2 = "fórmula 2" in blob or F2_RE.search(blob)
-        is_f3 = "fórmula 3" in blob or F3_RE.search(blob)
-        is_superbike = "superbike" in blob
-        is_dtm = "dtm" in blob
-        is_supersport = "supersport" in blob
+        
+        if (
+            "fórmula 2" in blob or "fórmula 3" in blob or "f2" in blob or "f3" in blob or
+            MOTO2_RE.search(blob) or MOTO3_RE.search(blob) or
+            "superbike" in blob or "dtm" in blob or "supersport" in blob
+        ):
+            return ("__EXCLUDED__", "", "")
 
-        if is_f1: comp = "Fórmula 1"
-        elif is_motogp: comp = "MotoGP"
-        elif is_f2: comp = "Fórmula 2"
-        elif is_f3: comp = "Fórmula 3"
-        elif is_superbike: comp = "Superbike"
-        elif is_dtm: comp = "DTM"
-        elif is_supersport: comp = "Supersport"
-        else: comp = clean_tournament(raw_tournament, "Motor")
+        if is_f1: 
+            return ("Motor", "🏎️", "Fórmula 1")
+        elif is_motogp: 
+            return ("Motor", "🏎️", "MotoGP")
+        else:
+            return ("__EXCLUDED__", "", "")
 
-        return ("Motor", "🏎️", comp)
-
-    other_tournament = clean_tournament(raw_tournament, "Evento Deportivo").lower()
-    if any(k in other_tournament or k in blob for k in ["título", "internacional", "open", "cuadro", "1/4", "semifinal", "final", "peso", "combate"]):
-        return ("__EXCLUDED__", "", "")
-
-    return ("Otros", "🎯", clean_tournament(raw_tournament, "Evento Deportivo"))
+    return ("__EXCLUDED__", "", "")
 
 
 def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
     if is_excluded_event(blob): return False
 
-    if sport == "Otros":
-        return False
-
     if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
         return False
 
-    if competition in {"Fórmula 1", "MotoGP", "Superbike", "DTM", "Supersport", "Serie A", "Premier League", "Bundesliga", "Ligue 1", "Liga portuguesa"}:
+    if competition in {"Fórmula 1", "MotoGP", "Serie A", "Premier League", "Bundesliga", "Ligue 1", "Liga portuguesa"}:
         return False
 
     if any(league in blob for league in ["serie a", "premier league", "bundesliga", "ligue 1", "liga portuguesa", "sporting cp", "benfica", "porto"]):
@@ -630,7 +584,7 @@ def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", com
         return contains(TENNIS_FAVORITES_RE, blob) or ("españa" in blob)
 
     if sport == "Fútbol":
-        return contains(SPANISH_BIG_THREE_RE, blob)
+        return contains(REAL_MADRID_RE, blob) or contains(SPAIN_RE, blob)
 
     return contains(MOTOR_SERIES_RE, blob)
 
@@ -783,7 +737,6 @@ def generate_html(events):
                 url, is_official = get_channel_info(channel)
                 safe_channel = escape(str(channel), quote=True)
                 safe_url = escape(url, quote=True)
-                # Los canales oficiales mantienen el estilo verde y el icono 🔗.
                 if is_official:
                     tv_badges_list.append(
                         f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
@@ -791,7 +744,6 @@ def generate_html(events):
                         f'{safe_channel} 🔗</a>'
                     )
                 else:
-                    # Los canales sin URL específica mantienen el estilo morado/azul y 🌐.
                     tv_badges_list.append(
                         f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
                         f'class="tv-badge tv-link alt-link" title="Canal alternativo para {safe_channel}">'
@@ -871,11 +823,9 @@ def generate_html(events):
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
         
-        /* Estilo Verde para enlaces oficiales exactos */
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
 
-        /* Estilo Morado/Azulado para canales alternativos */
         .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
         .alt-link:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
 
@@ -943,9 +893,6 @@ def generate_html(events):
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
             <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎</div>
-        </div>
-        <div class="stat-card" id="card-otros" onclick="setFilter('otros')">
-            <div><div class="lbl">Otros</div><div class="val" style="color:#a8a29e">{sport_counts['Otros']}</div></div><div style="font-size:1.1rem">🎯</div>
         </div>
     </div>
     <div class="filter-container">
