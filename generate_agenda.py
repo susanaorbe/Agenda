@@ -57,10 +57,6 @@ CHANNEL_URLS = {
     "teledeporte": "https://dlive.sx/watch.php?id=529",
     "laliga hypermotion": "https://dlive.sx/watch.php?id=539",
     "laliga tv hypermotion": "https://dlive.sx/watch.php?id=539",
-    "dazn motogp": "https://dlive.sx/watch.php?id=918",
-    "dazn baloncesto": "https://dlive.sx/watch.php?id=194",
-    "dazn baloncesto 2": "https://dlive.sx/watch.php?id=183",
-    "dazn baloncesto 3": "https://dlive.sx/watch.php?id=168"
 }
 
 
@@ -113,6 +109,7 @@ EXCLUDED_CHANNELS = {
     "fanseat",
     "fff tv youtube",
     "fiba youtube",
+    "flamengo tv youtube",
     "hbo max",
     "laliga tv bar",
     "laliga tv m2",
@@ -143,10 +140,11 @@ EXCLUDED_CHANNELS = {
     "tv canaria",
     "tv3(cataluña)",
     "tvg(galicia)",
+    "tv galicia",
     "tv5monde",
     "uefa tv",
     "uefa youtube",
-    "wta tv",
+    "wta tv"
 }
 
 # ============================================================================
