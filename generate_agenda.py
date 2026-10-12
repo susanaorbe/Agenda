@@ -4,12 +4,13 @@ from html import escape
 import zoneinfo
 import re
 
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
 
 # ============================================================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN Y CARGA DE EXCEL
 # ============================================================================
 
 WIDGET_URL = (
@@ -27,44 +28,28 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario estricto inicial de canales oficiales con URL específica
-CHANNEL_URLS = {
-    "la 1": "https://ver.movistarplus.es/",
-    "la 2": "https://ver.movistarplus.es/",
-    "antena 3": "https://ver.movistarplus.es/",
-    "cuatro": "https://ver.movistarplus.es/",
-    "telecinco": "https://ver.movistarplus.es/",
-    "la sexta": "https://ver.movistarplus.es/",
-    "movistar plus+": "https://ver.movistarplus.es/",
-    "m+ vamos": "https://ver.movistarplus.es/",
-    "m+ vamos 2": "https://ver.movistarplus.es/",
-    "m+ vamos 3": "https://ver.movistarplus.es/",
-    "dazn laliga": "https://www.dazn.com/es-ES/home",
-    "m+ laliga": "https://dlive.sx/watch.php?id=84",
-    "m+ liga de campeones": "https://dlive.sx/watch.php?id=435",
-    "dazn": "https://www.dazn.com/es-ES/home",
-    "dazn app gratis": "https://www.dazn.com/es-ES/home",
-    "dazn 1": "https://www.dazn.com/es-ES/home",
-    "dazn 2": "https://www.dazn.com/es-ES/home",
-    "dazn 3": "https://dlive.sx/watch.php?id=447",
-    "dazn 4": "https://dlive.sx/watch.php?id=448",
-    "dazn f1": "https://dlive.sx/watch.php?id=537",
-    "eurosport 1": "https://ver.movistarplus.es/",
-    "eurosport 2": "https://ver.movistarplus.es/",
-    "m+ deportes": "https://dlive.sx/watch.php?id=436",
-    "m+ deportes 2": "https://dlive.sx/watch.php?id=438",
-    "m+ deportes 3": "https://dlive.sx/watch.php?id=526",
-    "m+ deportes 4": "https://dlive.sx/watch.php?id=527",
-    "tennis channel - orange tv": "https://dlive.sx/watch.php?id=40",
-    "real madrid tv": "https://ver.movistarplus.es/",
-    "replay": "https://ver.movistarplus.es/",
-    "teledeporte": "https://ver.movistarplus.es/",
-    "laliga hypermotion": "https://ver.movistarplus.es/",
-    "laliga hypermotion 2": "https://ver.movistarplus.es/",
-    "laliga hypermotion 3": "https://ver.movistarplus.es/",
-    "laliga tv hypermotion": "https://www.dazn.com/es-ES/home",
-    "primera federación": "https://ver.movistarplus.es/"
-}
+# Diccionario inteligente de canales cargado directamente desde el Excel original
+CHANNEL_DICT = {}
+
+try:
+    df_excel = pd.read_excel("Tablero_deportivo_con_vinculos.xlsx")
+    for _, row in df_excel.iterrows():
+        channel_name = str(row.iloc[0]).strip().lower()
+        if not channel_name or channel_name == "nan":
+            continue
+        
+        # Extraer URLs de las columnas C, D, E, F (índices 2 a 5) o URL general (índice 1)
+        urls = []
+        for col_idx in range(1, len(row)):
+            val = str(row.iloc[col_idx]).strip()
+            if val.startswith("http://") or val.startswith("https://"):
+                if val not in urls:
+                    urls.append(val)
+        
+        if urls:
+            CHANNEL_DICT[channel_name] = urls
+except Exception as e:
+    print(f"Aviso: No se pudo cargar el Excel automáticamente al iniciar: {e}")
 
 
 def strip_accents(text: str) -> str:
@@ -72,36 +57,36 @@ def strip_accents(text: str) -> str:
     return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
 
-def get_channel_info(channel_name: str) -> tuple[str, bool, bool]:
-    """Devuelve: (url, tiene_url, es_dlive)"""
+def get_channel_urls(channel_name: str) -> list[str]:
+    """Devuelve la lista de URLs disponibles para un canal (hasta 4 o más del Excel)."""
     norm = normalize_search_text(channel_name)
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
 
-    url = ""
-    if clean_name in CHANNEL_URLS:
-        url = CHANNEL_URLS[clean_name]
-    else:
-        clean_no_acc = strip_accents(clean_name)
-        for k, v in CHANNEL_URLS.items():
-            if strip_accents(k) == clean_no_acc:
-                url = v
-                break
-        else:
-            if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
-                url = CHANNEL_URLS["m+ vamos"]
-            elif clean_name in {"movistar plus", "movistar+"}:
-                url = CHANNEL_URLS["movistar plus+"]
-            elif clean_name in {"tennis channel", "tennis channel orange tv"}:
-                url = CHANNEL_URLS["tennis channel - orange tv"]
-            elif clean_name in {"tdp", "teledeporte spain (tdp)"}:
-                url = CHANNEL_URLS["teledeporte"]
+    if clean_name in CHANNEL_DICT:
+        return CHANNEL_DICT[clean_name]
 
-    if url:
-        is_dlive = "dlive.sx" in url
-        return url, True, is_dlive
-    
-    return "", False, False
+    # Búsqueda flexible sin tildes o variaciones comunes
+    clean_no_acc = strip_accents(clean_name)
+    for k, v in CHANNEL_DICT.items():
+        if strip_accents(k) == clean_no_acc or clean_no_acc in strip_accents(k):
+            return v
+            
+    # Mapeos de respaldo por si el nombre difiere ligeramente
+    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50", "m+ vamos 2", "m+ vamos 3"}:
+        if "movistar plus" in CHANNEL_DICT:
+            return CHANNEL_DICT["movistar plus"]
+    elif clean_name in {"movistar plus", "movistar+"}:
+        if "movistar plus" in CHANNEL_DICT:
+            return CHANNEL_DICT["movistar plus"]
+    elif clean_name in {"tennis channel", "tennis channel orange tv"}:
+        if "tennis channel" in CHANNEL_DICT:
+            return CHANNEL_DICT["tennis channel"]
+    elif clean_name in {"tdp", "teledeporte spain (tdp)"}:
+        if "teledeporte spain (tdp)" in CHANNEL_DICT:
+            return CHANNEL_DICT["teledeporte spain (tdp)"]
+
+    return []
 
 
 EXCLUDED_CHANNELS = {
@@ -158,7 +143,7 @@ EXCLUDED_CHANNELS = {
 }
 
 # ============================================================================
-# REGEX
+# REGEX Y CLASIFICACIÓN
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -720,7 +705,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML
+# GENERACIÓN DE HTML CON MENÚ DESPLEGABLE DINÁMICO DE OPCIONES
 # ============================================================================
 
 def generate_html(events):
@@ -741,26 +726,39 @@ def generate_html(events):
         for ev in events:
             tv_badges_list = []
             for channel in ev["tv_list"]:
-                url, has_url, is_dlive = get_channel_info(channel)
+                urls = get_channel_urls(channel)
                 safe_channel = escape(str(channel), quote=True)
                 
-                if has_url:
-                    safe_url = escape(url, quote=True)
-                    if is_dlive:
+                if urls:
+                    # Comprobamos si tiene múltiples URLs (como las del excel con watch, hub, cast, stream)
+                    if len(urls) > 1:
+                        # Creamos un contenedor interactivo con menú desplegable flotante
+                        options_html = ""
+                        # Asignar nombres limpios a las opciones según su contenido o posición
+                        labels = ["Hub", "Watch", "Cast", "Stream (Directo)"]
+                        for idx, u in enumerate(urls):
+                            lbl = labels[idx] if idx < len(labels) else f"Opción {idx+1}"
+                            safe_u = escape(u, quote=True)
+                            options_html += f'<a href="{safe_u}" target="_blank" rel="noopener noreferrer">{safe_channel} - {lbl}</a>'
+                        
                         tv_badges_list.append(
-                            f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
-                            f'class="tv-badge tv-link alt-link" title="Abrir canal {safe_channel}">'
-                            f'{safe_channel} 🔗</a>'
+                            f'<div class="dropdown-tv">'
+                            f'<button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">{safe_channel} ▾</button>'
+                            f'<div class="dropdown-content">{options_html}</div>'
+                            f'</div>'
                         )
                     else:
+                        safe_url = escape(urls[0], quote=True)
+                        is_dlive = "dlive.sx" in urls[0]
+                        css_cls = "tv-badge alt-link" if is_dlive else "tv-badge"
                         tv_badges_list.append(
                             f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
-                            f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
+                            f'class="{css_cls}" title="Abrir canal {safe_channel}">'
                             f'{safe_channel} 🔗</a>'
                         )
                 else:
                     tv_badges_list.append(
-                        f'<span class="tv-badge tv-link alt-link" title="Canal alternativo">'
+                        f'<span class="tv-badge alt-link" style="cursor:default;" title="Canal sin enlace">'
                         f'{safe_channel}</span>'
                     )
 
@@ -798,7 +796,6 @@ def generate_html(events):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda Deportiva - Hoy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
@@ -838,13 +835,19 @@ def generate_html(events):
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
         
-        .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
-        .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
+        .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
+        .tv-badge:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
 
-        .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
-        .alt-link[href]:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
-        .alt-link:not([href]) {{ cursor: default; }}
-        .alt-link:not([href]):hover {{ transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
+        .alt-link {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }}
+        .alt-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }}
+
+        /* Dropdown para múltiples opciones de Dlive */
+        .dropdown-tv {{ position: relative; display: inline-block; }}
+        .tv-dropdown-btn {{ background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; }}
+        .dropdown-content {{ display: none; position: absolute; background-color: #111827; min-width: 200px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4); z-index: 100; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 0; left: 0; }}
+        .dropdown-content a {{ color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; transition: background 0.2s; }}
+        .dropdown-content a:hover {{ background-color: #1e293b; color: #60a5fa; }}
+        .dropdown-tv.show .dropdown-content {{ display: block; }}
 
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
@@ -889,31 +892,28 @@ def generate_html(events):
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
-            <label class="btn-alt" style="cursor: pointer;">
-                📊 Excel <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none;" onchange="loadExcel(event)">
-            </label>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
-        <div class="last-update" id="lastUpdateText">Última actualización: <strong>{fecha_act} (España)</strong></div>
+        <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val" id="count-todos">{total_cnt}</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
-            <div><div class="lbl">Filtrados</div><div class="val" id="count-filtrados" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">⭐</div>
+            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">⭐</div>
         </div>
         <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" id="count-futbol" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
         </div>
         <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" id="count-baloncesto" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
         </div>
         <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" id="count-tenis" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" id="count-motor" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎</div>
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎</div>
         </div>
     </div>
     <div class="filter-container">
@@ -938,99 +938,28 @@ def generate_html(events):
     </div>
 </div>
 <script>
-let customChannelMap = {{}};
-
 function cleanStr(str) {{
     return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').trim();
 }}
 
-function loadExcel(event) {{
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {{
-        try {{
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {{type: 'array'}});
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet, {{header: 1}});
-            
-            customChannelMap = {{}};
-            for (let i = 1; i < json.length; i++) {{
-                const row = json[i];
-                if (row && row.length > 0 && row[0]) {{
-                    const channelName = cleanStr(String(row[0]));
-                    // Busca la primera URL válida en las columnas siguientes (índice 1 en adelante)
-                    let channelUrl = '';
-                    for (let j = 1; j < row.length; j++) {{
-                        const val = String(row[j] || '').trim();
-                        if (val.startsWith('http://') || val.startsWith('https://')) {{
-                            channelUrl = val;
-                            break;
-                        }}
-                    }}
-                    if (channelName) {{
-                        customChannelMap[channelName] = channelUrl;
-                    }}
-                }}
-            }}
-            
-            rebuildTableBadges();
-            alert('¡Excel cargado con éxito! Se han actualizado los enlaces de los canales.');
-        }} catch (err) {{
-            console.error(err);
-            alert('Error al procesar el archivo Excel.');
-        }}
-    }};
-    reader.readAsArrayBuffer(file);
+// Control de menús desplegables al hacer clic en canales Dlive
+function toggleDropdown(event) {{
+    event.stopPropagation();
+    const dropdown = event.currentTarget.parentElement;
+    // Cerrar otros abiertos
+    document.querySelectorAll('.dropdown-tv').forEach(item => {{
+        if (item !== dropdown) item.classList.remove('show');
+    }});
+    dropdown.classList.toggle('show');
 }}
 
-function rebuildTableBadges() {{
-    const rows = document.querySelectorAll('.event-row');
-    rows.forEach(row => {{
-        const tvCol = row.querySelector('.tv-col');
-        if (!tvCol) return;
-        const container = tvCol.querySelector('.tv-container');
-        if (!container) return;
-        
-        const badges = container.querySelectorAll('.tv-badge');
-        let newHtml = '';
-        badges.forEach(badge => {{
-            // Extraer el nombre del canal quitando el icono 🔗 si lo tuviera
-            let rawName = badge.textContent.replace('🔗', '').trim();
-            let normName = cleanStr(rawName);
-            
-            // Comprobar si existe en el Excel cargado
-            let url = '';
-            if (customChannelMap.hasOwnProperty(normName)) {{
-                url = customChannelMap[normName];
-            }} else {{
-                // Búsqueda parcial o sin acentos
-                for (let k in customChannelMap) {{
-                    if (normName.includes(k) || k.includes(normName)) {{
-                        url = customChannelMap[k];
-                        break;
-                    }}
-                }}
-            }}
-            
-            const safeChannel = rawName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-            
-            if (url) {{
-                const safeUrl = url.replace(/"/g, '&quot;');
-                const isDlive = safeUrl.includes('dlive.sx');
-                if (isDlive) {{
-                    newHtml += `<a href="${{safeUrl}}" target="_blank" rel="noopener noreferrer" class="tv-badge tv-link alt-link" title="Abrir canal ${{safeChannel}}">${{safeChannel}} 🔗</a>`;
-                }} else {{
-                    newHtml += `<a href="${{safeUrl}}" target="_blank" rel="noopener noreferrer" class="tv-badge tv-link" title="Abrir canal ${{safeChannel}}">${{safeChannel}} 🔗</a>`;
-                }}
-            }} else {{
-                newHtml += `<span class="tv-badge tv-link alt-link" title="Canal alternativo">${{safeChannel}}</span>`;
-            }}
+// Cerrar menús al hacer clic fuera
+window.onclick = function(event) {{
+    if (!event.target.matches('.tv-dropdown-btn')) {{
+        document.querySelectorAll('.dropdown-tv').forEach(item => {{
+            item.classList.remove('show');
         }});
-        container.innerHTML = newHtml;
-    }});
+    }}
 }}
 
 let currentFilter = 'todos';
