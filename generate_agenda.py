@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 
 # ============================================================================
-# CONFIGURACIÓN Y DICCIONARIO DE CANALES (SIN PANDAS)
+# CONFIGURACIÓN Y DICCIONARIO DE CANALES
 # ============================================================================
 
 WIDGET_URL = (
@@ -27,7 +27,6 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario mapeado directamente desde el archivo Excel
 CHANNEL_DICT = {
     'la 1': ['https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php'],
     'la 2': ['https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php'],
@@ -37,13 +36,13 @@ CHANNEL_DICT = {
     'la sexta': ['https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php'],
     'movistar plus+': ['https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php'],
     'm+ vamos': ['https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php'],
-    'm+ vamos 2': ['https://ver.movistarplus.es/'],
-    'm+ vamos 3': ['https://ver.movistarplus.es/'],
+    'm+ vamos 2': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
+    'm+ vamos 3': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
     'dazn laliga': ['https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php'],
     'm+ laliga': ['https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php'],
     'm+ liga de campeones': ['https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php'],
-    'dazn': ['https://www.dazn.com/es-ES/home'],
-    'dazn app gratis': ['https://www.dazn.com/es-ES/home'],
+    'dazn': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
+    'dazn app gratis': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
     'dazn 1': ['https://dlive.sx/stream/stream-445.php', 'https://dlive.sx/hub/stream-445.php', 'https://dlive.sx/watch/stream-445.php', 'https://dlive.sx/cast/stream-445.php'],
     'dazn 2': ['https://dlive.sx/stream/stream-446.php', 'https://dlive.sx/hub/stream-446.php', 'https://dlive.sx/watch/stream-446.php', 'https://dlive.sx/cast/stream-446.php'],
     'dazn 3': ['https://dlive.sx/stream/stream-447.php', 'https://dlive.sx/hub/stream-447.php', 'https://dlive.sx/watch/stream-447.php', 'https://dlive.sx/cast/stream-447.php'],
@@ -57,13 +56,13 @@ CHANNEL_DICT = {
     'm+ deportes 4': ['https://dlive.sx/stream/stream-527.php', 'https://dlive.sx/hub/stream-527.php', 'https://dlive.sx/watch/stream-527.php', 'https://dlive.sx/cast/stream-527.php'],
     'tennis channel - orange tv': ['https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php'],
     'real madrid tv': ['https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php'],
-    'replay': ['https://ver.movistarplus.es'],    
+    'replay': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es'],
     'teledeporte': ['https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php'],
     'laliga hypermotion': ['https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php'],
-    'laliga hypermotion 2': ['https://ver.movistarplus.es/'],
-    'laliga hypermotion 3': ['https://ver.movistarplus.es/'],
-    'laliga tv hypermotion': ['https://www.dazn.com/es-ES/home'],
-    'primera federación': ['https://ver.movistarplus.es']
+    'laliga hypermotion 2': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
+    'laliga hypermotion 3': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
+    'laliga tv hypermotion': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
+    'primera federación': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es']
 }
 
 
@@ -84,20 +83,21 @@ def get_channel_urls(channel_name: str) -> list[str]:
         if strip_accents(k) == clean_no_acc or clean_no_acc in strip_accents(k):
             return v
             
-    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50", "m+ vamos 2", "m+ vamos 3"}:
-        if "#vamos spain" in CHANNEL_DICT:
-            return CHANNEL_DICT["#vamos spain"]
+    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
+        if "m+ vamos" in CHANNEL_DICT:
+            return CHANNEL_DICT["m+ vamos"]
     elif clean_name in {"movistar plus", "movistar+"}:
-        if "movistar plus" in CHANNEL_DICT:
-            return CHANNEL_DICT["movistar plus"]
+        if "movistar plus+" in CHANNEL_DICT:
+            return CHANNEL_DICT["movistar plus+"]
     elif clean_name in {"tennis channel", "tennis channel orange tv"}:
-        if "tennis channel" in CHANNEL_DICT:
-            return CHANNEL_DICT["tennis channel"]
+        if "tennis channel - orange tv" in CHANNEL_DICT:
+            return CHANNEL_DICT["tennis channel - orange tv"]
     elif clean_name in {"tdp", "teledeporte spain (tdp)"}:
-        if "teledeporte spain (tdp)" in CHANNEL_DICT:
-            return CHANNEL_DICT["teledeporte spain (tdp)"]
+        if "teledeporte" in CHANNEL_DICT:
+            return CHANNEL_DICT["teledeporte"]
 
-    return []
+    # Si el canal no está en la lista, se le asignan por defecto estos enlaces genéricos
+    return ['https://hubu.ru/fctvlink', 'https://daddylive.pk/']
 
 
 EXCLUDED_CHANNELS = {
