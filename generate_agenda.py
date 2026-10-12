@@ -55,7 +55,7 @@ CHANNEL_DICT = {
     'm+ deportes 2': ['https://dlive.sx/stream/stream-438.php', 'https://dlive.sx/hub/stream-438.php', 'https://dlive.sx/watch/stream-438.php', 'https://dlive.sx/cast/stream-438.php'],
     'm+ deportes 3': ['https://dlive.sx/stream/stream-526.php', 'https://dlive.sx/hub/stream-526.php', 'https://dlive.sx/watch/stream-526.php', 'https://dlive.sx/cast/stream-526.php'],
     'm+ deportes 4': ['https://dlive.sx/stream/stream-527.php', 'https://dlive.sx/hub/stream-527.php', 'https://dlive.sx/watch/stream-527.php', 'https://dlive.sx/cast/stream-527.php'],
-    'tennis channel - orange tv': ['https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php']
+    'tennis channel - orange tv': ['https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php'],
     'real madrid tv': ['https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php'],
     'replay': ['https://ver.movistarplus.es'],    
     'teledeporte': ['https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php'],
@@ -63,7 +63,7 @@ CHANNEL_DICT = {
     'laliga hypermotion 2': ['https://ver.movistarplus.es/'],
     'laliga hypermotion 3': ['https://ver.movistarplus.es/'],
     'laliga tv hypermotion': ['https://www.dazn.com/es-ES/home'],
-    'primera federación': ['https://ver.movistarplus.es'],
+    'primera federación': ['https://ver.movistarplus.es']
 }
 
 
