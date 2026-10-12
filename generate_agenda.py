@@ -72,33 +72,36 @@ def strip_accents(text: str) -> str:
     return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
 
-def get_channel_info(channel_name: str) -> tuple[str, bool]:
+def get_channel_info(channel_name: str) -> tuple[str, bool, bool]:
+    """Devuelve: (url, tiene_url, es_dlive)"""
     norm = normalize_search_text(channel_name)
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
 
-    # 1. Coincidencia exacta limpia en CHANNEL_URLS (ahora todos devuelven su URL activa)
+    url = ""
     if clean_name in CHANNEL_URLS:
-        return CHANNEL_URLS[clean_name], True
+        url = CHANNEL_URLS[clean_name]
+    else:
+        clean_no_acc = strip_accents(clean_name)
+        for k, v in CHANNEL_URLS.items():
+            if strip_accents(k) == clean_no_acc:
+                url = v
+                break
+        else:
+            if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
+                url = CHANNEL_URLS["m+ vamos"]
+            elif clean_name in {"movistar plus", "movistar+"}:
+                url = CHANNEL_URLS["movistar plus+"]
+            elif clean_name in {"tennis channel", "tennis channel orange tv"}:
+                url = CHANNEL_URLS["tennis channel - orange tv"]
+            elif clean_name in {"tdp", "teledeporte spain (tdp)"}:
+                url = CHANNEL_URLS["teledeporte"]
 
-    # Coincidencia exacta sin tildes
-    clean_no_acc = strip_accents(clean_name)
-    for k, v in CHANNEL_URLS.items():
-        if strip_accents(k) == clean_no_acc:
-            return v, True
-
-    # 2. Mapeos de alias habituales permitidos estrictos
-    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
-        return CHANNEL_URLS["m+ vamos"], True
-    if clean_name in {"movistar plus", "movistar+"}:
-        return CHANNEL_URLS["movistar plus+"], True
-    if clean_name in {"tennis channel", "tennis channel orange tv"}:
-        return CHANNEL_URLS["tennis channel - orange tv"], True
-    if clean_name in {"tdp", "teledeporte spain (tdp)"}:
-        return CHANNEL_URLS["teledeporte"], True
-
-    # Si no está en el diccionario, se trata como canal genérico sin URL
-    return "", False
+    if url:
+        is_dlive = "dlive.sx" in url
+        return url, True, is_dlive
+    
+    return "", False, False
 
 
 EXCLUDED_CHANNELS = {
@@ -738,18 +741,27 @@ def generate_html(events):
         for ev in events:
             tv_badges_list = []
             for channel in ev["tv_list"]:
-                url, is_official = get_channel_info(channel)
+                url, has_url, is_dlive = get_channel_info(channel)
                 safe_channel = escape(str(channel), quote=True)
-                if is_official:
+                
+                if has_url:
                     safe_url = escape(url, quote=True)
-                    # Todos los canales oficiales (incluyendo dlive.sx) llevan URL activa y el icono 🔗
-                    tv_badges_list.append(
-                        f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
-                        f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
-                        f'{safe_channel} 🔗</a>'
-                    )
+                    if is_dlive:
+                        # Canales dlive.sx: formato azul/morado (alt-link) pero con URL y con icono 🔗
+                        tv_badges_list.append(
+                            f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
+                            f'class="tv-badge tv-link alt-link" title="Abrir canal {safe_channel}">'
+                            f'{safe_channel} 🔗</a>'
+                        )
+                    else:
+                        # Canales oficiales estándar (ej. Movistar/DAZN): formato verde con URL e icono 🔗
+                        tv_badges_list.append(
+                            f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
+                            f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
+                            f'{safe_channel} 🔗</a>'
+                        )
                 else:
-                    # Canales genéricos sin URL (texto plano con estilo azul/morado, sin icono)
+                    # Canales sin URL: formato azul/morado (alt-link), sin URL y sin icono
                     tv_badges_list.append(
                         f'<span class="tv-badge tv-link alt-link" title="Canal alternativo">'
                         f'{safe_channel}</span>'
@@ -831,8 +843,11 @@ def generate_html(events):
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
 
-        .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); cursor: default; }}
-        .alt-link:hover {{ transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
+        /* Estilo Azul/Morado para canales alternativos o con dlive */
+        .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
+        .alt-link[href]:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
+        .alt-link:not([href]) {{ cursor: default; }}
+        .alt-link:not([href]):hover {{ transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
 
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
