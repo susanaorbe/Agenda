@@ -96,7 +96,6 @@ def get_channel_urls(channel_name: str) -> list[str]:
         if "teledeporte" in CHANNEL_DICT:
             return CHANNEL_DICT["teledeporte"]
 
-    # Si el canal no está en la lista, se le asignan por defecto estos enlaces genéricos
     return ['https://hubu.ru/fctvlink', 'https://daddylive.pk/']
 
 
@@ -705,9 +704,8 @@ def generate_html(events):
                 if urls:
                     if len(urls) > 1:
                         options_html = ""
-                        labels = ["Hub", "Watch", "Cast", "Stream (Directo)"]
                         for idx, u in enumerate(urls):
-                            lbl = labels[idx] if idx < len(labels) else f"Opción {idx+1}"
+                            lbl = f"Opción {idx + 1}"
                             safe_u = escape(u, quote=True)
                             options_html += f'<a href="{safe_u}" target="_blank" rel="noopener noreferrer">{safe_channel} - {lbl}</a>'
                         
