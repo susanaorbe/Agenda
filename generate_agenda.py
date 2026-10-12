@@ -677,7 +677,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML CON MENÚ DESPLEGABLE DINÁMICO DE OPCIONES
+# GENERACIÓN DE HTML CON MENÚ DESPLEGABLE DINÁMICO (DROPUP INTELIGENTE)
 # ============================================================================
 
 def generate_html(events):
@@ -787,7 +787,7 @@ def generate_html(events):
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
         .search-input:focus {{ border-color: var(--accent-blue); }}
         
-        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }}
+        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
@@ -812,7 +812,24 @@ def generate_html(events):
         /* Dropdown para múltiples opciones de Dlive */
         .dropdown-tv {{ position: relative; display: inline-block; }}
         .tv-dropdown-btn {{ background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; }}
-        .dropdown-content {{ display: none; position: absolute; background-color: #111827; min-width: 200px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4); z-index: 100; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 0; left: 0; }}
+        .dropdown-content {{ 
+            display: none; 
+            position: absolute; 
+            background-color: #111827; 
+            min-width: 200px; 
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); 
+            z-index: 1000; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 4px 0; 
+            left: 0; 
+            top: 100%; 
+        }}
+        .dropdown-tv.dropup .dropdown-content {{
+            top: auto;
+            bottom: 100%;
+            margin-bottom: 4px;
+        }}
         .dropdown-content a {{ color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; transition: background 0.2s; }}
         .dropdown-content a:hover {{ background-color: #1e293b; color: #60a5fa; }}
         .dropdown-tv.show .dropdown-content {{ display: block; }}
@@ -912,17 +929,31 @@ function cleanStr(str) {{
 
 function toggleDropdown(event) {{
     event.stopPropagation();
-    const dropdown = event.currentTarget.parentElement;
+    const btn = event.currentTarget;
+    const dropdown = btn.parentElement;
+    
     document.querySelectorAll('.dropdown-tv').forEach(item => {{
-        if (item !== dropdown) item.classList.remove('show');
+        if (item !== dropdown) {{
+            item.classList.remove('show', 'dropup');
+        }}
     }});
+
+    const rect = btn.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    
+    if (spaceBelow < 160) {{
+        dropdown.classList.add('dropup');
+    }} else {{
+        dropdown.classList.remove('dropup');
+    }}
+
     dropdown.classList.toggle('show');
 }}
 
 window.onclick = function(event) {{
     if (!event.target.matches('.tv-dropdown-btn')) {{
         document.querySelectorAll('.dropdown-tv').forEach(item => {{
-            item.classList.remove('show');
+            item.classList.remove('show', 'dropup');
         }});
     }}
 }}
