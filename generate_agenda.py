@@ -79,12 +79,18 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
 
     # 1. Coincidencia exacta limpia
     if clean_name in CHANNEL_URLS:
-        return CHANNEL_URLS[clean_name], True
+        url = CHANNEL_URLS[clean_name]
+        # Si la URL es de tipo dlive.sx, la tratamos como no oficial (sin enlace interactivo directo o formato genérico)
+        if "dlive.sx" in url:
+            return "", False
+        return url, True
 
     # Coincidencia exacta sin tildes
     clean_no_acc = strip_accents(clean_name)
     for k, v in CHANNEL_URLS.items():
         if strip_accents(k) == clean_no_acc:
+            if "dlive.sx" in v:
+                return "", False
             return v, True
 
     # 2. Mapeos de alias habituales permitidos estrictos
@@ -97,8 +103,8 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     if clean_name in {"tdp", "teledeporte spain (tdp)"}:
         return CHANNEL_URLS["teledeporte"], True
 
-    # Sin extrapolación: si el canal no está en la lista estricta, devuelve directamente el genérico
-    return "https://hubu.ru/fctvlink", False
+    # Sin extrapolación: si el canal no está en la lista estricta, devuelve vacío para formato genérico sin URL
+    return "", False
 
 
 EXCLUDED_CHANNELS = {
@@ -170,7 +176,6 @@ SPAIN_RE = rx(
     r"\bsefutbol\b"
 )
 
-# Tenistas favoritos reducidos exclusivamente a españoles
 TENNIS_FAVORITES_RE = rx(
     r"\balcaraz\b", r"\bnadal\b", r"\bmunar\b", r"\bjódar\b", 
     r"\bdavidovich\b", r"\bmérida\b", r"\blandaluce\b", r"\bcarreño\b", 
@@ -741,18 +746,18 @@ def generate_html(events):
             for channel in ev["tv_list"]:
                 url, is_official = get_channel_info(channel)
                 safe_channel = escape(str(channel), quote=True)
-                safe_url = escape(url, quote=True)
                 if is_official:
+                    safe_url = escape(url, quote=True)
                     tv_badges_list.append(
                         f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
                         f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
                         f'{safe_channel} 🔗</a>'
                     )
                 else:
+                    # Canales alternativos o con URL dlive (sin icono y sin URL)
                     tv_badges_list.append(
-                        f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
-                        f'class="tv-badge tv-link alt-link" title="Canal alternativo para {safe_channel}">'
-                        f'{safe_channel} 🌐</a>'
+                        f'<span class="tv-badge tv-link alt-link" title="Canal alternativo">'
+                        f'{safe_channel}</span>'
                     )
 
             tv_badges = "".join(tv_badges_list)
@@ -831,8 +836,8 @@ def generate_html(events):
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
 
-        .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
-        .alt-link:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
+        .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); cursor: default; }}
+        .alt-link:hover {{ transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
 
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
@@ -875,7 +880,8 @@ def generate_html(events):
     <header>
         <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls">
-            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">🌐 Hub Alternativo</a>
+            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
+            <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
