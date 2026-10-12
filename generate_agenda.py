@@ -4,13 +4,12 @@ from html import escape
 import zoneinfo
 import re
 
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
 
 # ============================================================================
-# CONFIGURACIÓN Y CARGA DE EXCEL
+# CONFIGURACIÓN Y DICCIONARIO DE CANALES (SIN PANDAS)
 # ============================================================================
 
 WIDGET_URL = (
@@ -28,37 +27,42 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario inteligente de canales cargado directamente desde el Excel original
-CHANNEL_DICT = {}
-
-try:
-    df_excel = pd.read_excel("Tablero_deportivo_con_vinculos.xlsx")
-    for _, row in df_excel.iterrows():
-        channel_name = str(row.iloc[0]).strip().lower()
-        if not channel_name or channel_name == "nan":
-            continue
-        
-        # Extraer URLs de las columnas C, D, E, F (índices 2 a 5) o URL general (índice 1)
-        urls = []
-        for col_idx in range(1, len(row)):
-            val = str(row.iloc[col_idx]).strip()
-            if val.startswith("http://") or val.startswith("https://"):
-                if val not in urls:
-                    urls.append(val)
-        
-        if urls:
-            CHANNEL_DICT[channel_name] = urls
-except Exception as e:
-    print(f"Aviso: No se pudo cargar el Excel automáticamente al iniciar: {e}")
+# Diccionario mapeado directamente desde el archivo Excel
+CHANNEL_DICT = {
+    'la 1': ['https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php'],
+    'la 2': ['https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php'],
+    'antena 3': ['https://dlive.sx/stream/stream-531.php', 'https://dlive.sx/hub/stream-531.php', 'https://dlive.sx/watch/stream-531.php', 'https://dlive.sx/cast/stream-531.php'],
+    'cuatro': ['https://dlive.sx/stream/stream-535.php', 'https://dlive.sx/hub/stream-535.php', 'https://dlive.sx/watch/stream-535.php', 'https://dlive.sx/cast/stream-535.php'],
+    'telecinco': ['https://dlive.sx/stream/stream-532.php', 'https://dlive.sx/hub/stream-532.php', 'https://dlive.sx/watch/stream-532.php', 'https://dlive.sx/cast/stream-532.php'],
+    'la sexta': ['https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php'],
+    'movistar plus': ['https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php'],
+    '#vamos spain': ['https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php'],
+    'dazn laliga': ['https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php'],
+    'movistar laliga': ['https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php'],
+    'movistar liga de campeones': ['https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php'],
+    'laliga hypermotion tv': ['https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php'],
+    'dazn 1 spain': ['https://dlive.sx/stream/stream-445.php', 'https://dlive.sx/hub/stream-445.php', 'https://dlive.sx/watch/stream-445.php', 'https://dlive.sx/cast/stream-445.php'],
+    'dazn 2 spain': ['https://dlive.sx/stream/stream-446.php', 'https://dlive.sx/hub/stream-446.php', 'https://dlive.sx/watch/stream-446.php', 'https://dlive.sx/cast/stream-446.php'],
+    'dazn 3 spain': ['https://dlive.sx/stream/stream-447.php', 'https://dlive.sx/hub/stream-447.php', 'https://dlive.sx/watch/stream-447.php', 'https://dlive.sx/cast/stream-447.php'],
+    'dazn 4 spain': ['https://dlive.sx/stream/stream-448.php', 'https://dlive.sx/hub/stream-448.php', 'https://dlive.sx/watch/stream-448.php', 'https://dlive.sx/cast/stream-448.php'],
+    'dazn f1 es': ['https://dlive.sx/stream/stream-537.php', 'https://dlive.sx/hub/stream-537.php', 'https://dlive.sx/watch/stream-537.php', 'https://dlive.sx/cast/stream-537.php'],
+    'eurosport 1 spain': ['https://dlive.sx/stream/stream-524.php', 'https://dlive.sx/hub/stream-524.php', 'https://dlive.sx/watch/stream-524.php', 'https://dlive.sx/cast/stream-524.php'],
+    'eurosport 2 spain': ['https://dlive.sx/stream/stream-525.php', 'https://dlive.sx/hub/stream-525.php', 'https://dlive.sx/watch/stream-525.php', 'https://dlive.sx/cast/stream-525.php'],
+    'movistar deportes spain': ['https://dlive.sx/stream/stream-436.php', 'https://dlive.sx/hub/stream-436.php', 'https://dlive.sx/watch/stream-436.php', 'https://dlive.sx/cast/stream-436.php'],
+    'movistar deportes 2 spain': ['https://dlive.sx/stream/stream-438.php', 'https://dlive.sx/hub/stream-438.php', 'https://dlive.sx/watch/stream-438.php', 'https://dlive.sx/cast/stream-438.php'],
+    'movistar deportes 3 spain': ['https://dlive.sx/stream/stream-526.php', 'https://dlive.sx/hub/stream-526.php', 'https://dlive.sx/watch/stream-526.php', 'https://dlive.sx/cast/stream-526.php'],
+    'movistar deportes 4 spain': ['https://dlive.sx/stream/stream-527.php', 'https://dlive.sx/hub/stream-527.php', 'https://dlive.sx/watch/stream-527.php', 'https://dlive.sx/cast/stream-527.php'],
+    'real madrid tv spain': ['https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php'],
+    'teledeporte spain (tdp)': ['https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php'],
+    'tennis channel': ['https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php']
+}
 
 
 def strip_accents(text: str) -> str:
-    """Elimina acentos para hacer coincidencias insensibles a tildes."""
     return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
 
 def get_channel_urls(channel_name: str) -> list[str]:
-    """Devuelve la lista de URLs disponibles para un canal (hasta 4 o más del Excel)."""
     norm = normalize_search_text(channel_name)
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
@@ -66,16 +70,14 @@ def get_channel_urls(channel_name: str) -> list[str]:
     if clean_name in CHANNEL_DICT:
         return CHANNEL_DICT[clean_name]
 
-    # Búsqueda flexible sin tildes o variaciones comunes
     clean_no_acc = strip_accents(clean_name)
     for k, v in CHANNEL_DICT.items():
         if strip_accents(k) == clean_no_acc or clean_no_acc in strip_accents(k):
             return v
             
-    # Mapeos de respaldo por si el nombre difiere ligeramente
     if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50", "m+ vamos 2", "m+ vamos 3"}:
-        if "movistar plus" in CHANNEL_DICT:
-            return CHANNEL_DICT["movistar plus"]
+        if "#vamos spain" in CHANNEL_DICT:
+            return CHANNEL_DICT["#vamos spain"]
     elif clean_name in {"movistar plus", "movistar+"}:
         if "movistar plus" in CHANNEL_DICT:
             return CHANNEL_DICT["movistar plus"]
@@ -90,56 +92,18 @@ def get_channel_urls(channel_name: str) -> list[str]:
 
 
 EXCLUDED_CHANNELS = {
-    "* sin tv en directo *",
-    "aragón play",
-    "aragón tv",
-    "asobal tv",
-    "atp tennis tv",
-    "dazn 1 bar(m148)",
-    "dazn 2 bar(m149)",
-    "esport3 web",
-    "esport3(cataluña)",
-    "etb1(país vasco)",
-    "fanplay",
-    "fanseat",
-    "fff tv youtube",
-    "fiba youtube",
-    "flamengo tv youtube",
-    "hbo max",
-    "laliga tv bar",
-    "laliga tv m2",
-    "laliga tv m3",
-    "laliga tv m4",
-    "laliga tv m5",
-    "laliga+ plus",
-    "m+ #vamos bar 2(308)",
-    "m+ #vamos bar(307)",
-    "m+ laliga hdr(m440 o111)",
-    "motogp videopass",
-    "movistar+ lite",
-    "nba league pass",
-    "onefootball",
-    "orange fútbol 1(107)",
-    "orange fútbol 2(108)",
-    "orange fútbol 3(109)",
-    "prosieben maxx(m+ astra)",
-    "rcdeportivo tv youtube",
-    "rcd deportivo tv youtube",
-    "red bull tv",
-    "rfef tv youtube",
-    "rfef.es",
-    "rtve play",
-    "sefutbol youtube",
-    "siroko tv",
-    "tv footballclub(acceder)",
-    "tv canaria",
-    "tv3(cataluña)",
-    "tvg(galicia)",
-    "tv galicia",
-    "tv5monde",
-    "uefa tv",
-    "uefa youtube",
-    "wta tv"
+    "* sin tv en directo *", "aragón play", "aragón tv", "asobal tv", "atp tennis tv",
+    "dazn 1 bar(m148)", "dazn 2 bar(m149)", "esport3 web", "esport3(cataluña)",
+    "etb1(país vasco)", "fanplay", "fanseat", "fff tv youtube", "fiba youtube",
+    "flamengo tv youtube", "hbo max", "laliga tv bar", "laliga tv m2", "laliga tv m3",
+    "laliga tv m4", "laliga tv m5", "laliga+ plus", "m+ #vamos bar 2(308)",
+    "m+ #vamos bar(307)", "m+ laliga hdr(m440 o111)", "motogp videopass",
+    "movistar+ lite", "nba league pass", "onefootball", "orange fútbol 1(107)",
+    "orange fútbol 2(108)", "orange fútbol 3(109)", "prosieben maxx(m+ astra)",
+    "rcdeportivo tv youtube", "rcd deportivo tv youtube", "red bull tv",
+    "rfef tv youtube", "rfef.es", "rtve play", "sefutbol youtube", "siroko tv",
+    "tv footballclub(acceder)", "tv canaria", "tv3(cataluña)", "tvg(galicia)",
+    "tv galicia", "tv5monde", "uefa tv", "uefa youtube", "wta tv"
 }
 
 # ============================================================================
@@ -730,11 +694,8 @@ def generate_html(events):
                 safe_channel = escape(str(channel), quote=True)
                 
                 if urls:
-                    # Comprobamos si tiene múltiples URLs (como las del excel con watch, hub, cast, stream)
                     if len(urls) > 1:
-                        # Creamos un contenedor interactivo con menú desplegable flotante
                         options_html = ""
-                        # Asignar nombres limpios a las opciones según su contenido o posición
                         labels = ["Hub", "Watch", "Cast", "Stream (Directo)"]
                         for idx, u in enumerate(urls):
                             lbl = labels[idx] if idx < len(labels) else f"Opción {idx+1}"
@@ -942,18 +903,15 @@ function cleanStr(str) {{
     return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').trim();
 }}
 
-// Control de menús desplegables al hacer clic en canales Dlive
 function toggleDropdown(event) {{
     event.stopPropagation();
     const dropdown = event.currentTarget.parentElement;
-    // Cerrar otros abiertos
     document.querySelectorAll('.dropdown-tv').forEach(item => {{
         if (item !== dropdown) item.classList.remove('show');
     }});
     dropdown.classList.toggle('show');
 }}
 
-// Cerrar menús al hacer clic fuera
 window.onclick = function(event) {{
     if (!event.target.matches('.tv-dropdown-btn')) {{
         document.querySelectorAll('.dropdown-tv').forEach(item => {{
