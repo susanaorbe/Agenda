@@ -77,20 +77,14 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
 
-    # 1. Coincidencia exacta limpia
+    # 1. Coincidencia exacta limpia en CHANNEL_URLS (ahora todos devuelven su URL activa)
     if clean_name in CHANNEL_URLS:
-        url = CHANNEL_URLS[clean_name]
-        # Si la URL es de tipo dlive.sx, la tratamos como no oficial (sin enlace interactivo directo o formato genérico)
-        if "dlive.sx" in url:
-            return "", False
-        return url, True
+        return CHANNEL_URLS[clean_name], True
 
     # Coincidencia exacta sin tildes
     clean_no_acc = strip_accents(clean_name)
     for k, v in CHANNEL_URLS.items():
         if strip_accents(k) == clean_no_acc:
-            if "dlive.sx" in v:
-                return "", False
             return v, True
 
     # 2. Mapeos de alias habituales permitidos estrictos
@@ -103,7 +97,7 @@ def get_channel_info(channel_name: str) -> tuple[str, bool]:
     if clean_name in {"tdp", "teledeporte spain (tdp)"}:
         return CHANNEL_URLS["teledeporte"], True
 
-    # Sin extrapolación: si el canal no está en la lista estricta, devuelve vacío para formato genérico sin URL
+    # Si no está en el diccionario, se trata como canal genérico sin URL
     return "", False
 
 
@@ -748,13 +742,14 @@ def generate_html(events):
                 safe_channel = escape(str(channel), quote=True)
                 if is_official:
                     safe_url = escape(url, quote=True)
+                    # Todos los canales oficiales (incluyendo dlive.sx) llevan URL activa y el icono 🔗
                     tv_badges_list.append(
                         f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
                         f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
                         f'{safe_channel} 🔗</a>'
                     )
                 else:
-                    # Canales alternativos o con URL dlive (sin icono y sin URL)
+                    # Canales genéricos sin URL (texto plano con estilo azul/morado, sin icono)
                     tv_badges_list.append(
                         f'<span class="tv-badge tv-link alt-link" title="Canal alternativo">'
                         f'{safe_channel}</span>'
