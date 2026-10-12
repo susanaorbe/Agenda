@@ -27,7 +27,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Diccionario estricto de canales oficiales con URL específica
+# Diccionario estricto inicial de canales oficiales con URL específica
 CHANNEL_URLS = {
     "la 1": "https://ver.movistarplus.es/",
     "la 2": "https://ver.movistarplus.es/",
@@ -747,21 +747,18 @@ def generate_html(events):
                 if has_url:
                     safe_url = escape(url, quote=True)
                     if is_dlive:
-                        # Canales dlive.sx: formato azul/morado (alt-link) pero con URL y con icono 🔗
                         tv_badges_list.append(
                             f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
                             f'class="tv-badge tv-link alt-link" title="Abrir canal {safe_channel}">'
                             f'{safe_channel} 🔗</a>'
                         )
                     else:
-                        # Canales oficiales estándar (ej. Movistar/DAZN): formato verde con URL e icono 🔗
                         tv_badges_list.append(
                             f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
                             f'class="tv-badge tv-link" title="Abrir canal {safe_channel}">'
                             f'{safe_channel} 🔗</a>'
                         )
                 else:
-                    # Canales sin URL: formato azul/morado (alt-link), sin URL y sin icono
                     tv_badges_list.append(
                         f'<span class="tv-badge tv-link alt-link" title="Canal alternativo">'
                         f'{safe_channel}</span>'
@@ -801,6 +798,7 @@ def generate_html(events):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda Deportiva - Hoy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
@@ -843,7 +841,6 @@ def generate_html(events):
         .tv-badge {{ display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; word-break: break-word; white-space: normal; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; transform: translateY(-1px); }}
 
-        /* Estilo Azul/Morado para canales alternativos o con dlive */
         .alt-link {{ background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
         .alt-link[href]:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
         .alt-link:not([href]) {{ cursor: default; }}
@@ -892,28 +889,31 @@ def generate_html(events):
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
+            <label class="btn-alt" style="cursor: pointer;">
+                📊 Excel <input type="file" id="excelFile" accept=".xlsx, .xls" style="display: none;" onchange="loadExcel(event)">
+            </label>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
-        <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
+        <div class="last-update" id="lastUpdateText">Última actualización: <strong>{fecha_act} (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Todos</div><div class="val" id="count-todos">{total_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-filtrados" onclick="setFilter('filtrados')">
-            <div><div class="lbl">Filtrados</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">⭐</div>
+            <div><div class="lbl">Filtrados</div><div class="val" id="count-filtrados" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">⭐</div>
         </div>
         <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
+            <div><div class="lbl">Fútbol</div><div class="val" id="count-futbol" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
         </div>
         <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
+            <div><div class="lbl">Baloncesto</div><div class="val" id="count-baloncesto" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
         </div>
         <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
+            <div><div class="lbl">Tenis</div><div class="val" id="count-tenis" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎</div>
+            <div><div class="lbl">Motor</div><div class="val" id="count-motor" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏎</div>
         </div>
     </div>
     <div class="filter-container">
@@ -938,8 +938,99 @@ def generate_html(events):
     </div>
 </div>
 <script>
+let customChannelMap = {{}};
+
 function cleanStr(str) {{
     return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').trim();
+}}
+
+function loadExcel(event) {{
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {{
+        try {{
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {{type: 'array'}});
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, {{header: 1}});
+            
+            customChannelMap = {{}};
+            for (let i = 1; i < json.length; i++) {{
+                const row = json[i];
+                if (row && row.length > 0 && row[0]) {{
+                    const channelName = cleanStr(String(row[0]));
+                    // Busca la primera URL válida en las columnas siguientes (índice 1 en adelante)
+                    let channelUrl = '';
+                    for (let j = 1; j < row.length; j++) {{
+                        const val = String(row[j] || '').trim();
+                        if (val.startsWith('http://') || val.startsWith('https://')) {{
+                            channelUrl = val;
+                            break;
+                        }}
+                    }}
+                    if (channelName) {{
+                        customChannelMap[channelName] = channelUrl;
+                    }}
+                }}
+            }}
+            
+            rebuildTableBadges();
+            alert('¡Excel cargado con éxito! Se han actualizado los enlaces de los canales.');
+        }} catch (err) {{
+            console.error(err);
+            alert('Error al procesar el archivo Excel.');
+        }}
+    }};
+    reader.readAsArrayBuffer(file);
+}}
+
+function rebuildTableBadges() {{
+    const rows = document.querySelectorAll('.event-row');
+    rows.forEach(row => {{
+        const tvCol = row.querySelector('.tv-col');
+        if (!tvCol) return;
+        const container = tvCol.querySelector('.tv-container');
+        if (!container) return;
+        
+        const badges = container.querySelectorAll('.tv-badge');
+        let newHtml = '';
+        badges.forEach(badge => {{
+            // Extraer el nombre del canal quitando el icono 🔗 si lo tuviera
+            let rawName = badge.textContent.replace('🔗', '').trim();
+            let normName = cleanStr(rawName);
+            
+            // Comprobar si existe en el Excel cargado
+            let url = '';
+            if (customChannelMap.hasOwnProperty(normName)) {{
+                url = customChannelMap[normName];
+            }} else {{
+                // Búsqueda parcial o sin acentos
+                for (let k in customChannelMap) {{
+                    if (normName.includes(k) || k.includes(normName)) {{
+                        url = customChannelMap[k];
+                        break;
+                    }}
+                }}
+            }}
+            
+            const safeChannel = rawName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            
+            if (url) {{
+                const safeUrl = url.replace(/"/g, '&quot;');
+                const isDlive = safeUrl.includes('dlive.sx');
+                if (isDlive) {{
+                    newHtml += `<a href="${{safeUrl}}" target="_blank" rel="noopener noreferrer" class="tv-badge tv-link alt-link" title="Abrir canal ${{safeChannel}}">${{safeChannel}} 🔗</a>`;
+                }} else {{
+                    newHtml += `<a href="${{safeUrl}}" target="_blank" rel="noopener noreferrer" class="tv-badge tv-link" title="Abrir canal ${{safeChannel}}">${{safeChannel}} 🔗</a>`;
+                }}
+            }} else {{
+                newHtml += `<span class="tv-badge tv-link alt-link" title="Canal alternativo">${{safeChannel}}</span>`;
+            }}
+        }});
+        container.innerHTML = newHtml;
+    }});
 }}
 
 let currentFilter = 'todos';
