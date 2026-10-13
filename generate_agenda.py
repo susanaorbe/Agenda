@@ -335,9 +335,18 @@ def contains(pattern: re.Pattern, text: str) -> bool:
     return bool(pattern.search(text))
 
 
+def is_excluded_basketball_champions_league(blob: str) -> bool:
+    """Excluye la Basketball Champions League aunque la web etiquete mal la competición."""
+    return bool(BASKETBALL_CHAMPIONS_LEAGUE_RE.search(normalize_search_text(blob)))
+
+
 def is_excluded_event(blob: str) -> bool:
     normalized = normalize_search_text(blob)
-    return bool(EXCLUDED_SPORTS_RE.search(normalized) or EXCLUDED_BLOB_RE.search(normalized))
+    return bool(
+        EXCLUDED_SPORTS_RE.search(normalized)
+        or EXCLUDED_BLOB_RE.search(normalized)
+        or is_excluded_basketball_champions_league(normalized)
+    )
 
 
 def clean_tournament(raw: str, fallback: str) -> str:
@@ -462,19 +471,18 @@ def classify_motor_sessions(events_list: list[dict]):
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "", False)
 
+    # La Basketball Champions League debe excluirse por completo de la agenda,
+    # incluso si la web la etiqueta erróneamente como UEFA Champions League.
+    if BASKETBALL_CHAMPIONS_LEAGUE_RE.search(blob):
+        return ("__EXCLUDED__", "", "", False)
+
     # 1. Tenis
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
         comp = classify_tennis(blob, raw_tournament, tv_blob)
         is_fav = contains(TENNIS_FAVORITES_RE, blob) or "españa" in blob
         return ("Tenis", "🎾", comp, is_fav)
 
-    # 2. Baloncesto: la web puede asociar por error estos partidos a
-    # "UEFA Champions League". Si reconocemos equipos de la BCL, prevalece
-    # la competición real de baloncesto sobre el nombre erróneo del torneo.
-    if BASKETBALL_CHAMPIONS_LEAGUE_RE.search(blob):
-        is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Baloncesto", "🏀", "Basketball Champions League", is_fav)
-
+    # 2. Baloncesto (solo las competiciones permitidas).
     if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
         comp_match = None
         for pattern, name in BASKET_COMPETITIONS:
@@ -614,6 +622,13 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
+
+                # Segunda comprobación con los campos ya extraídos: algunos elementos
+                # HTML contenedores no incluyen todos los datos en original_blob.
+                if is_excluded_basketball_champions_league(
+                    f"{event_str} {tournament}"
+                ):
+                    continue
 
                 if not EVENT_TEXT_RE.search(event_str):
                     continue
