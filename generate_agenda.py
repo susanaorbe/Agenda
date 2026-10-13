@@ -518,7 +518,13 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     for part in raw_parts:
         part_lower = normalize_search_text(part)
 
-        if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
+        if TIME_RE.search(part):
+            clean_part = TIME_RE.sub("", part).strip()
+            if clean_part and not tournament:
+                tournament = clean_part
+            continue
+
+        if part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
         if re.match(r"^[\s,.|;:/-]*$", part):
