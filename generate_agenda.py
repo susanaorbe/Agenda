@@ -70,16 +70,9 @@ def strip_accents(text: str) -> str:
     return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
 
-def normalize_search_text(text: str) -> str:
-    value = (text or "").lower()
-    value = value.replace("º", "ª")
-    value = re.sub(r"[|,;:/]+", " ", value)
-    return re.sub(r"\s+", " ", value).strip()
-
-
 def get_channel_urls(channel_name: str) -> list[str]:
     norm = normalize_search_text(channel_name)
-    clean_name = re.sub(r"\(\d+\)|\b\d+\b", "", norm).strip()
+    clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
 
     if clean_name in CHANNEL_DICT:
@@ -176,6 +169,8 @@ PRIMERA_RFEF_RE = rx(
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
+SPACES_RE = re.compile(r"\s+")
+SEPARATORS_RE = re.compile(r"[|,;:/]+")
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]")
 MOTOR_GROUP_CLEAN_RE = re.compile(
     r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
@@ -185,6 +180,14 @@ MOTOR_EVENT_SUFFIX_RE = re.compile(
     r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
     re.IGNORECASE,
 )
+
+
+def normalize_search_text(text: str) -> str:
+    value = (text or "").lower()
+    value = value.replace("º", "ª")
+    value = SEPARATORS_RE.sub(" ", value)
+    return SPACES_RE.sub(" ", value).strip()
+
 
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
@@ -252,6 +255,7 @@ EXCLUDED_BLOB_RE = rx(
     r"test\s+match"
 )
 
+# Competiciones permitidas actualizadas
 WOMEN_FOOTBALL_COMPETITIONS = (
     (rx(r"\bliga f\b", r"\bprimera división femenina\b"), "Liga F"),
     (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
@@ -302,6 +306,10 @@ GENERIC_TOURNAMENTS = frozenset({
 })
 
 EXCLUDED_CHANNELS_RE = rx(*(re.escape(channel) for channel in EXCLUDED_CHANNELS))
+
+
+def contains(pattern: re.Pattern, text: str) -> bool:
+    return bool(pattern.search(text))
 
 
 def is_excluded_event(blob: str) -> bool:
@@ -432,9 +440,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "", False)
 
     # 1. Tenis
-    if TENNIS_RE.search(blob) or TENNIS_TOURNAMENT_RE.search(blob) or TENNIS_TOURNAMENT_RE.search(raw_tournament):
+    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
         comp = classify_tennis(blob, raw_tournament, tv_blob)
-        is_fav = TENNIS_FAVORITES_RE.search(blob) or "españa" in blob
+        is_fav = contains(TENNIS_FAVORITES_RE, blob) or "españa" in blob
         return ("Tenis", "🎾", comp, is_fav)
 
     # 2. Baloncesto (Solo competiciones permitidas)
@@ -445,25 +453,25 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match:
-            is_fav = REAL_MADRID_RE.search(blob)
+            is_fav = contains(REAL_MADRID_RE, blob)
             return ("Baloncesto", "🏀", comp_match, is_fav)
         return ("__EXCLUDED__", "", "", False)
 
     # 3. Fútbol Femenino (Solo Real Madrid Femenino en competiciones permitidas)
-    is_women = WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
+    is_women = contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
     if is_women:
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
             if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
                 comp_match = name
                 break
-        if comp_match and REAL_MADRID_RE.search(blob):
+        if comp_match and contains(REAL_MADRID_RE, blob):
             return ("Fútbol", "⚽", comp_match, True)
         return ("__EXCLUDED__", "", "", False)
 
     # 4. Primera Federación (Solo Real Madrid Castilla)
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if CASTILLA_RE.search(blob):
+        if contains(CASTILLA_RE, blob):
             return ("Fútbol", "⚽", "Primera Federación", True)
         return ("__EXCLUDED__", "", "", False)
 
@@ -474,11 +482,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             comp_match = name
             break
     if comp_match:
-        is_fav = REAL_MADRID_RE.search(blob)
+        is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", comp_match, is_fav)
 
     # 6. Motor (F1, MotoGP, Indycar, Formula E)
-    if MOTOR_GENERAL_RE.search(blob):
+    if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         is_indycar = "indycar" in blob or "indy car" in blob
@@ -518,31 +526,28 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     for part in raw_parts:
         part_lower = normalize_search_text(part)
 
-        if TIME_RE.search(part):
-            clean_part = TIME_RE.sub("", part).strip()
-            if clean_part and not tournament:
-                tournament = clean_part
-            continue
-
-        if part_lower in {"ver partido", "directo", "(ver en directo)"}:
+        if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)"}:
             continue
 
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
-        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
-            if not matchup:
-                matchup = part
-            continue
-
+        # Detectar canales antes de buscar enfrentamientos: algunos nombres de canal,
+        # como "Tennis Channel - Orange TV(131)", contienen un guion y se confundían
+        # con un partido. La detección de canales no afecta a enfrentamientos como
+        # "Movistar Inter - ElPozo Murcia", que no contienen identificadores de TV.
         if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
-                channel = re.sub(r"\(\d+\)", "", channel).strip()
                 channel_lower = normalize_search_text(channel)
                 if channel and not EXCLUDED_CHANNELS_RE.search(channel_lower) and channel not in channels:
                     channels.append(channel)
+            continue
+
+        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE):
+            if not matchup:
+                matchup = part
             continue
 
         if TENNIS_TOURNAMENT_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
