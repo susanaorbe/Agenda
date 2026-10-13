@@ -29,10 +29,10 @@ REQUEST_TIMEOUT = 15
 
 CHANNEL_DICT = {
     'la 1': ['https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'la 2': ['https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php, 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'antena 3': ['https://dlive.sx/stream/stream-531.php', 'https://dlive.sx/hub/stream-531.php', 'https://dlive.sx/watch/stream-531.php', 'https://dlive.sx/cast/stream-531.php, 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'cuatro': ['https://dlive.sx/stream/stream-535.php', 'https://dlive.sx/hub/stream-535.php', 'https://dlive.sx/watch/stream-535.php', 'https://dlive.sx/cast/stream-535.php, 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'telecinco': ['https://dlive.sx/stream/stream-532.php', 'https://dlive.sx/hub/stream-532.php', 'https://dlive.sx/watch/stream-532.php', 'https://dlive.sx/cast/stream-532.php, 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
+    'la 2': ['https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
+    'antena 3': ['https://dlive.sx/stream/stream-531.php', 'https://dlive.sx/hub/stream-531.php', 'https://dlive.sx/watch/stream-531.php', 'https://dlive.sx/cast/stream-531.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
+    'cuatro': ['https://dlive.sx/stream/stream-535.php', 'https://dlive.sx/hub/stream-535.php', 'https://dlive.sx/watch/stream-535.php', 'https://dlive.sx/cast/stream-535.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
+    'telecinco': ['https://dlive.sx/stream/stream-532.php', 'https://dlive.sx/hub/stream-532.php', 'https://dlive.sx/watch/stream-532.php', 'https://dlive.sx/cast/stream-532.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'la sexta': ['https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'movistar plus+': ['https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'm+ vamos': ['https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
@@ -64,7 +64,6 @@ CHANNEL_DICT = {
     'laliga tv hypermotion': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
     'primera federación': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es']
 }
-
 
 def strip_accents(text: str) -> str:
     return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
