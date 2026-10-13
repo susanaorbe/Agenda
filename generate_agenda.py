@@ -125,11 +125,6 @@ def rx(*patterns: str) -> re.Pattern:
 REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
 CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
 
-SPAIN_RE = rx(
-    r"\bespaña\b", r"\bseleccion española\b", r"\bselección española\b",
-    r"\bsefutbol\b"
-)
-
 TENNIS_FAVORITES_RE = rx(
     r"\balcaraz\b", r"\bnadal\b", r"\bmunar\b", r"\bjódar\b", 
     r"\bdavidovich\b", r"\bmérida\b", r"\blandaluce\b", r"\bcarreño\b", 
@@ -155,48 +150,15 @@ F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
 MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
 
-MOTOR_SERIES_RE = rx(
-    r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b",
-    r"\bmotogp\b(?![\s\-]*(?:2|3|moto2|moto3|rookies))\b",
-    r"\bformula e\b", r"\bfórmula e\b", r"\bindycar\b", r"\bindy car\b"
-)
-
 MOTOR_GENERAL_RE = rx(
     r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bmotogp\b",
-    r"\bmoto2\b", r"\bmoto3\b", r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b",
-    r"\bsuperbike\b", r"\bsupersport\b", r"\bdtm\b"
+    r"\bindycar\b", r"\bindy car\b", r"\bformula e\b", r"\bfórmula e\b"
 )
 
 MOTO_STRICT_EXCLUDE_RE = rx(
     r"\bmoto2\b", r"\bmoto3\b", r"rookies\s+cup", r"\brookies\b", r"\bnascar\b",
-    r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b"
-)
-
-BASKET_RE = rx(
-    r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beurocup\b", r"\beurocopa\b",
-    r"\bbaloncesto\b", r"\bbasket\b", r"\bnba\b", r"\bliga endesa\b",
-    r"\bcopa del rey baloncesto\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bfiba\b",
-    r"\bchampions\s+league\s+ba[sk]et\b", r"\bliga\s+de\s+campeones\s+de\s+baloncesto\b",
-    r"\bbcl\b", r"\bjoventut\b", r"\bbnei\b", r"\bbc\b", r"\bcb\b", r"\bunicaja\b",
-    r"\bbaskets\b", r"\bpallacanestro\b",
-    r"\btrabzonspor\b", r"\bnanterre\b", r"\bslavia\s+prague\b", r"\bera\s+nbk\b",
-    r"\balba\s+berlin\b", r"\btelenet\b", r"\bgiants\b", r"\bantwerp\b",
-    r"\bfalco\b", r"\bszombathely\b", r"\bporto\s+cb\b", r"\bjuventus\s+utena\b"
-)
-
-HOCKEY_RE = rx(r"\bfih\b", r"\bhockey\b", r"\bhokey\b")
-FUTSAL_RE = rx(r"\bf[uú]tbol sala\b", r"\bliga prime\b", r"\bfutsal\b")
-RUGBY_RE = rx(r"\brugby\b", r"\bdivisi[oó]n\s+de\s+honor\b", r"\bgallagher\b", r"\bpremiership\b", r"\btest\s+match\b")
-HANDBALL_RE = rx(r"\bbalonmano\b", r"\basobal\b", r"\bliga asobal\b", r"\bhandball\b")
-CYCLING_RE = rx(r"\bciclismo\b")
-GOLF_RE = rx(r"\bgolf\b")
-NATIONS_LEAGUE_RE = rx(r"\bnations\s+league\b", r"\buefa\s+nations\s+league\b")
-
-FOOTBALL_RE = rx(
-    r"\bf[uú]tbol\b", r"\bchampions\b", r"\bliga\b", r"\bcopa\b", r"\buefa\b", r"\bfifa\b",
-    r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bcalcio\b", r"\bmls\b", r"\bsupercopa\b",
-    r"\bnations\s+league\b", r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b",
-    r"\beredivisie\b", r"\bligue 1\b", r"\bjupiler\s+pro\s+league\b"
+    r"\bfórmula 2\b", r"\bfórmula 3\b", r"\bf2\b", r"\bf3\b",
+    r"\bsuperbike\b", r"\bsupersport\b", r"\bdtm\b"
 )
 
 PRIMERA_RFEF_RE = rx(
@@ -293,22 +255,29 @@ EXCLUDED_BLOB_RE = rx(
     r"test\s+match"
 )
 
-FOOTBALL_COMPETITIONS = (
-    (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
-    (rx(r"\beuropa league\b"), "UEFA Europa League"),
-    (rx(r"\bconference league\b"), "UEFA Conference League"),
-    (rx(r"\blaliga hypermotion\b"), "LaLiga Hypermotion"),
-    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b"), "LaLiga EA Sports"),
-    (PRIMERA_RFEF_RE, "Primera Federación"),
-    (rx(r"\bpremier league\b"), "Premier League"),
-    (rx(r"\bserie a\b"), "Serie A"),
-    (rx(r"\bbundesliga\b"), "Bundesliga"),
-    (rx(r"\bligue 1\b", r"\bligue1\b"), "Ligue 1"),
-    (rx(r"\beredivisie\b"), "Eredivisie"),
-    (rx(r"\bjupiler pro league\b"), "Jupiler Pro League"),
+# Competiciones permitidas actualizadas
+WOMEN_FOOTBALL_COMPETITIONS = (
+    (rx(r"\bliga f\b", r"\bprimera división femenina\b"), "Liga F"),
+    (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
+    (rx(r"\bsupercopa de españa femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
+    (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
+)
+
+MEN_FOOTBALL_COMPETITIONS = (
+    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\blaliga\b", r"\bprimera división\b"), "LaLiga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
-    (NATIONS_LEAGUE_RE, "UEFA Nations League"),
-    (rx(r"\beuropeo\s+sub[- ]?21\b", r"\bsub[- ]?21\b"), "Europeo Sub-21"),
+    (rx(r"\bsupercopa de españa\b"), "Supercopa de España"),
+    (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
+    (rx(r"\bsupercopa de la uefa\b", r"\bsupercopa uefa\b", r"\bsupercopa de europa\b"), "Supercopa de la UEFA"),
+    (rx(r"\bcopa intercontinental\b", r"\bintercontinental\b"), "Copa Intercontinental de la FIFA"),
+    (rx(r"\bmundial de clubes\b", r"\bclub world cup\b"), "Mundial de Clubes"),
+)
+
+BASKET_COMPETITIONS = (
+    (rx(r"\bliga endesa\b", r"\bacb\b"), "Liga Endesa"),
+    (rx(r"\bcopa del rey\b", r"\bcopa acb\b"), "Copa del Rey"),
+    (rx(r"\bsupercopa endesa\b", r"\bsupercopa de españa\b"), "Supercopa de España"),
+    (rx(r"\beuroliga\b", r"\beuroleague\b"), "Euroliga"),
 )
 
 TENNIS_TOURNAMENT_RE = rx(
@@ -467,90 +436,74 @@ def classify_motor_sessions(events_list: list[dict]):
                 ev["is_filtered"] = False
 
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str]:
-    if is_excluded_event(blob): return ("__EXCLUDED__", "", "")
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool]:
+    if is_excluded_event(blob): return ("__EXCLUDED__", "", "", False)
 
-    if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob):
-        if not contains(REAL_MADRID_RE, blob):
-            return ("__EXCLUDED__", "", "")
-
-    if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
-        return ("__EXCLUDED__", "", "")
-
+    # 1. Tenis
     if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament):
-        return ("Tenis", "🎾", classify_tennis(blob, raw_tournament, tv_blob))
+        comp = classify_tennis(blob, raw_tournament, tv_blob)
+        is_fav = contains(TENNIS_FAVORITES_RE, blob) or "españa" in blob
+        return ("Tenis", "🎾", comp, is_fav)
 
-    if contains(RUGBY_RE, blob): return ("__EXCLUDED__", "", "")
+    # 2. Baloncesto (Solo competiciones permitidas)
+    if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
+        comp_match = None
+        for pattern, name in BASKET_COMPETITIONS:
+            if pattern.search(blob):
+                comp_match = name
+                break
+        if comp_match:
+            is_fav = contains(REAL_MADRID_RE, blob)
+            return ("Baloncesto", "🏀", comp_match, is_fav)
+        return ("__EXCLUDED__", "", "", False)
 
-    is_basket = contains(BASKET_RE, blob)
-    if is_basket:
-        comp = clean_tournament(raw_tournament, "Baloncesto")
-        if "eurocup" in comp.lower() or "eurocup" in blob:
-            comp = "Eurocup"
-        elif "champions" in comp.lower() or "champions" in blob or "uefa" in blob:
-            comp = "Liga de Campeones de Baloncesto"
-        return ("Baloncesto", "🏀", comp)
+    # 3. Fútbol Femenino (Solo Real Madrid Femenino en competiciones permitidas)
+    is_women = contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
+    if is_women:
+        comp_match = None
+        for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
+            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
+                comp_match = name
+                break
+        if comp_match and contains(REAL_MADRID_RE, blob):
+            return ("Fútbol", "⚽", comp_match, True)
+        return ("__EXCLUDED__", "", "", False)
 
-    for pattern, comp_name in FOOTBALL_COMPETITIONS:
-        if pattern.search(blob): return ("Fútbol", "⚽", comp_name)
+    # 4. Primera Federación (Solo Real Madrid Castilla)
+    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
+        if contains(CASTILLA_RE, blob):
+            return ("Fútbol", "⚽", "Primera Federación", True)
+        return ("__EXCLUDED__", "", "", False)
 
-    if contains(HOCKEY_RE, blob): return ("__EXCLUDED__", "", "")
-    if contains(FUTSAL_RE, blob): return ("__EXCLUDED__", "", "")
-    if contains(HANDBALL_RE, blob): return ("__EXCLUDED__", "", "")
-    if contains(CYCLING_RE, blob): return ("__EXCLUDED__", "", "")
+    # 5. Fútbol Masculino (Solo competiciones permitidas)
+    comp_match = None
+    for pattern, name in MEN_FOOTBALL_COMPETITIONS:
+        if pattern.search(blob):
+            comp_match = name
+            break
+    if comp_match:
+        is_fav = contains(REAL_MADRID_RE, blob)
+        return ("Fútbol", "⚽", comp_match, is_fav)
 
-    if contains(FOOTBALL_RE, blob): return ("Fútbol", "⚽", clean_tournament(raw_tournament, "Fútbol"))
-    
-    if contains(MOTOR_GENERAL_RE, blob) or "superbike" in blob or "dtm" in blob or "supersport" in blob:
+    # 6. Motor (F1, MotoGP, Indycar, Formula E)
+    if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        
-        if (
-            "fórmula 2" in blob or "fórmula 3" in blob or "f2" in blob or "f3" in blob or
-            MOTO2_RE.search(blob) or MOTO3_RE.search(blob) or
-            "superbike" in blob or "dtm" in blob or "supersport" in blob
-        ):
-            return ("__EXCLUDED__", "", "")
+        is_indycar = "indycar" in blob or "indy car" in blob
+        is_formulae = "formula e" in blob or "fórmula e" in blob
 
-        if is_f1: 
-            return ("Motor", "🏎️", "Fórmula 1")
-        elif is_motogp: 
-            return ("Motor", "🏎️", "MotoGP")
+        if is_f1:
+            return ("Motor", "🏎️", "Fórmula 1", False)
+        elif is_motogp:
+            return ("Motor", "🏎️", "MotoGP", False)
+        elif is_indycar:
+            return ("Motor", "🏎️", "Indycar", False)
+        elif is_formulae:
+            return ("Motor", "🏎️", "Fórmula E", False)
         else:
-            return ("__EXCLUDED__", "", "")
+            return ("__EXCLUDED__", "", "", False)
 
-    return ("__EXCLUDED__", "", "")
-
-
-def matches_strict_criteria(blob: str, channels: list[str], sport: str = "", competition: str = "", event_time: str = "") -> bool:
-    if is_excluded_event(blob): return False
-
-    if any(EXCLUDED_CHANNELS_RE.search(ch) for ch in channels):
-        return False
-
-    if competition in {"Fórmula 1", "MotoGP", "Serie A", "Premier League", "Bundesliga", "Ligue 1", "Liga portuguesa"}:
-        return False
-
-    if any(league in blob for league in ["serie a", "premier league", "bundesliga", "ligue 1", "liga portuguesa", "sporting cp", "benfica", "porto"]):
-        return False
-
-    if contains(NATIONS_LEAGUE_RE, blob):
-        return contains(SPAIN_RE, blob)
-
-    if contains(REAL_MADRID_RE, blob): return True
-    if contains(SPAIN_RE, blob): return True
-    if contains(MOTO_STRICT_EXCLUDE_RE, blob): return False
-
-    if sport == "Baloncesto":
-        return "españa" in blob or "spain" in blob or contains(REAL_MADRID_RE, blob)
-
-    if sport == "Tenis":
-        return contains(TENNIS_FAVORITES_RE, blob) or ("españa" in blob)
-
-    if sport == "Fútbol":
-        return contains(REAL_MADRID_RE, blob) or contains(SPAIN_RE, blob)
-
-    return contains(MOTOR_SERIES_RE, blob)
+    return ("__EXCLUDED__", "", "", False)
 
 
 # ============================================================================
@@ -639,22 +592,13 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
                 if is_excluded_event(blob): continue
-                if contains(GOLF_RE, blob): continue
-
-                if contains(WOMEN_RE, blob) and not contains(TENNIS_RE, blob) and not contains(REAL_MADRID_RE, blob):
-                    continue
-
-                if contains(PRIMERA_RFEF_RE, blob) and not contains(CASTILLA_RE, blob):
-                    continue
 
                 event_key = (time_clean, tournament.lower() if tournament else event_str.lower(), event_str.lower())
                 if event_key in seen_events: continue
                 seen_events.add(event_key)
 
-                sport, icon, competition = get_sport_and_competition(blob, tournament, tv_blob)
+                sport, icon, competition, is_favorite = get_sport_and_competition(blob, tournament, tv_blob)
                 if sport == "__EXCLUDED__": continue
-
-                is_favorite = matches_strict_criteria(blob, channels, sport=sport, competition=competition, event_time=time_clean)
 
                 results.append({
                     "hora": time_clean,
