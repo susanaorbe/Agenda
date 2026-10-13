@@ -273,7 +273,30 @@ MEN_FOOTBALL_COMPETITIONS = (
     (rx(r"\bmundial de clubes\b", r"\bclub world cup\b"), "Mundial de Clubes"),
 )
 
+BASKETBALL_CHAMPIONS_LEAGUE_RE = rx(
+    r"\bbasketball champions league\b",
+    # Equipos participantes: sirven como respaldo cuando la web extrae mal
+    # el nombre de la competición y muestra "UEFA Champions League".
+    r"\bnanterre 92\b", r"\brytas vilnius\b",
+    r"\bpallacanestro varese\b", r"\bperisteri(?: bc| betsson)?\b",
+    r"\balba berlin\b", r"\b(?:kk )?igokea(?: m:tel)?\b",
+    r"\bbamberg baskets\b", r"\bucam murcia\b",
+    r"\bbilbao basket\b", r"\bslavia prague(?: era nbk)?\b",
+    r"\bsurne bilbao\b", r"\bcholet basket\b",
+    r"\bhapoel holon\b", r"\bspartak office shoes\b",
+    r"\bsig strasbourg\b", r"\bcibona\b",
+    r"\blegia warszawa\b", r"\bgalatasaray mct technic\b",
+    r"\baek bc\b", r"\bfalco kc szombathely\b",
+    r"\bwindrose giants antwerp\b", r"\bfc porto\b",
+    r"\bjuventus utena\b", r"\bbk kvis pardubice\b",
+    r"\bpallacanestro reggiana\b", r"\bbnei penlink herzl[iy]a\b",
+    r"\btrabzonspor\b", r"\bsabah bc\b",
+    r"\btelekom baskets bonn\b", r"\basisa joventut\b",
+    r"\brasta vechta\b", r"\bbma365 bamberg baskets\b",
+)
+
 BASKET_COMPETITIONS = (
+    (rx(r"\bbasketball champions league\b"), "Basketball Champions League"),
     (rx(r"\bliga endesa\b", r"\bacb\b"), "Liga Endesa"),
     (rx(r"\bcopa del rey\b", r"\bcopa acb\b"), "Copa del Rey"),
     (rx(r"\bsupercopa endesa\b", r"\bsupercopa de españa\b"), "Supercopa de España"),
@@ -445,7 +468,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_fav = contains(TENNIS_FAVORITES_RE, blob) or "españa" in blob
         return ("Tenis", "🎾", comp, is_fav)
 
-    # 2. Baloncesto (Solo competiciones permitidas)
+    # 2. Baloncesto: la web puede asociar por error estos partidos a
+    # "UEFA Champions League". Si reconocemos equipos de la BCL, prevalece
+    # la competición real de baloncesto sobre el nombre erróneo del torneo.
+    if BASKETBALL_CHAMPIONS_LEAGUE_RE.search(blob):
+        is_fav = contains(REAL_MADRID_RE, blob)
+        return ("Baloncesto", "🏀", "Basketball Champions League", is_fav)
+
     if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
         comp_match = None
         for pattern, name in BASKET_COMPETITIONS:
