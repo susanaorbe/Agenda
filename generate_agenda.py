@@ -294,11 +294,20 @@ BASKETBALL_CHAMPIONS_LEAGUE_RE = rx(
     r"\brasta vechta\b", r"\bbma365 bamberg baskets\b",
 )
 
+EUROLEAGUE_WOMEN_RE = rx(
+    r"\beuroliga\s+femenina\b",
+    r"\beuroliga\s+femenino\b",
+    r"\beuroleague\s+women\b",
+    r"\bwomen'?s\s+euroleague\b",
+    r"\beuroliga\s+f\b",
+)
+
 BASKET_COMPETITIONS = (
     (rx(r"\bbasketball champions league\b"), "Basketball Champions League"),
     (rx(r"\bliga endesa\b", r"\bacb\b"), "Liga Endesa"),
     (rx(r"\bcopa del rey\b", r"\bcopa acb\b"), "Copa del Rey"),
     (rx(r"\bsupercopa endesa\b", r"\bsupercopa de españa\b"), "Supercopa de España"),
+    (EUROLEAGUE_WOMEN_RE, "Euroliga Femenina"),
     (rx(r"\beuroliga\b", r"\beuroleague\b"), "Euroliga"),
 )
 
@@ -489,6 +498,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match:
+            # Detectar correctamente la Euroliga Femenina y excluirla:
+            # la agenda solo admite las competiciones masculinas permitidas.
+            if comp_match == "Euroliga Femenina":
+                return ("__EXCLUDED__", "", "", False)
             is_fav = contains(REAL_MADRID_RE, blob)
             return ("Baloncesto", "🏀", comp_match, is_fav)
         return ("__EXCLUDED__", "", "", False)
