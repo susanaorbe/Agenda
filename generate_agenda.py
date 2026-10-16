@@ -65,6 +65,7 @@ CHANNEL_DICT = {
     'primera federación': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es']
 }
 
+
 def strip_accents(text: str) -> str:
     return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
 
@@ -251,7 +252,11 @@ EXCLUDED_BLOB_RE = rx(
     r"\bchallenger\b",
     r"\bvillena\b",
     r"liga\s+guerreras\s+iberdrola",
-    r"test\s+match"
+    r"test\s+match",
+    r"\bhypermotion\b",
+    r"\bsegunda\s+divisi[oó]n\b",
+    r"\b1\|2\|3\b",
+    r"\bsmartbank\b"
 )
 
 # Competiciones permitidas actualizadas
@@ -263,7 +268,7 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 )
 
 MEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\blaliga\b", r"\bprimera división\b"), "LaLiga"),
+    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera división\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "LaLiga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (rx(r"\bsupercopa de españa\b"), "Supercopa de España"),
     (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
@@ -274,8 +279,6 @@ MEN_FOOTBALL_COMPETITIONS = (
 
 BASKETBALL_CHAMPIONS_LEAGUE_RE = rx(
     r"\bbasketball champions league\b",
-    # Equipos participantes: sirven como respaldo cuando la web extrae mal
-    # el nombre de la competición y muestra "UEFA Champions League".
     r"\bnanterre 92\b", r"\brytas vilnius\b",
     r"\bpallacanestro varese\b", r"\bperisteri(?: bc| betsson)?\b",
     r"\balba berlin\b", r"\b(?:kk )?igokea(?: m:tel)?\b",
@@ -390,7 +393,7 @@ def classify_motor_sessions(events_list: list[dict]):
         if ev["deporte"] != "Motor":
             continue
         base_comp = ev["competicion"]
-        for key_prefix in ["Fórmula 1", "MotoGP"]:
+        for key_prefix in ["Fórmula 1", "MotoGP", "Indycar", "Formula E"]:
             if base_comp.startswith(key_prefix):
                 base_comp = key_prefix
                 break
@@ -472,6 +475,8 @@ def classify_motor_sessions(events_list: list[dict]):
                 )
             elif comp_base == "Fórmula 1":
                 ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
+            elif comp_base in ["Indycar", "Formula E"]:
+                ev["is_filtered"] = "carrera principal" in final_ev_lower or "carrera" in final_ev_lower
             else:
                 ev["is_filtered"] = False
 
@@ -479,8 +484,6 @@ def classify_motor_sessions(events_list: list[dict]):
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool]:
     if is_excluded_event(blob): return ("__EXCLUDED__", "", "", False)
 
-    # La Basketball Champions League debe excluirse por completo de la agenda,
-    # incluso si la web la etiqueta erróneamente como UEFA Champions League.
     if BASKETBALL_CHAMPIONS_LEAGUE_RE.search(blob):
         return ("__EXCLUDED__", "", "", False)
 
@@ -498,8 +501,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match:
-            # Detectar correctamente la Euroliga Femenina y excluirla:
-            # la agenda solo admite las competiciones masculinas permitidas.
             if comp_match == "Euroliga Femenina":
                 return ("__EXCLUDED__", "", "", False)
             is_fav = contains(REAL_MADRID_RE, blob)
@@ -581,10 +582,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
-        # Detectar canales antes de buscar enfrentamientos: algunos nombres de canal,
-        # como "Tennis Channel - Orange TV(131)", contienen un guion y se confundían
-        # con un partido. La detección de canales no afecta a enfrentamientos como
-        # "Movistar Inter - ElPozo Murcia", que no contienen identificadores de TV.
         if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             for channel in clean_part.split(","):
@@ -635,8 +632,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
 
-                # Segunda comprobación con los campos ya extraídos: algunos elementos
-                # HTML contenedores no incluyen todos los datos en original_blob.
                 if is_excluded_basketball_champions_league(
                     f"{event_str} {tournament}"
                 ):
