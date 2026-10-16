@@ -121,7 +121,7 @@ EXCLUDED_CHANNELS = {
 }
 
 # ============================================================================
-# REGEX Y CLASIFICACIÓN (NORMALIZADAS SIN ACENTOS/Ç)
+# REGEX Y CLASIFICACIÓN
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -498,21 +498,28 @@ def classify_motor_sessions(events_list: list[dict]):
                 ev["is_filtered"] = False
 
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool]:
-    if is_excluded_event(blob): return ("__EXCLUDED__", "", "", False)
+def detect_general_sport(blob: str, raw_tournament: str) -> tuple[str, str]:
+    text = f"{blob} {raw_tournament}".lower()
+    if contains(TENNIS_RE, text) or "tenis" in text:
+        return ("Tenis", "🎾")
+    if any(term in text for term in ["baloncesto", "basket", "acb", "euroliga", "nba", "euroleague"]):
+        return ("Baloncesto", "🏀")
+    if any(term in text for term in ["f1", "formula 1", "motogp", "motor", "indycar", "formula e"]):
+        return ("Motor", "🏆")
+    if any(term in text for term in ["ciclismo", "vuelta", "tour", "giro"]):
+        return ("Ciclismo", "🚴")
+    return ("Fútbol", "⚽")
 
-    if BASKETBALL_CHAMPIONS_LEAGUE_RE.search(blob):
-        return ("__EXCLUDED__", "", "", False)
 
-    # 1. Tenis
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
+    # 1. Tenis (Configurado)
     if contains(TENNIS_RE, blob) or contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
-        if not contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
-            return ("__EXCLUDED__", "", "", False)
-        comp = classify_tennis(blob, raw_tournament, tv_blob)
-        is_fav = contains(TENNIS_SPANISH_FAVORITES_RE, blob)
-        return ("Tenis", "🎾", comp, is_fav)
+        if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
+            comp = classify_tennis(blob, raw_tournament, tv_blob)
+            is_fav = contains(TENNIS_SPANISH_FAVORITES_RE, blob)
+            return ("Tenis", "🎾", comp, is_fav, True)
 
-    # 2. Baloncesto
+    # 2. Baloncesto (Configurado)
     if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
         comp_match = None
         for pattern, name in BASKET_COMPETITIONS:
@@ -520,16 +527,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match:
-            if comp_match in ["Euroliga Femenina", "Basketball Champions League"]:
-                return ("__EXCLUDED__", "", "", False)
-            if comp_match in ["Euroliga", "Liga Endesa"]:
-                if not contains(BARCA_REAL_RE, blob):
-                    return ("__EXCLUDED__", "", "", False)
-            is_fav = contains(REAL_MADRID_RE, blob)
-            return ("Baloncesto", "🏀", comp_match, is_fav)
-        return ("__EXCLUDED__", "", "", False)
+            if comp_match not in ["Euroliga Femenina", "BasketballChampions League"]:
+                if comp_match not in ["Euroliga", "Liga Endesa"] or contains(BARCA_REAL_RE, blob):
+                    is_fav = contains(REAL_MADRID_RE, blob)
+                    return ("Baloncesto", "🏀", comp_match, is_fav, True)
 
-    # 3. Fútbol Femenino
+    # 3. Fútbol Femenino (Configurado)
     is_women = contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
     if is_women:
         comp_match = None
@@ -538,42 +541,37 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match and contains(REAL_MADRID_RE, blob):
-            return ("Fútbol", "⚽", comp_match, True)
-        return ("__EXCLUDED__", "", "", False)
+            return ("Fútbol", "⚽", comp_match, True, True)
 
-    # 4. Primera Federación
+    # 4. Primera Federación (Configurado)
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
-            return ("Fútbol", "⚽", "Primera Federación", True)
-        return ("__EXCLUDED__", "", "", False)
+            return ("Fútbol", "⚽", "Primera Federación", True, True)
 
-    # 5. Fútbol Masculino
+    # 5. Fútbol Masculino (Configurado)
     comp_match = None
     for pattern, name in MEN_FOOTBALL_COMPETITIONS:
         if pattern.search(blob):
             comp_match = name
             break
     if comp_match:
+        valid = True
         if comp_match == "LaLiga":
-            if not contains(BARCA_REAL_ATLETICO_RE, blob):
-                return ("__EXCLUDED__", "", "", False)
+            valid = contains(BARCA_REAL_ATLETICO_RE, blob)
         elif comp_match == "Ligue 1":
-            if not contains(PSG_RE, blob):
-                return ("__EXCLUDED__", "", "", False)
+            valid = contains(PSG_RE, blob)
         elif comp_match == "Premier League":
-            if not contains(ARSENAL_RE, blob):
-                return ("__EXCLUDED__", "", "", False)
+            valid = contains(ARSENAL_RE, blob)
         elif comp_match == "Bundesliga":
-            if not contains(BAYERN_RE, blob):
-                return ("__EXCLUDED__", "", "", False)
+            valid = contains(BAYERN_RE, blob)
         elif comp_match == "Serie A":
-            if not contains(INTER_RE, blob):
-                return ("__EXCLUDED__", "", "", False)
+            valid = contains(INTER_RE, blob)
 
-        is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Fútbol", "⚽", comp_match, is_fav)
+        if valid:
+            is_fav = contains(REAL_MADRID_RE, blob)
+            return ("Fútbol", "⚽", comp_match, is_fav, True)
 
-    # 6. Motor -> Icono trofeo (🏆)
+    # 6. Motor (Configurado)
     if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
@@ -581,17 +579,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_formulae = "formula e" in blob
 
         if is_f1:
-            return ("Motor", "🏆", "Fórmula 1", False)
+            return ("Motor", "🏆", "Fórmula 1", False, True)
         elif is_motogp:
-            return ("Motor", "🏆", "MotoGP", False)
+            return ("Motor", "🏆", "MotoGP", False, True)
         elif is_indycar:
-            return ("Motor", "🏆", "Indycar", False)
+            return ("Motor", "🏆", "Indycar", False, True)
         elif is_formulae:
-            return ("Motor", "🏆", "Formula E", False)
-        else:
-            return ("__EXCLUDED__", "", "", False)
+            return ("Motor", "🏆", "Formula E", False, True)
 
-    return ("__EXCLUDED__", "", "", False)
+    # Fallback: Evento disponible en canal permitido pero NO configurado (aparecerá solo en 'Todos')
+    sport, icon = detect_general_sport(blob, raw_tournament)
+    comp = clean_tournament(raw_tournament, f"{sport} General")
+    return (sport, icon, comp, False, False)
 
 
 # ============================================================================
@@ -690,8 +689,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if event_key in seen_events: continue
                 seen_events.add(event_key)
 
-                sport, icon, competition, is_favorite = get_sport_and_competition(blob, tournament, tv_blob)
-                if sport == "__EXCLUDED__": continue
+                sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob)
 
                 results.append({
                     "hora": time_clean,
@@ -701,6 +699,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "evento": event_str,
                     "tv_list": channels,
                     "is_filtered": is_favorite,
+                    "is_configured": is_configured,
                 })
             except Exception:
                 continue
@@ -721,9 +720,9 @@ def generate_html(events):
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
-    total_cnt = len(events)
-    filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    sport_counts = Counter(event["deporte"] for event in events)
+    total_cnt = len(events) # Todos los eventos disponibles
+    filtered_cnt = sum(1 for event in events if event["is_filtered"]) # Favoritos
+    sport_counts = Counter(event["deporte"] for event in events if event["is_configured"]) # Conteo de deportes configurados
 
     def clean_key(s):
         return normalize_search_text(s)
@@ -781,7 +780,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
@@ -1019,10 +1018,19 @@ function applyFilters() {{
 
         const rowSport = cleanStr(tr.getAttribute('data-sport'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isConfigured = tr.getAttribute('data-configured') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
-        const matchesFilter = (currentFilter === 'todos') ? true : 
-                              (currentFilter === 'favoritos' ? isFiltered : rowSport === currentFilter);
+        let matchesFilter = false;
+        if (currentFilter === 'todos') {{
+            matchesFilter = true; // Muestra TODOS los eventos disponibles en canales permitidos
+        }} else if (currentFilter === 'favoritos') {{
+            matchesFilter = isFiltered;
+        }} else {{
+            // Las demás pestañas muestran exclusivamente los eventos configurados de ese deporte
+            matchesFilter = (rowSport === currentFilter && isConfigured);
+        }}
+
         const matchesSearch = text.includes(searchFilter);
 
         if (matchesFilter && matchesSearch) {{
