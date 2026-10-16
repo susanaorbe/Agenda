@@ -121,30 +121,31 @@ def rx(*patterns: str) -> re.Pattern:
     return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
 
 
-REAL_MADRID_RE = rx(r"\\breal madrid\\b", r"\\brm castilla\\b", r"\\br\\.?\\s*madrid\\b")
-CASTILLA_RE = rx(r"\\breal madrid castilla\\b", r"\\brm castilla\\b", r"\\bcastilla\\b")
-BARCELONA_FC_RE = rx(r"\\bfc barcelona\\b", r"\\bbarcelona\\b", r"\\bbarça\\b")
-ATLETICO_RE = rx(r"\\batl[eé]tico de madrid\\b", r"\\batletico madrid\\b")
-ARSENAL_RE = rx(r"\\barsenal(?: fc)?\\b")
-BAYERN_RE = rx(r"\\bbayern(?: munich| münchen)?\\b")
-INTER_MILAN_RE = rx(r"\\binter(?: de mil[aá]n| milan)?\\b", r"\\binternazionale\\b")
-PSG_RE = rx(r"\\bparis saint[- ]germain\\b", r"\\bpsg\\b")
+REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
+CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
+BARCELONA_FC_RE = rx(r"\bfc barcelona\b", r"\bbarcelona\b", r"\bbarça\b")
+ATLETICO_RE = rx(r"\batl[eé]tico de madrid\b", r"\batletico madrid\b")
+ARSENAL_RE = rx(r"\barsenal(?: fc)?\b")
+BAYERN_RE = rx(r"\bbayern(?: munich| münchen)?\b")
+INTER_MILAN_RE = rx(r"\binter(?: de mil[aá]n| milan)?\b", r"\binternazionale\b")
+PSG_RE = rx(r"\bparis saint[- ]germain\b", r"\bpsg\b")
 
 TENNIS_FAVORITES_RE = rx(
-    r"\\balcaraz\\b", r"\\bdavidovich(?: fokina)?\\b", r"\\bbucsa\\b",
-    r"\\bbadosa\\b", r"\\bmunar\\b", r"\\bbouzas(?: maneiro)?\\b"
+    r"\balcaraz\b", r"\bdavidovich(?: fokina)?\b", r"\bbucsa\b",
+    r"\bbadosa\b", r"\bmunar\b", r"\bbouzas(?: maneiro)?\b", r"\bjodar\b", r"\bjódar\b"
 )
 TENNIS_PLAYERS_RE = rx(
-    r"\\bjannik sinner\\b", r"\\bsinner\\b",
-    r"\\balexander zverev\\b", r"\\bzverev\\b",
-    r"\\belena rybakina\\b", r"\\brybakina\\b",
-    r"\\baryna sabalenka\\b", r"\\bsabalenka\\b",
-    r"\\bcarlos alcaraz\\b", r"\\balcaraz\\b",
-    r"\\balejandro davidovich(?: fokina)?\\b", r"\\bdavidovich\\b",
-    r"\\bcristina buc[sș]a\\b", r"\\bbuc[sș]a\\b",
-    r"\\bpaula badosa\\b", r"\\bbadosa\\b",
-    r"\\bjaume munar\\b", r"\\bmunar\\b",
-    r"\\bjessica bouzas(?: maneiro)?\\b", r"\\bbouzas\\b"
+    r"\bjannik sinner\b", r"\bsinner\b",
+    r"\balexander zverev\b", r"\bzverev\b",
+    r"\belena rybakina\b", r"\brybakina\b",
+    r"\baryna sabalenka\b", r"\bsabalenka\b",
+    r"\bcarlos alcaraz\b", r"\balcaraz\b",
+    r"\balejandro davidovich(?: fokina)?\b", r"\bdavidovich\b",
+    r"\bcristina buc[sș]a\b", r"\bbuc[sș]a\b",
+    r"\bpaula badosa\b", r"\bbadosa\b",
+    r"\bjaume munar\b", r"\bmunar\b",
+    r"\bjessica bouzas(?: maneiro)?\b", r"\bbouzas\b",
+    r"\brafael j[oó]dar\b", r"\bj[oó]dar\b"
 )
 
 TENNIS_RE = rx(
@@ -278,6 +279,11 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 )
 
 MEN_FOOTBALL_COMPETITIONS = (
+    (rx(r"\blaliga hypermotion\b"), "LaLiga Hypermotion"),
+    (rx(r"\bligue 1\b"), "Ligue 1"),
+    (rx(r"\bpremier league\b"), "Premier League"),
+    (rx(r"\bbundesliga\b"), "Bundesliga"),
+    (rx(r"\bserie a\b"), "Serie A"),
     (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\blaliga\b", r"\bprimera división\b"), "LaLiga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (rx(r"\bsupercopa de españa\b"), "Supercopa de España"),
@@ -1052,10 +1058,14 @@ function applyFilters() {{
 
 if __name__ == "__main__":
     events = fetch_and_parse_agenda()
-    if events:
-        html_content = generate_html(events)
-        with open("index.html", "w", encoding="utf-8") as f:
-            f.write(html_content)
-        print(f"Archivo index.html generado con éxito. Eventos encontrados: {len(events)}")
-    else:
-        print("Atención: No se obtuvieron eventos de la fuente. Se conserva la agenda previa.")
+
+    # Generar siempre la página, incluso si la fuente no devuelve eventos.
+    # Así index.html se actualiza y muestra el estado vacío en lugar de conservar
+    # una página anterior que podría parecer actualizada.
+    html_content = generate_html(events)
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    print(f"Archivo index.html generado con éxito. Eventos encontrados: {len(events)}")
+    if not events:
+        print("Aviso: La página se ha generado, pero no se han obtenido eventos de la fuente.")
