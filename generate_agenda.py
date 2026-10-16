@@ -66,8 +66,15 @@ CHANNEL_DICT = {
 }
 
 
-def strip_accents(text: str) -> str:
-    return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("ç", "c")
+def normalize_search_text(text: str) -> str:
+    value = (text or "").lower()
+    value = (
+        value.replace("á", "a").replace("é", "e").replace("í", "i")
+        .replace("ó", "o").replace("ú", "u").replace("ç", "c")
+        .replace("º", "ª")
+    )
+    value = re.sub(r"[|,;:/]+", " ", value)
+    return re.sub(r"\s+", " ", value).strip()
 
 
 def get_channel_urls(channel_name: str) -> list[str]:
@@ -78,9 +85,8 @@ def get_channel_urls(channel_name: str) -> list[str]:
     if clean_name in CHANNEL_DICT:
         return CHANNEL_DICT[clean_name]
 
-    clean_no_acc = strip_accents(clean_name)
     for k, v in CHANNEL_DICT.items():
-        if strip_accents(k) == clean_no_acc or clean_no_acc in strip_accents(k):
+        if normalize_search_text(k) == clean_name or clean_name in normalize_search_text(k):
             return v
             
     if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
@@ -115,7 +121,7 @@ EXCLUDED_CHANNELS = {
 }
 
 # ============================================================================
-# REGEX Y CLASIFICACIÓN
+# REGEX Y CLASIFICACIÓN (NORMALIZADAS SIN ACENTOS/Ç)
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -126,20 +132,19 @@ REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b"
 CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
 
 BARCA_REAL_ATLETICO_RE = rx(
-    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarça\b", r"\bbarca\b",
-    r"\batl[eé]tico de madrid\b", r"\batletico\b", r"\batleti\b"
+    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarca\b",
+    r"\batletico de madrid\b", r"\batletico\b", r"\batleti\b"
 )
 
-# Se añaden variaciones completas para detectar Barça Basket / Barcelona en Baloncesto
 BARCA_REAL_RE = rx(
-    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarça\b", r"\bbarca\b",
-    r"\bbarça basket\b", r"\bbarca basket\b", r"\bfc barcelona basket\b"
+    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarca\b",
+    r"\bbarca basket\b", r"\bfc barcelona basket\b"
 )
 
 PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
 ARSENAL_RE = rx(r"\barsenal\b")
-BAYERN_RE = rx(r"\bbayern m[uú]nich\b", r"\bbayern munich\b", r"\bbayern\b")
-INTER_RE = rx(r"\binter de mil[aá]n\b", r"\binter milan\b", r"\binter\b")
+BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
+INTER_RE = rx(r"\binter de milan\b", r"\binter milan\b", r"\binter\b")
 
 TENNIS_ALLOWED_PLAYERS_RE = rx(
     r"\bjannik sinner\b", r"\bsinner\b",
@@ -148,30 +153,30 @@ TENNIS_ALLOWED_PLAYERS_RE = rx(
     r"\baryna sabalenka\b", r"\bsabalenka\b",
     r"\bcarlos alcaraz\b", r"\balcaraz\b",
     r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina buc[sşç]a\b", r"\bbucsa\b",
+    r"\bcristina bucsa\b", r"\bbucsa\b",
     r"\bpaula badosa\b", r"\bbadosa\b",
     r"\bjaume munar\b", r"\bmunar\b",
     r"\bjessica bouzas\b", r"\bbouzas\b",
-    r"\brafael j[oó]dar\b", r"\bj[oó]dar\b"
+    r"\brafael jodar\b", r"\bjodar\b"
 )
 
 TENNIS_SPANISH_FAVORITES_RE = rx(
     r"\bcarlos alcaraz\b", r"\balcaraz\b",
     r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina buc[sşç]a\b", r"\bbucsa\b",
+    r"\bcristina bucsa\b", r"\bbucsa\b",
     r"\bpaula badosa\b", r"\bbadosa\b",
     r"\bjaume munar\b", r"\bmunar\b",
     r"\bjessica bouzas\b", r"\bbouzas\b",
-    r"\brafael j[oó]dar\b", r"\bj[oó]dar\b"
+    r"\brafael jodar\b", r"\bjodar\b"
 )
 
 TENNIS_RE = rx(
     r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bwimbledon\b", r"\broland garros\b",
     r"\bus open\b", r"\bopen de australia\b", r"\bmasters\b", r"\bdavis\b",
     r"\bcopa davis\b", r"\bbillie jean king cup\b", r"\blaver cup\b",
-    r"\bpek[í]n\b", r"\bbeijing\b", r"\bchina open\b", r"\btorneo de pek[í]n\b",
-    r"\bhangzhou\b", r"\bchengd[uú]\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b",
-    r"\btennis\s+channel\b", r"\btennis\s+tv\b"
+    r"\bpekin\b", r"\bbeijing\b", r"\bchina open\b", r"\btorneo de pekin\b",
+    r"\bhangzhou\b", r"\bchengdu\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b",
+    r"\btennis channel\b", r"\btennis tv\b"
 )
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
@@ -183,36 +188,27 @@ MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
 MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
 
 MOTOR_GENERAL_RE = rx(
-    r"\bfórmula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bmotogp\b",
-    r"\bindycar\b", r"\bindy car\b", r"\bformula e\b", r"\bfórmula e\b"
+    r"\bformula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bmotogp\b",
+    r"\bindycar\b", r"\bindy car\b", r"\bformula e\b"
 )
 
 PRIMERA_RFEF_RE = rx(
-    r"\bprimera federaci[oó]n\b",
+    r"\bprimera federacion\b",
     r"\bprimera rfef\b",
-    r"\b1[ªa]\s*federaci[oó]n\b",
+    r"\b1[ªa]\s*federacion\b",
 )
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
-SPACES_RE = re.compile(r"\s+")
-SEPARATORS_RE = re.compile(r"[|,;:/]+")
-EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑçÇ]")
+EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
 MOTOR_GROUP_CLEAN_RE = re.compile(
-    r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
+    r"(libres|fp\d|practica|entrenamientos|clasificacion|warm up|sprint|shootout|carrera|q\d).*$",
     re.IGNORECASE,
 )
 MOTOR_EVENT_SUFFIX_RE = re.compile(
-    r"\s*[-–—]\s*(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
+    r"\s*[-–—]\s*(libres|fp\d|practica|entrenamientos|clasificacion|warm up|sprint|shootout|carrera|q\d).*$",
     re.IGNORECASE,
 )
-
-
-def normalize_search_text(text: str) -> str:
-    value = (text or "").lower()
-    value = value.replace("º", "ª")
-    value = SEPARATORS_RE.sub(" ", value)
-    return SPACES_RE.sub(" ", value).strip()
 
 
 TV_IDENTIFIERS_RE = rx(
@@ -220,86 +216,86 @@ TV_IDENTIFIERS_RE = rx(
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis\s+channel\b", r"\borange\s+tv\b", r"\bchannel\s*[-–—]\s*orange\s+tv\b"
+    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b"
 )
 
 EXCLUDED_SPORTS_RE = rx(
-    r"\btorneo\s+betplay\s+dimayor\b",
-    r"\bbetplay\s+dimayor\b",
+    r"\btorneo betplay dimayor\b",
+    r"\bbetplay dimayor\b",
     r"\bmls\b",
     r"\bnfl\b",
     r"\bwnba\b",
-    r"\bprimera\s+feb\b",
-    r"\bliga\s*u\b",
-    r"\bliga\s+futve\b"
+    r"\bprimera feb\b",
+    r"\bliga u\b",
+    r"\bliga futve\b"
 )
 
 EXCLUDED_BLOB_RE = rx(
-    r"preol[ií]mpico\s+femenino",
-    r"nfl\s+pretemporada",
-    r"f1\s+academy",
-    r"segunda\s+federaci[oó]n",
-    r"segunda\s+rfef",
-    r"tercera\s+federaci[oó]n",
-    r"liga\s+nacional\s+juvenil",
-    r"fifa\s+asean\s+cup",
-    r"laliga\s+futures",
+    r"preolimpico femenino",
+    r"nfl pretemporada",
+    r"f1 academy",
+    r"segunda federacion",
+    r"segunda rfef",
+    r"tercera federacion",
+    r"liga nacional juvenil",
+    r"fifa asean cup",
+    r"laliga futures",
     r"academy\b",
     r"\breplay\b",
-    r"\bprimera\s+feb\b",
-    r"\bliga\s*u\b",
+    r"\bprimera feb\b",
+    r"\bliga u\b",
     r"\bncaa\b",
-    r"\bnational\s+league\b",
-    r"\bprimera\s+catalana\b",
-    r"\bu20\s+elite\s+league\b",
-    r"segunda\s+uruguay",
+    r"\bnational league\b",
+    r"\bprimera catalana\b",
+    r"\bu20 elite league\b",
+    r"segunda uruguay",
     r"\bwrc\b",
-    r"primera\s+divisi[oó]n\s+argentina",
-    r"liga\s+auf\s+uruguaya",
+    r"primera division argentina",
+    r"liga auf uruguaya",
     r"\bvelada\b",
-    r"rotterdam\s+open",
-    r"giro\s+dell['\s]*emilia",
-    r"\btop\s+14\b",
+    r"rotterdam open",
+    r"giro dell['\s]*emilia",
+    r"\btop 14\b",
     r"\bnascar\b",
     r"\bmoto2\b",
     r"\bmoto3\b",
     r"\brugby\b",
-    r"\bdivisi[oó]n\s+de\s+honor\b",
+    r"\bdivision de honor\b",
     r"\bgallagher\b",
     r"\bpremiership\b",
     r"\buci\b",
     r"\behf\b",
     r"\bboxeo\b",
     r"\bboxing\b",
-    r"\bt[ií]tulo\s+internacional\b",
+    r"\btitulo internacional\b",
     r"\bpadel\b",
     r"\bpádel\b",
-    r"\balemania\s+open\b",
+    r"\balemania open\b",
     r"\bchallenger\b",
     r"\bvillena\b",
-    r"liga\s+guerreras\s+iberdrola",
-    r"test\s+match",
+    r"liga guerreras iberdrola",
+    r"test match",
     r"\bhypermotion\b",
-    r"\bsegunda\s+divisi[oó]n\b",
+    r"\bsegunda division\b",
     r"\b1\|2\|3\b",
     r"\bsmartbank\b"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\bliga f\b", r"\bprimera división femenina\b"), "Liga F"),
+    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"),
     (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
-    (rx(r"\bsupercopa de españa femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
+    (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
     (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
 )
 
 MEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera división\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "LaLiga"),
+    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "LaLiga"),
     (rx(r"\bligue 1\b"), "Ligue 1"),
     (rx(r"\bpremier league\b", r"\bpremier\b"), "Premier League"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
     (rx(r"\bserie a\b"), "Serie A"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
-    (rx(r"\bsupercopa de españa\b"), "Supercopa de España"),
+    (rx(r"\bsupercopa de espana\b"), "Supercopa de España"),
     (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
     (rx(r"\bsupercopa de la uefa\b", r"\bsupercopa uefa\b", r"\bsupercopa de europa\b"), "Supercopa de la UEFA"),
     (rx(r"\bcopa intercontinental\b", r"\bintercontinental\b"), "Copa Intercontinental de la FIFA"),
@@ -320,32 +316,32 @@ BASKETBALL_CHAMPIONS_LEAGUE_RE = rx(
     r"\baek bc\b", r"\bfalco kc szombathely\b",
     r"\bwindrose giants antwerp\b", r"\bfc porto\b",
     r"\bjuventus utena\b", r"\bbk kvis pardubice\b",
-    r"\bpallacanestro reggiana\b", r"\bbnei penlink herzl[iy]a\b",
+    r"\bpallacanestro reggiana\b", r"\bbnei penlink herzliya\b",
     r"\btrabzonspor\b", r"\bsabah bc\b",
     r"\btelekom baskets bonn\b", r"\basisa joventut\b",
     r"\brasta vechta\b", r"\bbma365 bamberg baskets\b",
 )
 
 EUROLEAGUE_WOMEN_RE = rx(
-    r"\beuroliga\s+femenina\b",
-    r"\beuroliga\s+femenino\b",
-    r"\beuroleague\s+women\b",
-    r"\bwomen'?s\s+euroleague\b",
-    r"\beuroliga\s+f\b",
+    r"\beuroliga femenina\b",
+    r"\beuroliga femenino\b",
+    r"\beuroleague women\b",
+    r"\bwomen'?s euroleague\b",
+    r"\beuroliga f\b",
 )
 
 BASKET_COMPETITIONS = (
     (rx(r"\bbasketball champions league\b"), "Basketball Champions League"),
     (rx(r"\bliga endesa\b", r"\bacb\b"), "Liga Endesa"),
     (rx(r"\bcopa del rey\b", r"\bcopa acb\b"), "Copa del Rey"),
-    (rx(r"\bsupercopa endesa\b", r"\bsupercopa de españa\b"), "Supercopa de España"),
+    (rx(r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"), "Supercopa de España"),
     (EUROLEAGUE_WOMEN_RE, "Euroliga Femenina"),
-    (rx(r"\beuroliga\b", r"\beuroleague\b", r"\beuro\s+league\b"), "Euroliga"),
+    (rx(r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b"), "Euroliga"),
 )
 
 TENNIS_COMPETITIONS = (
-    (rx(r"\bchina\s+open\b", r"\bbeijing\b", r"\bpe[kí]n\b", r"\btorneo\s+de\s+pe[kí]n\b"), "China Open"),
-    (rx(r"\btorneo\s+de\s+tokio\b", r"\btokio\b", r"\btokyo\b", r"\bjapan\s+open\b"), "Japan Open"),
+    (rx(r"\bchina open\b", r"\bbeijing\b", r"\bpekin\b", r"\btorneo de pekin\b"), "China Open"),
+    (rx(r"\btorneo de tokio\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b"), "Japan Open"),
     (rx(r"\blaver cup\b"), "Laver Cup"),
     (rx(r"\bcopa davis\b", r"\bdavis cup\b", r"\bdavis\b"), "Copa Davis"),
     (rx(r"\bbillie jean king cup\b"), "Billie Jean King Cup"),
@@ -356,7 +352,7 @@ TENNIS_COMPETITIONS = (
 )
 
 GENERIC_TOURNAMENTS = frozenset({
-    "", "competición", "fútbol", "futbol", "baloncesto", "basket", "tenis",
+    "", "competicion", "futbol", "baloncesto", "basket", "tenis",
     "atp", "wta", "ciclismo", "motor",
 })
 
@@ -382,7 +378,8 @@ def is_excluded_event(blob: str) -> bool:
 
 def clean_tournament(raw: str, fallback: str) -> str:
     value = (raw or "").strip()
-    if len(value.lower()) > 2 and value.lower() not in GENERIC_TOURNAMENTS:
+    norm_val = normalize_search_text(value)
+    if len(norm_val) > 2 and norm_val not in GENERIC_TOURNAMENTS:
         return value
     return fallback
 
@@ -433,7 +430,7 @@ def classify_motor_sessions(events_list: list[dict]):
         total_sessions = len(group)
         for idx, ev in enumerate(group):
             session_name = ""
-            ev_lower = ev["evento"].lower()
+            ev_lower = normalize_search_text(ev["evento"])
             event_time_min = time_to_minutes(ev["hora"])
 
             if "carrera" in ev_lower or "race" in ev_lower:
@@ -442,7 +439,7 @@ def classify_motor_sessions(events_list: list[dict]):
                 session_name = "Warm Up"
             elif "sprint" in ev_lower:
                 session_name = "Carrera Sprint"
-            elif "clasificación" in ev_lower or "qualifying" in ev_lower or "q1" in ev_lower or "q2" in ev_lower:
+            elif "clasificacion" in ev_lower or "qualifying" in ev_lower or "q1" in ev_lower or "q2" in ev_lower:
                 session_name = "Clasificación"
             
             if not session_name:
@@ -486,15 +483,15 @@ def classify_motor_sessions(events_list: list[dict]):
                 clean_base_event = MOTOR_EVENT_SUFFIX_RE.sub("", ev["evento"]).strip()
                 ev["evento"] = f"{clean_base_event} - {session_name}"
 
-            final_ev_lower = ev["evento"].lower()
+            final_ev_lower = normalize_search_text(ev["evento"])
             if comp_base == "MotoGP":
-                is_moto_classification = any(term in final_ev_lower for term in ["clasificación", "clasificacion"])
+                is_moto_classification = "clasificacion" in final_ev_lower
                 ev["is_filtered"] = (
-                    any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera"])
+                    ("sprint" in final_ev_lower or "carrera principal" in final_ev_lower or "carrera" in final_ev_lower)
                     and not is_moto_classification
                 )
             elif comp_base == "Fórmula 1":
-                ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificación", "shootout"])
+                ev["is_filtered"] = any(term in final_ev_lower for term in ["sprint", "carrera principal", "carrera", "clasificacion", "shootout"])
             elif comp_base in ["Indycar", "Formula E"]:
                 ev["is_filtered"] = "carrera principal" in final_ev_lower or "carrera" in final_ev_lower
             else:
@@ -507,15 +504,15 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
     if BASKETBALL_CHAMPIONS_LEAGUE_RE.search(blob):
         return ("__EXCLUDED__", "", "", False)
 
-    # 1. Tenis (Restringido estrictamente a los tenistas permitidos)
-    if contains(TENNIS_RE, blob) or contains(TENNIS_TOURNAMENT_RE, blob) or contains(TENNIS_TOURNAMENT_RE, raw_tournament) or contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
+    # 1. Tenis
+    if contains(TENNIS_RE, blob) or contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
         if not contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
             return ("__EXCLUDED__", "", "", False)
         comp = classify_tennis(blob, raw_tournament, tv_blob)
         is_fav = contains(TENNIS_SPANISH_FAVORITES_RE, blob)
         return ("Tenis", "🎾", comp, is_fav)
 
-    # 2. Baloncesto (Solo Euroliga o Liga Endesa donde jueguen FC Barcelona o Real Madrid)
+    # 2. Baloncesto
     if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
         comp_match = None
         for pattern, name in BASKET_COMPETITIONS:
@@ -532,7 +529,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             return ("Baloncesto", "🏀", comp_match, is_fav)
         return ("__EXCLUDED__", "", "", False)
 
-    # 3. Fútbol Femenino (Solo Real Madrid Femenino en competiciones permitidas)
+    # 3. Fútbol Femenino
     is_women = contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
     if is_women:
         comp_match = None
@@ -544,13 +541,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             return ("Fútbol", "⚽", comp_match, True)
         return ("__EXCLUDED__", "", "", False)
 
-    # 4. Primera Federación (Solo Real Madrid Castilla)
+    # 4. Primera Federación
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
             return ("Fútbol", "⚽", "Primera Federación", True)
         return ("__EXCLUDED__", "", "", False)
 
-    # 5. Fútbol Masculino (Restricciones por competición y equipos)
+    # 5. Fútbol Masculino
     comp_match = None
     for pattern, name in MEN_FOOTBALL_COMPETITIONS:
         if pattern.search(blob):
@@ -576,12 +573,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", comp_match, is_fav)
 
-    # 6. Motor (F1, MotoGP, Indycar, Formula E) -> Icono trofeo (🏆)
+    # 6. Motor -> Icono trofeo (🏆)
     if contains(MOTOR_GENERAL_RE, blob):
-        is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
+        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         is_indycar = "indycar" in blob or "indy car" in blob
-        is_formulae = "formula e" in blob or "fórmula e" in blob
+        is_formulae = "formula e" in blob
 
         if is_f1:
             return ("Motor", "🏆", "Fórmula 1", False)
@@ -650,7 +647,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     if not matchup and tournament:
         matchup = tournament
 
-    if "uci" in tournament.lower():
+    if "uci" in normalize_search_text(tournament):
         tournament, matchup = matchup, tournament
 
     return time_clean, matchup, channels, tournament
@@ -689,7 +686,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 if is_excluded_event(blob): continue
 
-                event_key = (time_clean, tournament.lower() if tournament else event_str.lower(), event_str.lower())
+                event_key = (time_clean, normalize_search_text(tournament) if tournament else normalize_search_text(event_str), normalize_search_text(event_str))
                 if event_key in seen_events: continue
                 seen_events.add(event_key)
 
@@ -729,7 +726,7 @@ def generate_html(events):
     sport_counts = Counter(event["deporte"] for event in events)
 
     def clean_key(s):
-        return s.lower().replace("ú", "u").replace("ó", "o").replace("á", "a").replace("é", "e").replace("í", "i")
+        return normalize_search_text(s)
 
     rows_list = []
     if not events:
@@ -771,9 +768,9 @@ def generate_html(events):
                     )
 
             tv_badges = "".join(tv_badges_list)
-            search_text = " ".join(
+            search_text = normalize_search_text(" ".join(
                 [ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
-            ).lower()
+            ))
             safe_search = escape(search_text, quote=True)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
             safe_time = escape(str(ev["hora"]))
@@ -964,7 +961,7 @@ def generate_html(events):
 </div>
 <script>
 function cleanStr(str) {{
-    return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ç/g, 'c').trim();
+    return (str || '').toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c').trim();
 }}
 
 function toggleDropdown(event) {{
