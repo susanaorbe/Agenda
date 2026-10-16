@@ -302,7 +302,6 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 
 MEN_FOOTBALL_COMPETITIONS = (
     (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "LaLiga"),
-    (HYPERMOTION_RE, "LaLiga Hypermotion"),
     (rx(r"\bligue 1\b"), "Ligue 1"),
     (rx(r"\bpremier league\b", r"\bpremier\b"), "Premier League"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
@@ -575,8 +574,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         valid = True
         if comp_match == "LaLiga":
             valid = contains(BARCA_REAL_ATLETICO_RE, blob)
-        elif comp_match == "LaLiga Hypermotion":
-            valid = True
         elif comp_match == "Ligue 1":
             valid = contains(PSG_RE, blob)
         elif comp_match == "Premier League":
@@ -606,7 +603,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         elif is_formulae:
             return ("Motor", "🏆", "Formula E", False, True)
 
-    # Fallback para 'Todos': Evento disponible en canal permitido pero NO configurado
+    # Fallback para 'Todos' y otras categorías no configuradas estrictamente
     sport, icon = detect_general_sport(blob, raw_tournament)
     comp = clean_tournament(raw_tournament, f"{sport} General")
     return (sport, icon, comp, False, False)
