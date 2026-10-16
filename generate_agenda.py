@@ -500,6 +500,20 @@ def classify_motor_sessions(events_list: list[dict]):
 
 def detect_general_sport(blob: str, raw_tournament: str) -> tuple[str, str]:
     text = f"{blob} {raw_tournament}".lower()
+    
+    # Reglas específicas solicitadas para la pestaña 'Todos'
+    if any(term in text for term in ["lpga shanghai", "dp world india championship"]):
+        return ("Golf", "⛳")
+    if "milan open" in text:
+        return ("Pádel", "🎾")
+    if "campeonato mundo pista" in text or "pista shanghai" in text:
+        return ("Ciclismo", "🚴")
+    if any(term in text for term in ["worldwcr", "sportbike", "supersport"]):
+        return ("Motor", "🏆")
+    if any(term in text for term in ["asobal", "ademar leon", "bm villa de aranda"]):
+        return ("Balonmano", "🤾")
+        
+    # Fallback general existente
     if contains(TENNIS_RE, text) or "tenis" in text:
         return ("Tenis", "🎾")
     if any(term in text for term in ["baloncesto", "basket", "acb", "euroliga", "nba", "euroleague"]):
@@ -527,7 +541,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match:
-            if comp_match not in ["Euroliga Femenina", "BasketballChampions League"]:
+            if comp_match not in ["Euroliga Femenina", "Basketball Champions League"]:
                 if comp_match not in ["Euroliga", "Liga Endesa"] or contains(BARCA_REAL_RE, blob):
                     is_fav = contains(REAL_MADRID_RE, blob)
                     return ("Baloncesto", "🏀", comp_match, is_fav, True)
@@ -587,7 +601,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         elif is_formulae:
             return ("Motor", "🏆", "Formula E", False, True)
 
-    # Fallback: Evento disponible en canal permitido pero NO configurado (aparecerá solo en 'Todos')
+    # Fallback para 'Todos': Evento disponible en canal permitido pero NO configurado
     sport, icon = detect_general_sport(blob, raw_tournament)
     comp = clean_tournament(raw_tournament, f"{sport} General")
     return (sport, icon, comp, False, False)
@@ -720,9 +734,9 @@ def generate_html(events):
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
-    total_cnt = len(events) # Todos los eventos disponibles
-    filtered_cnt = sum(1 for event in events if event["is_filtered"]) # Favoritos
-    sport_counts = Counter(event["deporte"] for event in events if event["is_configured"]) # Conteo de deportes configurados
+    total_cnt = len(events)
+    filtered_cnt = sum(1 for event in events if event["is_filtered"])
+    sport_counts = Counter(event["deporte"] for event in events if event["is_configured"])
 
     def clean_key(s):
         return normalize_search_text(s)
@@ -1023,7 +1037,7 @@ function applyFilters() {{
 
         let matchesFilter = false;
         if (currentFilter === 'todos') {{
-            matchesFilter = true; // Muestra TODOS los eventos disponibles en canales permitidos
+            matchesFilter = true; // Muestra ABSOLUTAMENTE TODOS los eventos de los canales permitidos
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
         }} else {{
