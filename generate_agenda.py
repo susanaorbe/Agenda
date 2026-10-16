@@ -198,6 +198,11 @@ PRIMERA_RFEF_RE = rx(
     r"\b1[ªa]\s*federacion\b",
 )
 
+HYPERMOTION_RE = rx(
+    r"\blaliga hypermotion\b", r"\bhypermotion\b", r"\bsegunda division\b",
+    r"\bsmartbank\b", r"\blaliga2\b", r"\blaliga 1\|2\|3\b", r"\b2[ªa]\s*division\b"
+)
+
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
@@ -209,7 +214,6 @@ MOTOR_EVENT_SUFFIX_RE = re.compile(
     r"\s*[-–—]\s*(libres|fp\d|practica|entrenamientos|clasificacion|warm up|sprint|shootout|carrera|q\d).*$",
     re.IGNORECASE,
 )
-
 
 TV_IDENTIFIERS_RE = rx(
     r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
@@ -230,7 +234,7 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bliga futve\b"
 )
 
-# Exclusiones ajustadas: Segunda División / Hypermotion / SmartBank se eliminan de aquí para incluirse
+# Se excluyen explícitamente Golf, Pádel (incl. Milan Open), Ciclismo, Balonmano, Bundesliga Femenina y 2. Bundesliga
 EXCLUDED_BLOB_RE = rx(
     r"preolimpico femenino",
     r"nfl pretemporada",
@@ -271,11 +275,22 @@ EXCLUDED_BLOB_RE = rx(
     r"\btitulo internacional\b",
     r"\bpadel\b",
     r"\bpádel\b",
+    r"\bmilan open\b",
     r"\balemania open\b",
     r"\bchallenger\b",
     r"\bvillena\b",
     r"liga guerreras iberdrola",
-    r"test match"
+    r"test match",
+    r"\bgolf\b",
+    r"\blpga\b",
+    r"\bdp world\b",
+    r"\bciclismo\b",
+    r"\bcampeonato mundo pista\b",
+    r"\bbalonmano\b",
+    r"\basobal\b",
+    r"\bfrauen[\s\-]*bundesliga\b",
+    r"\bbundesliga femenina\b",
+    r"\b2\.?\s*bundesliga\b"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -287,6 +302,7 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 
 MEN_FOOTBALL_COMPETITIONS = (
     (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "LaLiga"),
+    (HYPERMOTION_RE, "LaLiga Hypermotion"),
     (rx(r"\bligue 1\b"), "Ligue 1"),
     (rx(r"\bpremier league\b", r"\bpremier\b"), "Premier League"),
     (rx(r"\bbundesliga\b"), "Bundesliga"),
@@ -498,27 +514,17 @@ def classify_motor_sessions(events_list: list[dict]):
 def detect_general_sport(blob: str, raw_tournament: str) -> tuple[str, str]:
     text = f"{blob} {raw_tournament}".lower()
     
-    # Asignaciones automáticas para la pestaña 'Todos'
-    if any(term in text for term in ["lpga shanghai", "dp world india championship"]):
-        return ("Golf", "⛳")
-    if "campeonato mundo pista" in text or "pista shanghai" in text:
-        return ("Ciclismo", "🚴")
+    if HYPERMOTION_RE.search(text):
+        return ("Fútbol", "⚽")
     if any(term in text for term in ["worldwcr", "sportbike", "supersport"]):
         return ("Motor", "🏆")
-    if any(term in text for term in ["asobal", "ademar leon", "bm villa de aranda"]):
-        return ("Balonmano", "🤾")
-    if any(term in text for term in ["hypermotion", "segunda division", "smartbank", "1 2 3"]):
-        return ("Fútbol", "⚽")
         
-    # Fallback general existente
     if contains(TENNIS_RE, text) or "tenis" in text:
         return ("Tenis", "🎾")
     if any(term in text for term in ["baloncesto", "basket", "acb", "euroliga", "nba", "euroleague"]):
         return ("Baloncesto", "🏀")
     if any(term in text for term in ["f1", "formula 1", "motogp", "motor", "indycar", "formula e"]):
         return ("Motor", "🏆")
-    if any(term in text for term in ["ciclismo", "vuelta", "tour", "giro"]):
-        return ("Ciclismo", "🚴")
     return ("Fútbol", "⚽")
 
 
@@ -569,6 +575,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         valid = True
         if comp_match == "LaLiga":
             valid = contains(BARCA_REAL_ATLETICO_RE, blob)
+        elif comp_match == "LaLiga Hypermotion":
+            valid = True  # LaLiga Hypermotion permitida de forma general
         elif comp_match == "Ligue 1":
             valid = contains(PSG_RE, blob)
         elif comp_match == "Premier League":
@@ -644,7 +652,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
                 matchup = part
             continue
 
-        if TENNIS_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower):
+        if TENNIS_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower) or HYPERMOTION_RE.search(part_lower):
             if not tournament:
                 tournament = part
             continue
@@ -724,7 +732,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML CON MENÚ DESPLEGABLE DINÁMICO (DROPUP INTELIGENTE)
+# GENERACIÓN DE HTML
 # ============================================================================
 
 def generate_html(events):
@@ -856,7 +864,6 @@ def generate_html(events):
         .alt-link {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }}
         .alt-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }}
 
-        /* Dropdown para múltiples opciones de Dlive */
         .dropdown-tv {{ position: relative; display: inline-block; }}
         .tv-dropdown-btn {{ background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; }}
         .dropdown-content {{ 
@@ -1034,11 +1041,10 @@ function applyFilters() {{
 
         let matchesFilter = false;
         if (currentFilter === 'todos') {{
-            matchesFilter = true; // Muestra ABSOLUTAMENTE TODOS los eventos de los canales permitidos
+            matchesFilter = true;
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
         }} else {{
-            // Las demás pestañas muestran exclusivamente los eventos configurados de ese deporte
             matchesFilter = (rowSport === currentFilter && isConfigured);
         }}
 
