@@ -230,6 +230,7 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bliga futve\b"
 )
 
+# Exclusiones ajustadas: Segunda División / Hypermotion / SmartBank se eliminan de aquí para incluirse
 EXCLUDED_BLOB_RE = rx(
     r"preolimpico femenino",
     r"nfl pretemporada",
@@ -274,11 +275,7 @@ EXCLUDED_BLOB_RE = rx(
     r"\bchallenger\b",
     r"\bvillena\b",
     r"liga guerreras iberdrola",
-    r"test match",
-    r"\bhypermotion\b",
-    r"\bsegunda division\b",
-    r"\b1\|2\|3\b",
-    r"\bsmartbank\b"
+    r"test match"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -501,17 +498,17 @@ def classify_motor_sessions(events_list: list[dict]):
 def detect_general_sport(blob: str, raw_tournament: str) -> tuple[str, str]:
     text = f"{blob} {raw_tournament}".lower()
     
-    # Reglas específicas solicitadas para la pestaña 'Todos'
+    # Asignaciones automáticas para la pestaña 'Todos'
     if any(term in text for term in ["lpga shanghai", "dp world india championship"]):
         return ("Golf", "⛳")
-    if "milan open" in text:
-        return ("Pádel", "🎾")
     if "campeonato mundo pista" in text or "pista shanghai" in text:
         return ("Ciclismo", "🚴")
     if any(term in text for term in ["worldwcr", "sportbike", "supersport"]):
         return ("Motor", "🏆")
     if any(term in text for term in ["asobal", "ademar leon", "bm villa de aranda"]):
         return ("Balonmano", "🤾")
+    if any(term in text for term in ["hypermotion", "segunda division", "smartbank", "1 2 3"]):
+        return ("Fútbol", "⚽")
         
     # Fallback general existente
     if contains(TENNIS_RE, text) or "tenis" in text:
