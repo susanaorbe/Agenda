@@ -234,7 +234,6 @@ EXCLUDED_SPORTS_RE = rx(
     r"\bliga futve\b"
 )
 
-# Se excluyen explícitamente Golf, Pádel (incl. Milan Open), Ciclismo, Balonmano, Bundesliga Femenina y 2. Bundesliga
 EXCLUDED_BLOB_RE = rx(
     r"preolimpico femenino",
     r"nfl pretemporada",
@@ -285,6 +284,7 @@ EXCLUDED_BLOB_RE = rx(
     r"\blpga\b",
     r"\bdp world\b",
     r"\bciclismo\b",
+    r"\beneco tour\b",
     r"\bcampeonato mundo pista\b",
     r"\bbalonmano\b",
     r"\basobal\b",
@@ -576,7 +576,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         if comp_match == "LaLiga":
             valid = contains(BARCA_REAL_ATLETICO_RE, blob)
         elif comp_match == "LaLiga Hypermotion":
-            valid = True  # LaLiga Hypermotion permitida de forma general
+            valid = True
         elif comp_match == "Ligue 1":
             valid = contains(PSG_RE, blob)
         elif comp_match == "Premier League":
