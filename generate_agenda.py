@@ -59,7 +59,7 @@ CHANNEL_DICT = {
     'replay': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'teledeporte': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php'],
     'laliga hypermotion': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php'],
-    'laliga hypermotion 2': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/''],
+    'laliga hypermotion 2': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'laliga hypermotion 3': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'laliga tv hypermotion': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'primera federación': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/']
