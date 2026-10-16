@@ -67,7 +67,7 @@ CHANNEL_DICT = {
 
 
 def strip_accents(text: str) -> str:
-    return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+    return text.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("ç", "c")
 
 
 def get_channel_urls(channel_name: str) -> list[str]:
@@ -130,8 +130,10 @@ BARCA_REAL_ATLETICO_RE = rx(
     r"\batl[eé]tico de madrid\b", r"\batletico\b", r"\batleti\b"
 )
 
+# Se añaden variaciones completas para detectar Barça Basket / Barcelona en Baloncesto
 BARCA_REAL_RE = rx(
-    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarça\b", r"\bbarca\b"
+    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarça\b", r"\bbarca\b",
+    r"\bbarça basket\b", r"\bbarca basket\b", r"\bfc barcelona basket\b"
 )
 
 PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
@@ -146,7 +148,7 @@ TENNIS_ALLOWED_PLAYERS_RE = rx(
     r"\baryna sabalenka\b", r"\bsabalenka\b",
     r"\bcarlos alcaraz\b", r"\balcaraz\b",
     r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina buc[sş]a\b", r"\bbucsa\b",
+    r"\bcristina buc[sşç]a\b", r"\bbucsa\b",
     r"\bpaula badosa\b", r"\bbadosa\b",
     r"\bjaume munar\b", r"\bmunar\b",
     r"\bjessica bouzas\b", r"\bbouzas\b",
@@ -156,7 +158,7 @@ TENNIS_ALLOWED_PLAYERS_RE = rx(
 TENNIS_SPANISH_FAVORITES_RE = rx(
     r"\bcarlos alcaraz\b", r"\balcaraz\b",
     r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina buc[sş]a\b", r"\bbucsa\b",
+    r"\bcristina buc[sşç]a\b", r"\bbucsa\b",
     r"\bpaula badosa\b", r"\bbadosa\b",
     r"\bjaume munar\b", r"\bmunar\b",
     r"\bjessica bouzas\b", r"\bbouzas\b",
@@ -195,7 +197,7 @@ TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido", re.IGNORECASE)
 SPACES_RE = re.compile(r"\s+")
 SEPARATORS_RE = re.compile(r"[|,;:/]+")
-EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]")
+EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑçÇ]")
 MOTOR_GROUP_CLEAN_RE = re.compile(
     r"(libres|fp\d|práctica|entrenamientos|clasificación|warm up|sprint|shootout|carrera|q\d).*$",
     re.IGNORECASE,
@@ -574,7 +576,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", comp_match, is_fav)
 
-    # 6. Motor (F1, MotoGP, Indycar, Formula E)
+    # 6. Motor (F1, MotoGP, Indycar, Formula E) -> Icono trofeo (🏆)
     if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("fórmula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
@@ -582,13 +584,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_formulae = "formula e" in blob or "fórmula e" in blob
 
         if is_f1:
-            return ("Motor", "🏁", "Fórmula 1", False)
+            return ("Motor", "🏆", "Fórmula 1", False)
         elif is_motogp:
-            return ("Motor", "🏁", "MotoGP", False)
+            return ("Motor", "🏆", "MotoGP", False)
         elif is_indycar:
-            return ("Motor", "🏁", "Indycar", False)
+            return ("Motor", "🏆", "Indycar", False)
         elif is_formulae:
-            return ("Motor", "🏁", "Formula E", False)
+            return ("Motor", "🏆", "Formula E", False)
         else:
             return ("__EXCLUDED__", "", "", False)
 
@@ -921,7 +923,7 @@ def generate_html(events):
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📋</div>
+            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📺</div>
         </div>
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
             <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
@@ -936,7 +938,7 @@ def generate_html(events):
             <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏁</div>
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏆</div>
         </div>
     </div>
     <div class="filter-container">
@@ -962,7 +964,7 @@ def generate_html(events):
 </div>
 <script>
 function cleanStr(str) {{
-    return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').trim();
+    return (str || '').toLowerCase().replace(/ú/g, 'u').replace(/ó/g, 'o').replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ç/g, 'c').trim();
 }}
 
 function toggleDropdown(event) {{
