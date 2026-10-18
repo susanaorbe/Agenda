@@ -298,11 +298,11 @@ MOTOR_EVENT_SUFFIX_RE = re.compile(
 )
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
+    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|primera federaci[oó]n)"
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b"
+    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprimera federaci[oó]n\b"
 )
 
 EXCLUDED_SPORTS_RE = rx(
@@ -837,7 +837,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "hbo max"
+                "cmmplay", "etb1", "tvg", "tv3", "hbo max", "primera federacion"
             ))
         )
         if looks_like_channel:
@@ -851,8 +851,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
                 
-                # Evitar que cadenas largas de competición (como "España - Primera Federación - Grupo 2") se cuelen como canales
-                if any(term in channel_lower for term in ["grupo", "españa -", "division", "fase"]):
+                # Excluir únicamente si la línea de canal es la cabecera completa de la competición (ej: "España - Primera Federación - Grupo 2")
+                if "españa -" in channel_lower or ("grupo" in channel_lower and "primera federacion" in channel_lower and len(channel_lower) > 20):
                     continue
 
                 if (
