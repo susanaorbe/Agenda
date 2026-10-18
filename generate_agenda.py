@@ -435,6 +435,22 @@ GENERIC_TOURNAMENTS = frozenset({
 
 EXCLUDED_CHANNELS_RE = rx(*(re.escape(channel) for channel in EXCLUDED_CHANNELS))
 
+def channel_key(value: str) -> str:
+    """Clave comparable de canal: ignora acentos, espacios y signos."""
+    return re.sub(r"[^a-z0-9]+", "", normalize_search_text(value))
+
+
+EXCLUDED_CHANNEL_KEYS = {channel_key(channel) for channel in EXCLUDED_CHANNELS}
+
+
+def is_excluded_channel(channel: str) -> bool:
+    key = channel_key(channel)
+    if not key:
+        return True
+    return any(key == excluded or key.startswith(excluded)
+               for excluded in EXCLUDED_CHANNEL_KEYS)
+
+
 
 def contains(pattern: re.Pattern, text: str) -> bool:
     return bool(pattern.search(text))
@@ -686,67 +702,90 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     time_match = TIME_RE.search(text_full)
     time_clean = time_match.group(0) if time_match else ""
 
-    raw_parts = [part.strip() for part in item.get_text("\n", strip=True).split("\n") if part.strip()]
+    raw_parts = [
+        part.strip()
+        for part in item.get_text("\n", strip=True).split("\n")
+        if part.strip()
+    ]
     if not 2 <= len(raw_parts) <= 25:
         return "", "", [], ""
 
-    matchup = ""
-    tournament = ""
     channels: list[str] = []
     text_lines = []
 
+    competition_terms = (
+        "liga", "primera", "segunda", "tercera", "federacion",
+        "division", "grupo", "torneo", "serie a", "premier",
+        "endesa", "bundesliga", "atp", "wta", "masters",
+        "copa", "champions", "superbike", "gran premio",
+        "gp ", "eredivisie", "euroliga", "euroleague"
+    )
+
     for part in raw_parts:
         part_lower = normalize_search_text(part)
-
-        # 1. Ignorar horas y botones de interacción
-        if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)", "ver gratis", "(ver)", "acceder", "(acceder)"}:
+        if TIME_RE.fullmatch(part) or part_lower in {
+            "ver partido", "directo", "(ver en directo)", "ver gratis",
+            "(ver)", "acceder", "(acceder)"
+        }:
             continue
-        if re.match(r"^[\s,.|;:/-]*$", part):
+        if re.fullmatch(r"[\s,.|;:/-]*", part):
+            continue
+        if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
             continue
 
-        # 2. Descartar diales aislados estilo (M54 O110), (M73), etc.
-        if re.match(r"^\(?[m|o|m\+]\d+.*\)?$", part_lower):
-            continue
-
-        # 3. Extraer canales de TV y plataformas
-        if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower or "youtube" in part_lower or "fanatiz" in part_lower:
+        looks_like_channel = (
+            TV_IDENTIFIERS_RE.search(part)
+            or CHANNEL_LINE_RE.search(part_lower)
+            or any(term in part_lower for term in (
+                "m+", "dazn", "youtube", "fanatiz", "onefootball",
+                "siroko", "tv footballclub", "aragon tv", "aragon play",
+                "cmmplay", "etb1", "tvg", "tv3", "hbo max"
+            ))
+        )
+        if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
-            
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
-                if channel and not EXCLUDED_CHANNELS_RE.search(channel_lower) and channel not in channels:
-                    if not re.match(r"^\(?[m|o]\d+.*\)?$", channel_lower) and channel_lower not in {"acceder", "(acceder)", "ver en directo"}:
-                        channels.append(channel)
+                if (
+                    channel
+                    and not is_excluded_channel(channel)
+                    and channel not in channels
+                    and not re.fullmatch(r"\(?[mo]\+?\d+.*\)?", channel_lower)
+                    and channel_lower not in {"acceder", "(acceder)", "ver en directo"}
+                ):
+                    channels.append(channel)
             continue
 
         text_lines.append(part)
 
-    # 4. Clasificación independiente por análisis de contenido (Evita inversiones de columnas)
+    # Los guiones de "España - 1ª División - Femenino" son competición,
+    # no un enfrentamiento entre equipos.
+    tournament_candidates = []
+    matchup_candidates = []
     for part in text_lines:
         part_lower = normalize_search_text(part)
-
-        is_matchup_line = (
-            re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE) or
-            re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE) or
-            (len(part.split()) >= 2 and not any(k in part_lower for k in [
-                "liga", "primera", "segunda", "tercera", "federacion", "grupo", 
-                "torneo", "serie a", "premier", "endesa", "bundesliga", "atp", 
-                "wta", "masters", "copa", "champions", "superbike", "gp", "eredivisie"
-            ]))
+        is_competition_line = any(term in part_lower for term in competition_terms)
+        has_match_separator = bool(
+            re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
+            or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
         )
+        if is_competition_line:
+            tournament_candidates.append(part)
+        elif has_match_separator and len(part.split()) >= 3:
+            matchup_candidates.append(part)
 
-        if is_matchup_line and not matchup:
-            matchup = part
-        elif not tournament:
-            tournament = part
-        elif not matchup:
-            matchup = part
+    matchup = matchup_candidates[0] if matchup_candidates else ""
+    tournament = tournament_candidates[0] if tournament_candidates else ""
+
+    if not matchup:
+        matchup = next((part for part in text_lines if part != tournament), "")
+    if not tournament:
+        tournament = next((part for part in text_lines if part != matchup), "")
 
     if not matchup and tournament:
-        matchup = tournament
-        tournament = "General"
+        matchup, tournament = tournament, "General"
     elif matchup and not tournament:
         tournament = "General"
 
