@@ -277,6 +277,10 @@ EXCLUDED_BLOB_RE = rx(
     r"torneo federal\b",
     r"liga auf uruguaya",
     r"liga 1 peru",
+    r"j1 league",
+    r"j\.league",
+    r"bundesliga sub-19",
+    r"bundesliga u19",
     r"liga pro ecuador",
     r"liga colombiana",
     r"liga futve",
@@ -603,6 +607,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 break
         if comp_match:
             if comp_match not in ["Euroliga Femenina", "Basketball Champions League"]:
+                # Filtro estricto: En Liga Endesa o Euroliga solo mantenemos Madrid, Barça o Joventut
                 if comp_match not in ["Euroliga", "Liga Endesa"] or contains(BARCA_REAL_RE, blob):
                     is_fav = contains(REAL_MADRID_RE, blob)
                     return ("Baloncesto", "🏀", comp_match, is_fav, True)
@@ -674,7 +679,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
 
 # ============================================================================
-# PARSER
+# PARSER CORREGIDO PARA EVITAR INVERSIÓN
 # ============================================================================
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str]:
@@ -719,21 +724,33 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
 
         text_lines.append(part)
 
-    # 4. Asignación correcta de Partido (Matchup) vs Liga (Tournament)
+    # 4. Identificar Liga (Competición) vs Enfrentamiento (Evento) en orden estricto
     for part in text_lines:
         part_lower = normalize_search_text(part)
 
-        # Es enfrentamiento si contiene espacio doble entre palabras, vs, o un guion
-        is_matchup = (
+        # Si contiene palabras de Liga/Torneo/Categoría -> Competición
+        is_comp_keyword = any(k in part_lower for k in [
+            "j league", "j.league", "liga", "primera", "segunda", "tercera", "federacion", 
+            "grupo", "torneo", "serie a", "premier", "endesa", "bundesliga", "atp", "wta", 
+            "masters", "grand slam", "copa", "champions", "superbike", "gp"
+        ])
+
+        # Es enfrentamiento si contiene espacio amplio, vs, guion central o dos o más palabras
+        is_matchup_candidate = (
             re.search(r"\s{2,}|\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE) or
-            (" " in part and not any(k in part_lower for k in ["liga", "primera", "segunda", "tercera", "federacion", "grupo", "torneo", "serie a", "premier", "endesa"]))
+            (" " in part and not is_comp_keyword)
         )
 
-        if is_matchup and not matchup:
+        if is_comp_keyword and not tournament:
+            tournament = part
+        elif is_matchup_candidate and not matchup:
             matchup = part
         elif not tournament:
             tournament = part
+        elif not matchup:
+            matchup = part
 
+    # Corrección de fallback en caso de no haber encontrado partido explícito
     if not matchup and tournament:
         matchup = tournament
         tournament = "General"
