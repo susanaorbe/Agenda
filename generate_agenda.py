@@ -462,6 +462,30 @@ def is_excluded_basketball_champions_league(blob: str) -> bool:
 
 def is_excluded_event(blob: str) -> bool:
     normalized = normalize_search_text(blob)
+
+    # Competiciones que no deben aparecer en la agenda.
+    # Primera Federación solo se permite cuando participa el Real Madrid Castilla.
+    excluded_competitions = (
+        r"\b1[ªa]?\s*division\s*[-–—]\s*femenin",
+        r"\bprimera division femenina\b",
+        r"\bliga f\b",
+        r"\bliga femenina(?: endesa)?\b",
+        r"\bliga femenina endesa\b",
+        r"\beredivisie\s*[-–—]?\s*femenin",
+        r"\beredivisie vrouwen\b",
+    )
+    if any(re.search(pattern, normalized, re.IGNORECASE) for pattern in excluded_competitions):
+        return True
+
+    is_primera_federacion = bool(
+        re.search(r"\bprimera federacion\b|\bprimera rfef\b|\b1[ªa]\s*federacion\b", normalized)
+    )
+    has_real_madrid_castilla = bool(
+        re.search(r"\breal madrid castilla\b|\brm castilla\b", normalized)
+    )
+    if is_primera_federacion and not has_real_madrid_castilla:
+        return True
+
     return bool(
         EXCLUDED_SPORTS_RE.search(normalized)
         or EXCLUDED_BLOB_RE.search(normalized)
