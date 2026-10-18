@@ -125,7 +125,7 @@ EXCLUDED_CHANNELS = {
     "cmmplay",
     "conmebol libertadores youtube",
     "dazn 1 bar(m148)",
-    "dazn 1 bar"
+    "dazn 1 bar",
     "dazn 2 bar(m149)",
     "dazn 2 bar",
     "deportes tvcanaria youtube",
@@ -260,7 +260,7 @@ TENNIS_RE = rx(
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
 ATP_RE = re.compile(r"\batp\b", re.IGNORECASE)
-WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b")
+WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b", r"\(f\)\b")
 
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
 MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
@@ -284,7 +284,7 @@ HYPERMOTION_RE = rx(
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(
-    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
+    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|\([mo]\d+\s+o\d+\)|ver partido|acceder", 
     re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
@@ -544,6 +544,9 @@ def is_excluded_event(blob: str) -> bool:
         r"\bliga femenina endesa\b",
         r"\beredivisie\s*[-–—]?\s*femenin",
         r"\beredivisie vrouwen\b",
+        r"\bserie a\b.*\(f\)",
+        r"\bserie a femminile\b",
+        r"\bserie a\b.*femenina",
     )
     if any(re.search(pattern, normalized, re.IGNORECASE) for pattern in excluded_competitions):
         return True
@@ -840,6 +843,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
+            clean_part = re.sub(r"\([mo]\d+\s+o\d+\)", "", clean_part, flags=re.IGNORECASE).strip()
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
