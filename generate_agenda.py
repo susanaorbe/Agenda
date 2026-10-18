@@ -215,7 +215,10 @@ HYPERMOTION_RE = rx(
 )
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
-CLEAN_TV_RE = re.compile(r"\(ver en directo\)|ver partido|\(ver gratis\)|\(acceder\)|\(ver\)", re.IGNORECASE)
+CLEAN_TV_RE = re.compile(
+    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
+    re.IGNORECASE
+)
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
 MOTOR_GROUP_CLEAN_RE = re.compile(
     r"(libres|fp\d|practica|entrenamientos|clasificacion|warm up|sprint|shootout|carrera|q\d).*$",
@@ -343,7 +346,9 @@ EXCLUDED_BLOB_RE = rx(
     r"\bliga sudamericana\b",
     r"\bliga premier islandia\b",
     r"\bcopa libertadores femenina\b",
-    r"\bd1 feminine\b"
+    r"\bd1 feminine\b",
+    r"d1 féminine",
+    r"nascar cup series"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -582,14 +587,14 @@ def detect_general_sport(blob: str, raw_tournament: str) -> tuple[str, str]:
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
-    # 1. Tenis (Configurado)
+    # 1. Tenis
     if contains(TENNIS_RE, blob) or contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
         if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
             comp = classify_tennis(blob, raw_tournament, tv_blob)
             is_fav = contains(TENNIS_SPANISH_FAVORITES_RE, blob)
             return ("Tenis", "🎾", comp, is_fav, True)
 
-    # 2. Baloncesto (Configurado)
+    # 2. Baloncesto
     if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
         comp_match = None
         for pattern, name in BASKET_COMPETITIONS:
@@ -602,7 +607,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                     is_fav = contains(REAL_MADRID_RE, blob)
                     return ("Baloncesto", "🏀", comp_match, is_fav, True)
 
-    # 3. Fútbol Femenino (Configurado)
+    # 3. Fútbol Femenino
     is_women = contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
     if is_women:
         comp_match = None
@@ -613,7 +618,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         if comp_match and contains(REAL_MADRID_RE, blob):
             return ("Fútbol", "⚽", comp_match, True, True)
 
-    # 4. Primera Federación (Configurado)
+    # 4. Primera Federación
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
             return ("Fútbol", "⚽", "Primera Federación", True, True)
@@ -647,7 +652,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob) or ("bahia" in blob and "flamengo" in blob)
             return ("Fútbol", "⚽", comp_match, is_fav, True)
 
-    # 6. Motor (Configurado)
+    # 6. Motor
     if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
@@ -663,7 +668,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         elif is_formulae:
             return ("Motor", "🏆", "Formula E", False, True)
 
-    # Fallback para 'Todos' y otras categorías no configuradas strictly
     sport, icon = detect_general_sport(blob, raw_tournament)
     comp = clean_tournament(raw_tournament, f"{sport} General")
     return (sport, icon, comp, False, False)
@@ -679,50 +683,60 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     time_clean = time_match.group(0) if time_match else ""
 
     raw_parts = [part.strip() for part in item.get_text("\n", strip=True).split("\n") if part.strip()]
-    if not 2 <= len(raw_parts) <= 15:
+    if not 2 <= len(raw_parts) <= 25:
         return "", "", [], ""
 
     matchup = ""
-    channels: list[str] = []
     tournament = ""
+    channels: list[str] = []
+    text_lines = []
 
     for part in raw_parts:
         part_lower = normalize_search_text(part)
 
-        if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)", "ver gratis", "(ver)"}:
+        # 1. Ignorar horas y botones de interacción
+        if TIME_RE.match(part) or part_lower in {"ver partido", "directo", "(ver en directo)", "ver gratis", "(ver)", "acceder", "(acceder)"}:
             continue
-
         if re.match(r"^[\s,.|;:/-]*$", part):
             continue
 
-        if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower or "youtube" in part_lower:
+        # 2. Descartar diales aislados estilo (M54 O110), (M73), (M75 O127), etc.
+        if re.match(r"^\(?[m|o|m\+]\d+.*\)?$", part_lower):
+            continue
+
+        # 3. Extraer canales de TV y plataformas
+        if TV_IDENTIFIERS_RE.search(part) or CHANNEL_LINE_RE.search(part_lower) or "m+" in part_lower or "dazn" in part_lower or "youtube" in part_lower or "fanatiz" in part_lower:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
+            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
+            
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
                 if channel and not EXCLUDED_CHANNELS_RE.search(channel_lower) and channel not in channels:
-                    channels.append(channel)
+                    if not re.match(r"^\(?[m|o]\d+.*\)?$", channel_lower) and channel_lower not in {"acceder", "(acceder)", "ver en directo"}:
+                        channels.append(channel)
             continue
 
-        # Enfrentamiento (Evento) estricto
-        if re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE) or re.search(r"^[A-Z0-9\sªº\.\-']+\s{2,}[A-Z0-9\sªº\.\-']+$", part):
-            if not matchup:
-                matchup = part
-            continue
+        text_lines.append(part)
 
-        # Competición
-        if TENNIS_RE.search(part_lower) or WTA_RE.search(part_lower) or ATP_RE.search(part_lower) or PRIMERA_RFEF_RE.search(part_lower) or HYPERMOTION_RE.search(part_lower) or "segunda" in part_lower or "liga" in part_lower or "grupo" in part_lower:
-            if not tournament:
-                tournament = part
-            continue
+    # 4. Asignación correcta de Partido (Matchup) vs Liga (Tournament)
+    for part in text_lines:
+        part_lower = normalize_search_text(part)
 
-        if not tournament and len(part) < 35:
-            tournament = part
-        elif not matchup:
+        # Es enfrentamiento si contiene espacio doble entre palabras, vs, o un guion
+        is_matchup = (
+            re.search(r"\s{2,}|\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE) or
+            (" " in part and not any(k in part_lower for k in ["liga", "primera", "segunda", "tercera", "federacion", "grupo", "torneo", "serie a", "premier", "endesa"]))
+        )
+
+        if is_matchup and not matchup:
             matchup = part
+        elif not tournament:
+            tournament = part
 
     if not matchup and tournament:
         matchup = tournament
+        tournament = "General"
 
     return time_clean, matchup, channels, tournament
 
