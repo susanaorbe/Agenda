@@ -284,7 +284,7 @@ HYPERMOTION_RE = rx(
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(
-    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|\([mo]\d+\s+o\d+\)|ver partido|acceder", 
+    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
     re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
@@ -843,7 +843,9 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
-            clean_part = re.sub(r"\([mo]\d+\s+o\d+\)", "", clean_part, flags=re.IGNORECASE).strip()
+            # Limpiar cualquier paréntesis numérico o de satélite como (M53 O125)
+            clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
+
             for channel in clean_part.split(","):
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
