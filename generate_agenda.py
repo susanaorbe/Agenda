@@ -298,11 +298,11 @@ MOTOR_EVENT_SUFFIX_RE = re.compile(
 )
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?)"
+    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|primera federaci[oó]n)"
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b"
+    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprimera federaci[oó]n\b"
 )
 
 EXCLUDED_SPORTS_RE = rx(
@@ -837,7 +837,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "hbo max"
+                "cmmplay", "etb1", "tvg", "tv3", "hbo max", "primera federacion"
             ))
         )
         if looks_like_channel:
@@ -846,7 +846,9 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             # Limpiar cualquier paréntesis numérico o de satélite como (M53 O125)
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
 
-            for channel in clean_part.split(","):
+            # Separar canales tanto por comas como por saltos de línea internos en bruto
+            sub_parts = re.split(r"[,|\n]+", clean_part)
+            for channel in sub_parts:
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
                 if (
