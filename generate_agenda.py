@@ -223,23 +223,24 @@ CHANNEL_LINE_RE = rx(
 
 
 # ============================================================================
-# NÚCLEO DE LISTA BLANCA (WHITELIST LOGIC)
+# NÚCLEO DE CLASIFICACIÓN (LISTA BLANCA + EVENTOS GENERALES DE LOS 4 DEPORTES)
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
     """
-    Lista blanca estricta: Si el evento no encaja explícitamente en las reglas,
-    devuelve is_configured = False para ser descartado por completo.
+    Devuelve (sport, icon, competition, is_favorite, is_configured).
+    - is_configured = True: Eventos que cumplen la lista blanca estricta (usados en Favoritos y tarjetas de deporte).
+    - is_configured = False: Eventos generales de Fútbol, Baloncesto, Tenis y Motor (visibles en la tarjeta 'Todos').
+    - Si no pertenece a ninguno de estos 4 deportes, devuelve ("", "", "", False, False) para descartarlo.
     """
     
-    # 1. TENIS: Únicamente evaluamos si incluye a los tenistas permitidos
+    # 1. EVALUAR LISTA BLANCA ESTRICTA (is_configured = True)
+    
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
-        is_fav = contains(TENNIS_ALLOWED_PLAYERS_RE, blob) # Todos los permitidos son de interés/favoritos
-        return ("Tenis", "🎾", comp, is_fav, True)
+        return ("Tenis", "🎾", comp, True, True)
 
-    # 2. BALONCESTO: Se filtra estrictamente por las competiciones indicadas (sin restricciones de equipo)
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
         comp_name = "Liga Endesa"
         if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
@@ -252,7 +253,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Baloncesto", "🏀", comp_name, is_fav, True)
 
-    # 3. MOTOR: Fórmula 1, MotoGP, Indycar, Formula E
     if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
@@ -268,7 +268,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         elif is_formulae:
             return ("Motor", "🏆", "Formula E", False, True)
 
-    # 4. FÚTBOL FEMENINO SELECCIONADO
     if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
@@ -278,21 +277,17 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         if comp_match and contains(REAL_MADRID_RE, blob):
             return ("Fútbol", "⚽", comp_match, True, True)
 
-    # 5. PRIMERA FEDERACIÓN (Solo Real Madrid Castilla)
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
             return ("Fútbol", "⚽", "España - Primera Federación", True, True)
 
-    # 6. LALIGA HYPERMOTION (Segunda División - Todos los partidos)
     if HYPERMOTION_RE.search(blob):
         return ("Fútbol", "⚽", "España - LaLiga Hypermotion", False, True)
 
-    # 7. LALIGA (Primera División - Todos los partidos)
     if LALIGA_RE.search(blob):
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True)
 
-    # 8. LIGAS INTERNACIONALES PRINCIPALES (Con restricciones de equipo y excluyendo fútbol femenino)
     if not contains(WOMEN_RE, blob):
         if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
             return ("Fútbol", "⚽", "Francia - Ligue 1", False, True)
@@ -303,7 +298,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True)
 
-    # 9. OTRAS GRANDES CITAS (Copa del Rey, Champions, etc. según aplique)
     if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True)
@@ -312,7 +306,25 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True)
 
-    # Si no encaja en ninguna regla de la lista blanca, se descarta por completo
+
+    # 2. CAPTURAR RESTO DE EVENTOS GENERALES DE FÚTBOL, BALONCESTO, TENIS Y MOTOR (is_configured = False)
+    
+    if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
+        return ("Tenis", "🎾", comp, False, False)
+
+    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
+        return ("Baloncesto", "🏀", comp, False, False)
+
+    if contains(rx(r"\bformula\b", r"\bf1\b", r"\bmotogp\b", r"\bmoto2\b", r"\bmoto3\b", r"\brally\b", r"\bindycar\b", r"\bnascar\b", r"\bsuperbike\b", r"\bwec\b", r"\bformula e\b"), blob):
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"motor", ""} else "Motor"
+        return ("Motor", "🏆", comp, False, False)
+
+    if contains(rx(r"\bfutbol\b", r"\bliga\b", r"\bchampions\b", r"\bcopa\b", r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bprimeira\b", r"\beredivisie\b", r"\bfa cup\b"), blob) or " - " in blob or " vs " in blob:
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
+        return ("Fútbol", "⚽", comp, False, False)
+
     return ("", "", "", False, False)
 
 
@@ -537,11 +549,11 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
-                # Evaluación estricta de la lista blanca
+                # Clasifica el evento dentro de los 4 deportes (fútbol, baloncesto, tenis, motor)
                 sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob)
                 
-                if not is_configured:
-                    continue  # Descarta instantáneamente todo lo que no esté en la lista blanca
+                if not sport:
+                    continue  # Descarta si no pertenece a ninguno de los 4 deportes principales
 
                 event_key = (time_clean, normalize_search_text(competition), normalize_search_text(event_str))
                 if event_key in seen_events: 
@@ -916,4 +928,4 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito bajo arquitectura de lista blanca. Eventos encontrados: {len(events)}")
+    print(f"Archivo index.html generado con éxito. Eventos totales (Fútbol, Baloncesto, Tenis y Motor): {len(events)}")
