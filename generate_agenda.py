@@ -504,21 +504,14 @@ GENERIC_TOURNAMENTS = frozenset({
     "atp", "wta", "ciclismo", "motor",
 })
 
-EXCLUDED_CHANNELS_RE = rx(*(re.escape(channel) for channel in EXCLUDED_CHANNELS))
-
-def channel_key(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", normalize_search_text(value))
-
-
-EXCLUDED_CHANNEL_KEYS = {channel_key(channel) for channel in EXCLUDED_CHANNELS}
+EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
 
 
 def is_excluded_channel(channel: str) -> bool:
-    key = channel_key(channel)
+    key = re.sub(r"[^a-z0-9]+", "", normalize_search_text(channel))
     if not key:
         return True
-    return any(key == excluded or key.startswith(excluded)
-               for excluded in EXCLUDED_CHANNEL_KEYS)
+    return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
 
 
 def contains(pattern: re.Pattern, text: str) -> bool:
@@ -529,8 +522,15 @@ def is_excluded_basketball_champions_league(blob: str) -> bool:
     return bool(BASKETBALL_CHAMPIONS_LEAGUE_RE.search(normalize_search_text(blob)))
 
 
-def is_excluded_event(blob: str) -> bool:
+def is_excluded_event(blob: str, tournament: str = "", event_str: str = "") -> bool:
     normalized = normalize_search_text(blob)
+    full_text = normalize_search_text(f"{tournament} {event_str}")
+
+    # Excluir específicamente hockey sobre patines / patinaje / campeonatos del mundo de hockey (ej. Francia - Argentina)
+    if "campeonato del mundo" in normalized and ("francia" in normalized and "argentina" in normalized):
+        return True
+    if "hockey" in normalized or "patines" in normalized:
+        return True
 
     excluded_competitions = (
         r"\b1[ªa]?\s*division\s*[-–—]\s*femenin",
@@ -546,10 +546,10 @@ def is_excluded_event(blob: str) -> bool:
         r"\bfrauen[\s\-]*bundesliga\b",
         r"\bbundesliga femenina\b",
     )
-    if any(re.search(pattern, normalized, re.IGNORECASE) for pattern in excluded_competitions):
+    if any(re.search(pattern, normalized, re.IGNORECASE) for pattern in excluded_competitions) or any(re.search(pattern, full_text, re.IGNORECASE) for pattern in excluded_competitions):
         return True
 
-    if WOMEN_RE.search(normalized) and not contains(REAL_MADRID_RE, normalized):
+    if (WOMEN_RE.search(normalized) or WOMEN_RE.search(full_text)) and not contains(REAL_MADRID_RE, normalized):
         return True
 
     is_primera_federacion = bool(
@@ -736,7 +736,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
-            return ("Fútbol", "⚽", "Primera Federación", True, True)
+            return ("Fútbol", "⚽", "España - Primera Federación", True, True)
 
     comp_match = None
     for pattern, name in MEN_FOOTBALL_COMPETITIONS:
@@ -745,7 +745,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             break
     if comp_match:
         if comp_match == "LaLiga Hypermotion":
-            return ("Fútbol", "⚽", "LaLiga Hypermotion", False, False)
+            return ("Fútbol", "⚽", "España - LaLiga Hypermotion", False, False)
 
         valid = False
         if comp_match == "LaLiga":
@@ -873,6 +873,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     matchup = matchup_candidates[0] if matchup_candidates else (text_lines[1] if len(text_lines) > 1 else "")
     tournament = tournament_candidates[0] if tournament_candidates else (text_lines[0] if text_lines else "General")
 
+    # Corrección de inversión automática si el bloque de competición contiene un enfrentamiento o guión entre equipos
+    if re.search(r"\s+-\s+|\s+vs\.?\s+", tournament, re.IGNORECASE) and not any(term in normalize_search_text(tournament) for term in competition_terms):
+        matchup, tournament = tournament, matchup
+
     if matchup == tournament and len(text_lines) > 1:
         matchup = text_lines[1]
 
@@ -891,10 +895,11 @@ def fetch_and_parse_agenda() -> list[dict]:
         for item in soup.find_all(("div", "tr", "li")):
             try:
                 original_blob = normalize_search_text(item.get_text(" ", strip=True))
-                if is_excluded_event(original_blob): continue
-
+                
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
                 if not time_clean or not event_str: continue
+
+                if is_excluded_event(original_blob, tournament, event_str): continue
 
                 if is_excluded_basketball_champions_league(
                     f"{event_str} {tournament}"
@@ -910,7 +915,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
-                if is_excluded_event(blob): continue
+                if is_excluded_event(blob, tournament, event_str): continue
 
                 event_key = (time_clean, normalize_search_text(tournament) if tournament else normalize_search_text(event_str), normalize_search_text(event_str))
                 if event_key in seen_events: continue
