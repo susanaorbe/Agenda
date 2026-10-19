@@ -223,7 +223,6 @@ BARCA_REAL_RE = rx(
 PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
 ARSENAL_RE = rx(r"\barsenal\b")
 BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
-INTER_RE = rx(r"\binter de milan\b", r"\binter milan\b", r"\binter\b", r"\bac milan\b", r"\bmilan\b", r"\batalanta\b", r"\bjuventus\b", r"\blazio\b")
 
 TENNIS_ALLOWED_PLAYERS_RE = rx(
     r"\bjannik sinner\b", r"\bsinner\b",
@@ -434,19 +433,17 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 )
 
 MEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "LaLiga"),
-    (HYPERMOTION_RE, "LaLiga Hypermotion"),
-    (rx(r"\bligue 1\b"), "Ligue 1"),
-    (rx(r"\bpremier league\b", r"\bpremier\b"), "Premier League"),
-    (rx(r"\bbundesliga\b"), "Bundesliga"),
-    (rx(r"\bserie a\b"), "Serie A"),
+    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "España - La Liga"),
+    (HYPERMOTION_RE, "España - LaLiga Hypermotion"),
+    (rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), "Francia - Ligue 1"),
+    (rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), "Inglaterra - Premier League"),
+    (rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), "Alemania - Bundesliga"),
     (rx(r"\bcopa del rey\b"), "Copa del Rey"),
     (rx(r"\bsupercopa de espana\b"), "Supercopa de España"),
     (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
     (rx(r"\bsupercopa de la uefa\b", r"\bsupercopa uefa\b", r"\bsupercopa de europa\b"), "Supercopa de la UEFA"),
     (rx(r"\bcopa intercontinental\b", r"\bintercontinental\b"), "Copa Intercontinental de la FIFA"),
     (rx(r"\bmundial de clubes\b", r"\bclub world cup\b"), "Mundial de Clubes"),
-    (rx(r"\bserie a brasil\b", r"\bbrasileirao\b"), "Serie A Brasil"),
 )
 
 BASKETBALL_CHAMPIONS_LEAGUE_RE = rx(
@@ -526,7 +523,6 @@ def is_excluded_event(blob: str, tournament: str = "", event_str: str = "") -> b
     normalized = normalize_search_text(blob)
     full_text = normalize_search_text(f"{tournament} {event_str}")
 
-    # Excluir específicamente hockey sobre patines / patinaje / campeonatos del mundo de hockey (ej. Francia - Argentina)
     if "campeonato del mundo" in normalized and ("francia" in normalized and "argentina" in normalized):
         return True
     if "hockey" in normalized or "patines" in normalized:
@@ -744,23 +740,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             comp_match = name
             break
     if comp_match:
-        if comp_match == "LaLiga Hypermotion":
-            return ("Fútbol", "⚽", "España - LaLiga Hypermotion", False, False)
+        if comp_match == "España - LaLiga Hypermotion":
+            return ("Fútbol", "⚽", "España - LaLiga Hypermotion", False, True)
 
         valid = False
-        if comp_match == "LaLiga":
-            valid = contains(BARCA_REAL_ATLETICO_RE, blob)
-        elif comp_match == "Ligue 1":
+        if comp_match == "España - La Liga":
+            valid = True
+        elif comp_match == "Francia - Ligue 1":
             valid = contains(PSG_RE, blob)
-        elif comp_match == "Premier League":
+        elif comp_match == "Inglaterra - Premier League":
             valid = contains(ARSENAL_RE, blob)
-        elif comp_match == "Bundesliga":
+        elif comp_match == "Alemania - Bundesliga":
             valid = contains(BAYERN_RE, blob)
-        elif comp_match == "Serie A":
-            valid = contains(INTER_RE, blob)
-        elif comp_match == "Serie A Brasil":
-            if any(ch in tv_blob for ch in ["m+ vamos", "movistar", "m+ liga de campeones"]):
-                valid = True
 
         if valid:
             is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob) or ("bahia" in blob and "flamengo" in blob)
@@ -873,7 +864,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     matchup = matchup_candidates[0] if matchup_candidates else (text_lines[1] if len(text_lines) > 1 else "")
     tournament = tournament_candidates[0] if tournament_candidates else (text_lines[0] if text_lines else "General")
 
-    # Corrección de inversión automática si el bloque de competición contiene un enfrentamiento o guión entre equipos
     if re.search(r"\s+-\s+|\s+vs\.?\s+", tournament, re.IGNORECASE) and not any(term in normalize_search_text(tournament) for term in competition_terms):
         matchup, tournament = tournament, matchup
 
