@@ -36,6 +36,8 @@ CHANNEL_DICT = {
     'la sexta': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php', 'https://daddylive.pk/'],
     'movistar plus+': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php', 'https://daddylive.pk/'],
     'm+ vamos': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php', 'https://daddylive.pk/'],
+    'dazn': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
+    'dazn app gratis': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
     'dazn laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php', 'https://daddylive.pk/'],
     'm+ laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php', 'https://daddylive.pk/'],
     'm+ liga de campeones': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php', 'https://daddylive.pk/'],
@@ -53,7 +55,7 @@ CHANNEL_DICT = {
     'tennis channel - orange tv': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php', 'https://daddylive.pk/'],
     'real madrid tv': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php', 'https://daddylive.pk/'],
     'teledeporte': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php', 'https://daddylive.pk/'],
-    'laliga hypermotion': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php', 'https://daddylive.pk/'],
+    'laliga tv hypermotion': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php', 'https://daddylive.pk/'],
 }
 
 
@@ -291,22 +293,23 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True)
 
-    # 8. LIGAS INTERNACIONALES PRINCIPALES (Con restricciones de equipo)
-    if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
-        return ("Fútbol", "⚽", "Francia - Ligue 1", False, True)
-    
-    if contains(rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), blob) and contains(ARSENAL_RE, blob):
-        return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True)
+    # 8. LIGAS INTERNACIONALES PRINCIPALES (Con restricciones de equipo y excluyendo fútbol femenino)
+    if not contains(WOMEN_RE, blob):
+        if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
+            return ("Fútbol", "⚽", "Francia - Ligue 1", False, True)
+        
+        if contains(rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), blob) and contains(ARSENAL_RE, blob):
+            return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True)
 
-    if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
-        return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True)
+        if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
+            return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True)
 
     # 9. OTRAS GRANDES CITAS (Copa del Rey, Champions, etc. según aplique)
-    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob):
+    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True)
 
-    if contains(rx(r"\bcopa del rey\b"), blob):
+    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob):
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True)
 
