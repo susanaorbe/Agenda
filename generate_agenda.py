@@ -137,7 +137,7 @@ def contains(pattern: re.Pattern, text: str) -> bool:
 
 
 # ============================================================================
-# REGEX DE LISTA BLANCA (WHITELIST PATTERNS)
+# REGEX DE PATRONES
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -151,7 +151,12 @@ PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
 ARSENAL_RE = rx(r"\barsenal\b")
 BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
 
-# Tenis: solo importa que juegue un jugador permitido
+# Deportes externos que la fuente confunde con fútbol (Hockey, NFL, etc.)
+EXCLUDED_SPORTS_RE = rx(
+    r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
+    r"\bbalonmano\b", r"\bwaterpolo\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b"
+)
+
 TENNIS_ALLOWED_PLAYERS_RE = rx(
     r"\bjannik sinner\b", r"\bsinner\b", r"\balexander zverev\b", r"\bzverev\b",
     r"\belena rybakina\b", r"\brybakina\b", r"\baryna sabalenka\b", r"\bsabalenka\b",
@@ -223,17 +228,21 @@ CHANNEL_LINE_RE = rx(
 
 
 # ============================================================================
-# NÚCLEO DE CLASIFICACIÓN (LISTA BLANCA + EVENTOS GENERALES DE LOS 4 DEPORTES)
+# NÚCLEO DE CLASIFICACIÓN
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
     """
     Devuelve (sport, icon, competition, is_favorite, is_configured).
-    - is_configured = True: Eventos que cumplen la lista blanca estricta (usados en Favoritos y tarjetas de deporte).
-    - is_configured = False: Eventos generales de Fútbol, Baloncesto, Tenis y Motor (visibles en la tarjeta 'Todos').
-    - Si no pertenece a ninguno de estos 4 deportes, devuelve ("", "", "", False, False) para descartarlo.
+    - Excluye explícitamente deportes ajenos (como hockey o NFL).
+    - is_configured = True: Eventos estrictos para Favoritos y tarjetas de deporte.
+    - is_configured = False: Eventos generales de los 4 deportes (fútbol, baloncesto, tenis, motor) para la tarjeta 'Todos'.
     """
     
+    # Descartar deportes no permitidos confundidos por la fuente
+    if EXCLUDED_SPORTS_RE.search(blob):
+        return ("", "", "", False, False)
+
     # 1. EVALUAR LISTA BLANCA ESTRICTA (is_configured = True)
     
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
@@ -307,7 +316,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True)
 
 
-    # 2. CAPTURAR RESTO DE EVENTOS GENERALES DE FÚTBOL, BALONCESTO, TENIS Y MOTOR (is_configured = False)
+    # 2. CAPTURAR RESTO DE EVENTOS GENERALES DE LOS 4 DEPORTES (is_configured = False) para la tarjeta "Todos"
     
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
@@ -549,11 +558,10 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
-                # Clasifica el evento dentro de los 4 deportes (fútbol, baloncesto, tenis, motor)
                 sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob)
                 
                 if not sport:
-                    continue  # Descarta si no pertenece a ninguno de los 4 deportes principales
+                    continue  # Descarta eventos que no pertenezcan a los 4 deportes principales
 
                 event_key = (time_clean, normalize_search_text(competition), normalize_search_text(event_str))
                 if event_key in seen_events: 
