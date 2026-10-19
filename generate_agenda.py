@@ -28,42 +28,32 @@ REQUEST_HEADERS = {
 REQUEST_TIMEOUT = 15
 
 CHANNEL_DICT = {
-    'la 1': ['https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'la 2': ['https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'antena 3': ['https://dlive.sx/stream/stream-531.php', 'https://dlive.sx/hub/stream-531.php', 'https://dlive.sx/watch/stream-531.php', 'https://dlive.sx/cast/stream-531.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'cuatro': ['https://dlive.sx/stream/stream-535.php', 'https://dlive.sx/hub/stream-535.php', 'https://dlive.sx/watch/stream-535.php', 'https://dlive.sx/cast/stream-535.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'telecinco': ['https://dlive.sx/stream/stream-532.php', 'https://dlive.sx/hub/stream-532.php', 'https://dlive.sx/watch/stream-532.php', 'https://dlive.sx/cast/stream-532.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'la sexta': ['https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'movistar plus+': ['https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ vamos': ['https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ vamos 2': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
-    'm+ vamos 3': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
-    'dazn laliga': ['https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ laliga': ['https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ liga de campeones': ['https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
-    'dazn app gratis': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
-    'dazn 1': ['https://dlive.sx/stream/stream-445.php', 'https://dlive.sx/hub/stream-445.php', 'https://dlive.sx/watch/stream-445.php', 'https://dlive.sx/cast/stream-445.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn 2': ['https://dlive.sx/stream/stream-446.php', 'https://dlive.sx/hub/stream-446.php', 'https://dlive.sx/watch/stream-446.php', 'https://dlive.sx/cast/stream-446.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn 3': ['https://dlive.sx/stream/stream-447.php', 'https://dlive.sx/hub/stream-447.php', 'https://dlive.sx/watch/stream-447.php', 'https://dlive.sx/cast/stream-447.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn 4': ['https://dlive.sx/stream/stream-448.php', 'https://dlive.sx/hub/stream-448.php', 'https://dlive.sx/watch/stream-448.php', 'https://dlive.sx/cast/stream-448.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn f1': ['https://dlive.sx/stream/stream-537.php', 'https://dlive.sx/hub/stream-537.php', 'https://dlive.sx/watch/stream-537.php', 'https://dlive.sx/cast/stream-537.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn baloncesto 3': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
-    'eurosport 1': ['https://dlive.sx/stream/stream-524.php', 'https://dlive.sx/hub/stream-524.php', 'https://dlive.sx/watch/stream-524.php', 'https://dlive.sx/cast/stream-524.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'eurosport 2': ['https://dlive.sx/stream/stream-525.php', 'https://dlive.sx/hub/stream-525.php', 'https://dlive.sx/watch/stream-525.php', 'https://dlive.sx/cast/stream-525.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ deportes': ['https://dlive.sx/stream/stream-436.php', 'https://dlive.sx/hub/stream-436.php', 'https://dlive.sx/watch/stream-436.php', 'https://dlive.sx/cast/stream-436.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ deportes 2': ['https://dlive.sx/stream/stream-438.php', 'https://dlive.sx/hub/stream-438.php', 'https://dlive.sx/watch/stream-438.php', 'https://dlive.sx/cast/stream-438.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ deportes 3': ['https://dlive.sx/stream/stream-526.php', 'https://dlive.sx/hub/stream-526.php', 'https://dlive.sx/watch/stream-526.php', 'https://dlive.sx/cast/stream-526.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'm+ deportes 4': ['https://dlive.sx/stream/stream-527.php', 'https://dlive.sx/hub/stream-527.php', 'https://dlive.sx/watch/stream-527.php', 'https://dlive.sx/cast/stream-527.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'tennis channel - orange tv': ['https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'real madrid tv': ['https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'replay': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es'],
-    'teledeporte': ['https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'laliga hypermotion': ['https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php', 'https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'laliga hypermotion 2': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
-    'laliga hypermotion 3': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es/'],
-    'laliga tv hypermotion': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://www.dazn.com/es-ES/home'],
-    'primera federación': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/', 'https://ver.movistarplus.es']
+    'la 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://daddylive.pk/'],
+    'la 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php', 'https://daddylive.pk/'],
+    'antena 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-531.php', 'https://dlive.sx/hub/stream-531.php', 'https://dlive.sx/watch/stream-531.php', 'https://dlive.sx/cast/stream-531.php', 'https://daddylive.pk/'],
+    'cuatro': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-535.php', 'https://dlive.sx/hub/stream-535.php', 'https://dlive.sx/watch/stream-535.php', 'https://dlive.sx/cast/stream-535.php', 'https://daddylive.pk/'],
+    'telecinco': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-532.php', 'https://dlive.sx/hub/stream-532.php', 'https://dlive.sx/watch/stream-532.php', 'https://dlive.sx/cast/stream-532.php', 'https://daddylive.pk/'],
+    'la sexta': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php', 'https://daddylive.pk/'],
+    'movistar plus+': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php', 'https://daddylive.pk/'],
+    'm+ vamos': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php', 'https://daddylive.pk/'],
+    'dazn laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php', 'https://daddylive.pk/'],
+    'm+ laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php', 'https://daddylive.pk/'],
+    'm+ liga de campeones': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php', 'https://daddylive.pk/'],
+    'dazn 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-445.php', 'https://dlive.sx/hub/stream-445.php', 'https://dlive.sx/watch/stream-445.php', 'https://dlive.sx/cast/stream-445.php', 'https://daddylive.pk/'],
+    'dazn 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-446.php', 'https://dlive.sx/hub/stream-446.php', 'https://dlive.sx/watch/stream-446.php', 'https://dlive.sx/cast/stream-446.php', 'https://daddylive.pk/'],
+    'dazn 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-447.php', 'https://dlive.sx/hub/stream-447.php', 'https://dlive.sx/watch/stream-447.php', 'https://dlive.sx/cast/stream-447.php', 'https://daddylive.pk/'],
+    'dazn 4': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-448.php', 'https://dlive.sx/hub/stream-448.php', 'https://dlive.sx/watch/stream-448.php', 'https://dlive.sx/cast/stream-448.php', 'https://daddylive.pk/'],
+    'dazn f1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-537.php', 'https://dlive.sx/hub/stream-537.php', 'https://dlive.sx/watch/stream-537.php', 'https://dlive.sx/cast/stream-537.php', 'https://daddylive.pk/'],
+    'eurosport 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-524.php', 'https://dlive.sx/hub/stream-524.php', 'https://dlive.sx/watch/stream-524.php', 'https://dlive.sx/cast/stream-524.php', 'https://daddylive.pk/'],
+    'eurosport 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-525.php', 'https://dlive.sx/hub/stream-525.php', 'https://dlive.sx/watch/stream-525.php', 'https://dlive.sx/cast/stream-525.php', 'https://daddylive.pk/'],
+    'm+ deportes': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-436.php', 'https://dlive.sx/hub/stream-436.php', 'https://dlive.sx/watch/stream-436.php', 'https://dlive.sx/cast/stream-436.php', 'https://daddylive.pk/'],
+    'm+ deportes 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-438.php', 'https://dlive.sx/hub/stream-438.php', 'https://dlive.sx/watch/stream-438.php', 'https://dlive.sx/cast/stream-438.php', 'https://daddylive.pk/'],
+    'm+ deportes 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-526.php', 'https://dlive.sx/hub/stream-526.php', 'https://dlive.sx/watch/stream-526.php', 'https://dlive.sx/cast/stream-526.php', 'https://daddylive.pk/'],
+    'm+ deportes 4': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-527.php', 'https://dlive.sx/hub/stream-527.php', 'https://dlive.sx/watch/stream-527.php', 'https://dlive.sx/cast/stream-527.php', 'https://daddylive.pk/'],
+    'tennis channel - orange tv': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-40.php', 'https://dlive.sx/hub/stream-40.php', 'https://dlive.sx/watch/stream-40.php', 'https://dlive.sx/cast/stream-40.php', 'https://daddylive.pk/'],
+    'real madrid tv': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php', 'https://daddylive.pk/'],
+    'teledeporte': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php', 'https://daddylive.pk/'],
+    'laliga hypermotion': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php', 'https://daddylive.pk/'],
 }
 
 
@@ -107,98 +97,46 @@ def get_channel_urls(channel_name: str) -> list[str]:
 
 
 EXCLUDED_CHANNELS = {
-    "* sin tv en directo *",
-    "antel tv internacional",
-    "aragón play",
-    "aragón tv",
-    "asobal tv",
-    "atp tennis tv",
-    "athletic-club.eus",
-    "baloncesto tv",
-    "baloncesto tv ppv",
-    "barclays women's super league youtube",
-    "be mad",
-    "betevé web",
-    "beisbolplay",
-    "canal 9 soria youtube",
-    "cayotv youtube",
-    "cmmplay",
-    "conmebol libertadores youtube",
-    "dazn 1 bar(m148)",
-    "dazn 1 bar",
-    "dazn 2 bar(m149)",
-    "dazn 2 bar",
-    "deportes tvcanaria youtube",
-    "eleventv youtube",
-    "esport3 web",
-    "esport3(cataluña)",
-    "etb1(país vasco)",
-    "fanatiz",
-    "fanplay",
-    "fanplay tv",
-    "fanseat",
-    "fff tv youtube",
-    "fiba youtube",
-    "flamengo tv youtube",
-    "hbo max",
-    "la 7",
-    "la 7 tv",
-    "la ocho mediterráneo",
-    "la xarxa+",
-    "laliga tv bar",
-    "laliga tv m2",
-    "laliga tv m3",
-    "laliga tv m4",
-    "laliga tv m5",
-    "laliga+ plus",
-    "liga futve youtube",
-    "ligafutve app",
-    "lleida televisió",
-    "m+ #vamos bar 2",
-    "m+ #vamos bar 2(308)",
-    "m+ #vamos bar(307)",
-    "m+ laliga hdr",
-    "m+ laliga hdr(m440 o111)",
-    "mediaset infinity",
-    "motogp videopass",
-    "movistar+ lite",
-    "nba league pass",
-    "nwsl+",
-    "onefootball",
-    "onefootball ppv",
-    "orange fútbol 1(107)",
-    "orange fútbol 2(108)",
-    "orange fútbol 3(109)",
-    "prosieben maxx(m+ astra)",
-    "rcd deportivo tv youtube",
-    "rcdeportivo tv youtube",
-    "rcn nuestra tele",
-    "red bull tv",
-    "rfef tv youtube",
-    "rfef.es",
-    "rtve play",
-    "sefutbol youtube",
-    "sevilla fc +",
-    "siroko tv",
-    "tv 3",
-    "tv footballclub(acceder)",
-    "tv canaria",
-    "tv galicia",
-    "tv3(cataluña)",
-    "tvg(galicia)",    
-    "tv footballclub ▾",
-    "tvg",
-    "tv5monde",
-    "uefa tv",
-    "uefa youtube",
-    "win sports tv youtube",
-    "wta tv",
-    "web directo",
-    "zapping internacional",
+    "* sin tv en directo *", "antel tv internacional", "aragón play", "aragón tv",
+    "asobal tv", "atp tennis tv", "athletic-club.eus", "baloncesto tv",
+    "baloncesto tv ppv", "barclays women's super league youtube", "be mad", "betevé web",
+    "beisbolplay", "canal 9 soria youtube", "cayotv youtube", "cmmplay",
+    "conmebol libertadores youtube", "dazn 1 bar(m148)", "dazn 1 bar", "dazn 2 bar(m149)",
+    "dazn 2 bar", "deportes tvcanaria youtube", "eleventv youtube", "esport3 web",
+    "esport3(cataluña)", "etb1(país vasco)", "fanatiz", "fanplay",
+    "fanplay tv", "fanseat", "fff tv youtube", "fiba youtube",
+    "flamengo tv youtube", "hbo max", "la 7", "la 7 tv",
+    "la ocho mediterráneo", "la xarxa+", "laliga tv bar", "laliga tv m2",
+    "laliga tv m3", "laliga tv m4", "laliga tv m5", "laliga+ plus",
+    "liga futve youtube", "ligafutve app", "lleida televisió", "m+ #vamos bar 2",
+    "m+ #vamos bar 2(308)", "m+ #vamos bar(307)", "m+ laliga hdr", "m+ laliga hdr(m440 o111)",
+    "mediaset infinity", "motogp videopass", "movistar+ lite", "nba league pass",
+    "nwsl+", "onefootball", "onefootball ppv", "orange fútbol 1(107)",
+    "orange fútbol 2(108)", "orange fútbol 3(109)", "prosieben maxx(m+ astra)", "rcd deportivo tv youtube",
+    "rcdeportivo tv youtube", "rcn nuestra tele", "red bull tv", "rfef tv youtube",
+    "rfef.es", "rtve play", "sefutbol youtube", "sevilla fc +",
+    "siroko tv", "tv 3", "tv footballclub(acceder)", "tv canaria",
+    "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tv footballclub ▾",
+    "tvg", "tv5monde", "uefa tv", "uefa youtube",
+    "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
 }
 
+EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
+
+
+def is_excluded_channel(channel: str) -> bool:
+    key = re.sub(r"[^a-z0-9]+", "", normalize_search_text(channel))
+    if not key:
+        return True
+    return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
+
+
+def contains(pattern: re.Pattern, text: str) -> bool:
+    return bool(pattern.search(text))
+
+
 # ============================================================================
-# REGEX Y CLASIFICACIÓN
+# REGEX DE LISTA BLANCA (WHITELIST PATTERNS)
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -208,57 +146,21 @@ def rx(*patterns: str) -> re.Pattern:
 REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
 CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
 
-BARCA_REAL_ATLETICO_RE = rx(
-    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarca\b",
-    r"\batletico de madrid\b", r"\batletico\b", r"\batleti\b", r"\basasuna\b",
-    r"\bracing santander\b", r"\bcelta\b", r"\balaves\b", r"\bmalaga\b", r"\breal sociedad\b",
-    r"\bsevilla\b"
-)
-
-BARCA_REAL_RE = rx(
-    r"\breal madrid\b", r"\bbarcelona\b", r"\bfc barcelona\b", r"\bbarca\b",
-    r"\bbarca basket\b", r"\bfc barcelona basket\b", r"\bjoventut\b"
-)
-
 PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
 ARSENAL_RE = rx(r"\barsenal\b")
 BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
 
+# Tenis: solo importa que juegue un jugador permitido
 TENNIS_ALLOWED_PLAYERS_RE = rx(
-    r"\bjannik sinner\b", r"\bsinner\b",
-    r"\balexander zverev\b", r"\bzverev\b",
-    r"\belena rybakina\b", r"\brybakina\b",
-    r"\baryna sabalenka\b", r"\bsabalenka\b",
-    r"\bcarlos alcaraz\b", r"\balcaraz\b",
-    r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina bucsa\b", r"\bbucsa\b",
-    r"\bpaula badosa\b", r"\bbadosa\b",
-    r"\bjaume munar\b", r"\bmunar\b",
-    r"\bjessica bouzas\b", r"\bbouzas\b",
+    r"\bjannik sinner\b", r"\bsinner\b", r"\balexander zverev\b", r"\bzverev\b",
+    r"\belena rybakina\b", r"\brybakina\b", r"\baryna sabalenka\b", r"\bsabalenka\b",
+    r"\bcarlos alcaraz\b", r"\balcaraz\b", r"\balejandro davidovich\b", r"\bdavidovich\b",
+    r"\bcristina bucsa\b", r"\bbucsa\b", r"\bpaula badosa\b", r"\bbadosa\b",
+    r"\bjaume munar\b", r"\bmunar\b", r"\bjessica bouzas\b", r"\bbouzas\b",
     r"\brafael jodar\b", r"\bjodar\b"
-)
-
-TENNIS_SPANISH_FAVORITES_RE = rx(
-    r"\bcarlos alcaraz\b", r"\balcaraz\b",
-    r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina bucsa\b", r"\bbucsa\b",
-    r"\bpaula badosa\b", r"\bbadosa\b",
-    r"\bjaume munar\b", r"\bmunar\b",
-    r"\bjessica bouzas\b", r"\bbouzas\b",
-    r"\brafael jodar\b", r"\bjodar\b"
-)
-
-TENNIS_RE = rx(
-    r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bwimbledon\b", r"\broland garros\b",
-    r"\bus open\b", r"\bopen de australia\b", r"\bmasters\b", r"\bdavis\b",
-    r"\bcopa davis\b", r"\bbillie jean king cup\b", r"\blaver cup\b",
-    r"\bpekin\b", r"\bbeijing\b", r"\bchina open\b", r"\btorneo de pekin\b",
-    r"\bhangzhou\b", r"\bchengdu\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b",
-    r"\btennis channel\b", r"\btennis tv\b"
 )
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
-ATP_RE = re.compile(r"\batp\b", re.IGNORECASE)
 WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b", r"\(f\)\b", r"\(w\)\b")
 
 F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
@@ -271,14 +173,28 @@ MOTOR_GENERAL_RE = rx(
 )
 
 PRIMERA_RFEF_RE = rx(
-    r"\bprimera federacion\b",
-    r"\bprimera rfef\b",
-    r"\b1[ªa]\s*federacion\b",
+    r"\bprimera federacion\b", r"\bprimera rfef\b", r"\b1[ªa]\s*federacion\b",
 )
 
 HYPERMOTION_RE = rx(
     r"\blaliga hypermotion\b", r"\bhypermotion\b", r"\bsegunda division\b",
     r"\bsmartbank\b", r"\blaliga2\b", r"\blaliga 1\|2\|3\b", r"\b2[ªa]\s*division\b"
+)
+
+LALIGA_RE = rx(
+    r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
+    r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
+)
+
+BASKET_ALLOWED_COMPETITIONS_RE = rx(
+    r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
+    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"
+)
+
+WOMEN_FOOTBALL_COMPETITIONS = (
+    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"), (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
+    (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
+    (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
 )
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
@@ -304,291 +220,192 @@ CHANNEL_LINE_RE = rx(
     r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprimera federaci[oó]n\b"
 )
 
-EXCLUDED_SPORTS_RE = rx(
-    r"\btorneo betplay dimayor\b",
-    r"\bbetplay dimayor\b",
-    r"\bmls\b",
-    r"\bnfl\b",
-    r"\bwnba\b",
-    r"\bprimera feb\b",
-    r"\bliga u\b",
-    r"\bliga futve\b",
-    r"\bncaaf\b"
-)
 
-EXCLUDED_BLOB_RE = rx(
-    r"preolimpico femenino",
-    r"nfl pretemporada",
-    r"f1 academy",
-    r"segunda federacion",
-    r"segunda rfef",
-    r"tercera federacion",
-    r"tercera\b",
-    r"liga nacional juvenil",
-    r"fifa asean cup",
-    r"laliga futures",
-    r"academy\b",
-    r"\breplay\b",
-    r"\bprimera feb\b",
-    r"\bliga u\b",
-    r"\bncaa\b",
-    r"\bncaaf\b",
-    r"\bnational league\b",
-    r"\bprimera catalana\b",
-    r"\bu20 elite league\b",
-    r"segunda uruguay",
-    r"\bwrc\b",
-    r"primera division argentina",
-    r"primera nacional argentina",
-    r"primera c\b",
-    r"torneo federal\b",
-    r"liga auf uruguaya",
-    r"liga 1 peru",
-    r"j1 league",
-    r"j\.league",
-    r"bundesliga sub-19",
-    r"bundesliga u19",
-    r"liga pro ecuador",
-    r"liga colombiana",
-    r"liga futve",
-    r"\bvelada\b",
-    r"rotterdam open",
-    r"giro dell['\s]*emilia",
-    r"\btop 14\b",
-    r"\bnascar\b",
-    r"\bmoto2\b",
-    r"\bmoto3\b",
-    r"\brugby\b",
-    r"\bdivision de honor\b",
-    r"\bgallagher\b",
-    r"\bpremiership\b",
-    r"\buci\b",
-    r"\behf\b",
-    r"\bboxeo\b",
-    r"\bboxing\b",
-    r"\btitulo internacional\b",
-    r"\bpadel\b",
-    r"\bpádel\b",
-    r"\bmilan open\b",
-    r"\balemania open\b",
-    r"\bchallenger\b",
-    r"\bvillena\b",
-    r"liga guerreras iberdrola",
-    r"test match",
-    r"\bgolf\b",
-    r"\blpga\b",
-    r"\bdp world\b",
-    r"\bciclismo\b",
-    r"\beneco tour\b",
-    r"\btour de holanda\b",
-    r"\btour of holland\b",
-    r"\btour of the netherlands\b",
-    r"\bsimac ladies tour\b",
-    r"\bclasica del veneto\b",
-    r"\bveneto\b",
-    r"\bcampeonato mundo pista\b",
-    r"\bbalonmano\b",
-    r"\basobal\b",
-    r"\bfrauen[\s\-]*bundesliga\b",
-    r"\bbundesliga femenina\b",
-    r"\b2\.?\s*bundesliga\b",
-    r"\bworldwcr\b",
-    r"\bsportbike\b",
-    r"\bsupersport\b",
-    r"\bsuperbike\b",
-    r"\bmaraton\b",
-    r"\bmarathon\b",
-    r"\bcross\b",
-    r"\brugby\b",
-    r"\bcadete\b",
-    r"\bsub-17\b",
-    r"\beurofeo sub-17\b",
-    r"\bveikkausliiga\b",
-    r"\bdamallsvenskan\b",
-    r"\badmiral bundesliga\b",
-    r"\bsuperliga de letonia\b",
-    r"\bserie b\b",
-    r"\bnfl\b",
-    r"\bliga elite\b",
-    r"\bjuvenil\b",
-    r"\bsenior\b",
-    r"\bchampions cup\b",
-    r"\b3\.?\s*liga\b",
-    r"\bliga polaca\b",
-    r"\bnwsl\b",
-    r"\blvbp\b",
-    r"\bliga sudamericana\b",
-    r"\bliga premier islandia\b",
-    r"\bcopa libertadores femenina\b",
-    r"\bd1 feminine\b",
-    r"d1 féminine",
-    r"nascar cup series"
-)
+# ============================================================================
+# NÚCLEO DE LISTA BLANCA (WHITELIST LOGIC)
+# ============================================================================
 
-WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"),
-    (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
-    (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
-    (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
-)
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
+    """
+    Lista blanca estricta: Si el evento no encaja explícitamente en las reglas,
+    devuelve is_configured = False para ser descartado por completo.
+    """
+    
+    # 1. TENIS: Únicamente evaluamos si incluye a los tenistas permitidos
+    if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
+        tour = "WTA" if WTA_RE.search(blob) else "ATP"
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
+        is_fav = contains(TENNIS_ALLOWED_PLAYERS_RE, blob) # Todos los permitidos son de interés/favoritos
+        return ("Tenis", "🎾", comp, is_fav, True)
 
-MEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"), "España - La Liga"),
-    (HYPERMOTION_RE, "España - LaLiga Hypermotion"),
-    (rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), "Francia - Ligue 1"),
-    (rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), "Inglaterra - Premier League"),
-    (rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), "Alemania - Bundesliga"),
-    (rx(r"\bcopa del rey\b"), "Copa del Rey"),
-    (rx(r"\bsupercopa de espana\b"), "Supercopa de España"),
-    (rx(r"\bchampions league\b", r"\bchampions\b"), "UEFA Champions League"),
-    (rx(r"\bsupercopa de la uefa\b", r"\bsupercopa uefa\b", r"\bsupercopa de europa\b"), "Supercopa de la UEFA"),
-    (rx(r"\bcopa intercontinental\b", r"\bintercontinental\b"), "Copa Intercontinental de la FIFA"),
-    (rx(r"\bmundial de clubes\b", r"\bclub world cup\b"), "Mundial de Clubes"),
-)
+    # 2. BALONCESTO: Se filtra estrictamente por las competiciones indicadas (sin restricciones de equipo)
+    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
+        comp_name = "Liga Endesa"
+        if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
+            comp_name = "Euroliga"
+        elif contains(rx(r"\bcopa del rey\b", r"\bcopa acb\b"), blob):
+            comp_name = "Copa del Rey"
+        elif contains(rx(r"\bsupercopa\b"), blob):
+            comp_name = "Supercopa de España"
+        
+        is_fav = contains(REAL_MADRID_RE, blob)
+        return ("Baloncesto", "🏀", comp_name, is_fav, True)
 
-BASKETBALL_CHAMPIONS_LEAGUE_RE = rx(
-    r"\bbasketball champions league\b",
-    r"\bnanterre 92\b", r"\brytas vilnius\b",
-    r"\bpallacanestro varese\b", r"\bperisteri(?: bc| betsson)?\b",
-    r"\balba berlin\b", r"\b(?:kk )?igokea(?: m:tel)?\b",
-    r"\bbamberg baskets\b", r"\bucam murcia\b",
-    r"\bbilbao basket\b", r"\bslavia prague(?: era nbk)?\b",
-    r"\bsurne bilbao\b", r"\bcholet basket\b",
-    r"\bhapoel holon\b", r"\bspartak office shoes\b",
-    r"\bsig strasbourg\b", r"\bcibona\b",
-    r"\blegia warszawa\b", r"\bgalatasaray mct technic\b",
-    r"\baek bc\b", r"\bfalco kc szombathely\b",
-    r"\bwindrose giants antwerp\b", r"\bfc porto\b",
-    r"\bjuventus utena\b", r"\bbk kvis pardubice\b",
-    r"\bpallacanestro reggiana\b", r"\bbnei penlink herzliya\b",
-    r"\btrabzonspor\b", r"\bsabah bc\b",
-    r"\btelekom baskets bonn\b", r"\basisa joventut\b",
-    r"\brasta vechta\b", r"\bbma365 bamberg baskets\b",
-)
+    # 3. MOTOR: Fórmula 1, MotoGP, Indycar, Formula E
+    if contains(MOTOR_GENERAL_RE, blob):
+        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
+        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
+        is_indycar = "indycar" in blob or "indy car" in blob
+        is_formulae = "formula e" in blob
 
-EUROLEAGUE_WOMEN_RE = rx(
-    r"\beuroliga femenina\b",
-    r"\beuroliga femenino\b",
-    r"\beuroleague women\b",
-    r"\bwomen'?s euroleague\b",
-    r"\beuroliga f\b",
-)
+        if is_f1:
+            return ("Motor", "🏆", "Fórmula 1", False, True)
+        elif is_motogp:
+            return ("Motor", "🏆", "MotoGP", False, True)
+        elif is_indycar:
+            return ("Motor", "🏆", "Indycar", False, True)
+        elif is_formulae:
+            return ("Motor", "🏆", "Formula E", False, True)
 
-BASKET_COMPETITIONS = (
-    (rx(r"\bbasketball champions league\b"), "Basketball Champions League"),
-    (rx(r"\bliga endesa\b", r"\bacb\b"), "Liga Endesa"),
-    (rx(r"\bcopa del rey\b", r"\bcopa acb\b"), "Copa del Rey"),
-    (rx(r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"), "Supercopa de España"),
-    (EUROLEAGUE_WOMEN_RE, "Euroliga Femenina"),
-    (rx(r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b"), "Euroliga"),
-)
+    # 4. FÚTBOL FEMENINO SELECCIONADO
+    if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
+        comp_match = None
+        for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
+            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
+                comp_match = name
+                break
+        if comp_match and contains(REAL_MADRID_RE, blob):
+            return ("Fútbol", "⚽", comp_match, True, True)
 
-TENNIS_COMPETITIONS = (
-    (rx(r"\bmasters de shanghai\b", r"\bmasters shanghai\b", r"\bshanghai\b"), "Masters de Shanghái"),
-    (rx(r"\bchina open\b", r"\bbeijing\b", r"\bpekin\b", r"\btorneo de pekin\b"), "China Open"),
-    (rx(r"\btorneo de tokio\b", r"\btokio\b", r"\btokyo\b", r"\bjapan open\b"), "Japan Open"),
-    (rx(r"\blaver cup\b"), "Laver Cup"),
-    (rx(r"\bcopa davis\b", r"\bdavis cup\b", r"\bdavis\b"), "Copa Davis"),
-    (rx(r"\bbillie jean king cup\b"), "Billie Jean King Cup"),
-    (rx(r"\bus open\b"), "US Open"),
-    (rx(r"\bwimbledon\b"), "Wimbledon"),
-    (rx(r"\broland garros\b"), "Roland Garros"),
-    (rx(r"\bopen de australia\b"), "Open de Australia"),
-)
+    # 5. PRIMERA FEDERACIÓN (Solo Real Madrid Castilla)
+    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
+        if contains(CASTILLA_RE, blob):
+            return ("Fútbol", "⚽", "España - Primera Federación", True, True)
 
-GENERIC_TOURNAMENTS = frozenset({
-    "", "competicion", "futbol", "baloncesto", "basket", "tenis",
-    "atp", "wta", "ciclismo", "motor",
-})
+    # 6. LALIGA HYPERMOTION (Segunda División - Todos los partidos)
+    if HYPERMOTION_RE.search(blob):
+        return ("Fútbol", "⚽", "España - LaLiga Hypermotion", False, True)
 
-EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
+    # 7. LALIGA (Primera División - Todos los partidos)
+    if LALIGA_RE.search(blob):
+        is_fav = contains(REAL_MADRID_RE, blob)
+        return ("Fútbol", "⚽", "España - La Liga", is_fav, True)
+
+    # 8. LIGAS INTERNACIONALES PRINCIPALES (Con restricciones de equipo)
+    if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
+        return ("Fútbol", "⚽", "Francia - Ligue 1", False, True)
+    
+    if contains(rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), blob) and contains(ARSENAL_RE, blob):
+        return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True)
+
+    if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
+        return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True)
+
+    # 9. OTRAS GRANDES CITAS (Copa del Rey, Champions, etc. según aplique)
+    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob):
+        is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
+        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True)
+
+    if contains(rx(r"\bcopa del rey\b"), blob):
+        is_fav = contains(REAL_MADRID_RE, blob)
+        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True)
+
+    # Si no encaja en ninguna regla de la lista blanca, se descarta por completo
+    return ("", "", "", False, False)
 
 
-def is_excluded_channel(channel: str) -> bool:
-    key = re.sub(r"[^a-z0-9]+", "", normalize_search_text(channel))
-    if not key:
-        return True
-    return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
+def parse_row_elements(item) -> tuple[str, str, list[str], str]:
+    text_full = item.get_text(" | ", strip=True)
+    time_match = TIME_RE.search(text_full)
+    time_clean = time_match.group(0) if time_match else ""
 
+    raw_parts = [
+        part.strip()
+        for part in item.get_text("\n", strip=True).split("\n")
+        if part.strip()
+    ]
+    if not 2 <= len(raw_parts) <= 25:
+        return "", "", [], ""
 
-def contains(pattern: re.Pattern, text: str) -> bool:
-    return bool(pattern.search(text))
+    channels: list[str] = []
+    text_lines = []
 
-
-def is_excluded_basketball_champions_league(blob: str) -> bool:
-    return bool(BASKETBALL_CHAMPIONS_LEAGUE_RE.search(normalize_search_text(blob)))
-
-
-def is_excluded_event(blob: str, tournament: str = "", event_str: str = "") -> bool:
-    normalized = normalize_search_text(blob)
-    full_text = normalize_search_text(f"{tournament} {event_str}")
-
-    if "campeonato del mundo" in normalized and ("francia" in normalized and "argentina" in normalized):
-        return True
-    if "hockey" in normalized or "patines" in normalized:
-        return True
-
-    excluded_competitions = (
-        r"\b1[ªa]?\s*division\s*[-–—]\s*femenin",
-        r"\bprimera division femenina\b",
-        r"\bliga f\b",
-        r"\bliga femenina(?: endesa)?\b",
-        r"\bliga femenina endesa\b",
-        r"\beredivisie\s*[-–—]?\s*femenin",
-        r"\beredivisie vrouwen\b",
-        r"\bserie a\b.*\(f\)",
-        r"\bserie a femminile\b",
-        r"\bserie a\b.*femenina",
-        r"\bfrauen[\s\-]*bundesliga\b",
-        r"\bbundesliga femenina\b",
-    )
-    if any(re.search(pattern, normalized, re.IGNORECASE) for pattern in excluded_competitions) or any(re.search(pattern, full_text, re.IGNORECASE) for pattern in excluded_competitions):
-        return True
-
-    if (WOMEN_RE.search(normalized) or WOMEN_RE.search(full_text)) and not contains(REAL_MADRID_RE, normalized):
-        return True
-
-    is_primera_federacion = bool(
-        re.search(r"\bprimera federacion\b|\bprimera rfef\b|\b1[ªa]\s*federacion\b", normalized)
-    )
-    has_real_madrid_castilla = bool(
-        re.search(r"\breal madrid castilla\b|\brm castilla\b", normalized)
-    )
-    if is_primera_federacion and not has_real_madrid_castilla:
-        return True
-
-    return bool(
-        EXCLUDED_SPORTS_RE.search(normalized)
-        or EXCLUDED_BLOB_RE.search(normalized)
-        or is_excluded_basketball_champions_league(normalized)
+    competition_terms = (
+        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "gran premio",
+        "gp ", "eredivisie", "euroliga", "euroleague", "pro league"
     )
 
+    for part in raw_parts:
+        part_lower = normalize_search_text(part)
+        if TIME_RE.fullmatch(part) or part_lower in {
+            "ver partido", "directo", "(ver en directo)", "ver gratis",
+            "(ver)", "acceder", "(acceder)"
+        }:
+            continue
+        if re.fullmatch(r"[\s,.|;:/-]*", part):
+            continue
+        if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
+            continue
 
-def clean_tournament(raw: str, fallback: str) -> str:
-    value = (raw or "").strip()
-    norm_val = normalize_search_text(value)
-    if len(norm_val) > 2 and norm_val not in GENERIC_TOURNAMENTS:
-        return value
-    return fallback
+        looks_like_channel = (
+            TV_IDENTIFIERS_RE.search(part)
+            or CHANNEL_LINE_RE.search(part_lower)
+            or any(term in part_lower for term in (
+                "m+", "dazn", "youtube", "fanatiz", "onefootball",
+                "siroko", "tv footballclub", "aragon tv", "aragon play",
+                "cmmplay", "etb1", "tvg", "tv3", "hbo max", "primera federacion"
+            ))
+        )
+        if looks_like_channel:
+            clean_part = CLEAN_TV_RE.sub("", part).strip()
+            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
+            clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
 
+            sub_parts = re.split(r"[,|\n]+", clean_part)
+            for channel in sub_parts:
+                channel = channel.strip().rstrip(":").strip()
+                channel_lower = normalize_search_text(channel)
+                
+                if "españa -" in channel_lower or ("grupo" in channel_lower and "primera federacion" in channel_lower and len(channel_lower) > 20):
+                    continue
 
-def classify_tennis(blob: str, raw_tournament: str, tv_blob: str) -> str:
-    tennis_text = normalize_search_text(f"{blob} {raw_tournament} {tv_blob}")
-    tour = "WTA" if "wta" in tennis_text else "ATP"
+                if (
+                    channel
+                    and not is_excluded_channel(channel)
+                    and channel not in channels
+                    and not re.fullmatch(r"\(?[mo]\+?\d+.*\)?", channel_lower)
+                    and channel_lower not in {"acceder", "(acceder)", "ver en directo"}
+                ):
+                    channels.append(channel)
+            continue
 
-    for pattern, comp_name in TENNIS_COMPETITIONS:
-        if pattern.search(tennis_text):
-            return f"{tour} {comp_name}"
+        text_lines.append(part)
 
-    return clean_tournament(raw_tournament, f"{tour} Tour")
+    tournament_candidates = []
+    matchup_candidates = []
+    for part in text_lines:
+        part_lower = normalize_search_text(part)
+        is_competition_line = any(term in part_lower for term in competition_terms)
+        has_match_separator = bool(
+            re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
+            or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
+        )
+        if is_competition_line and not has_match_separator:
+            tournament_candidates.append(part)
+        elif has_match_separator or len(part.split()) >= 2:
+            matchup_candidates.append(part)
 
+    matchup = matchup_candidates[0] if matchup_candidates else (text_lines[1] if len(text_lines) > 1 else "")
+    tournament = tournament_candidates[0] if tournament_candidates else (text_lines[0] if text_lines else "General")
 
-def time_to_minutes(time_str: str) -> int:
-    try:
-        parts = time_str.strip().split(":")
-        return int(parts[0]) * 60 + int(parts[1])
-    except (AttributeError, ValueError, IndexError):
-        return 0
+    if re.search(r"\s+-\s+|\s+vs\.?\s+", tournament, re.IGNORECASE) and not any(term in normalize_search_text(tournament) for term in competition_terms):
+        matchup, tournament = tournament, matchup
+
+    if matchup == tournament and len(text_lines) > 1:
+        matchup = text_lines[1]
+
+    return time_clean, matchup, channels, tournament
 
 
 def classify_motor_sessions(events_list: list[dict]):
@@ -686,191 +503,12 @@ def classify_motor_sessions(events_list: list[dict]):
                 ev["is_filtered"] = False
 
 
-def detect_general_sport(blob: str, raw_tournament: str) -> tuple[str, str]:
-    text = f"{blob} {raw_tournament}".lower()
-    
-    if HYPERMOTION_RE.search(text):
-        return ("Fútbol", "⚽")
-        
-    if contains(TENNIS_RE, text) or "tenis" in text:
-        return ("Tenis", "🎾")
-    if any(term in text for term in ["baloncesto", "basket", "acb", "euroliga", "nba", "euroleague"]):
-        return ("Baloncesto", "🏀")
-    if any(term in text for term in ["f1", "formula 1", "motogp", "motor", "indycar", "formula e"]):
-        return ("Motor", "🏆")
-    return ("Fútbol", "⚽")
-
-
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
-    if contains(TENNIS_RE, blob) or contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
-        if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
-            comp = classify_tennis(blob, raw_tournament, tv_blob)
-            is_fav = contains(TENNIS_SPANISH_FAVORITES_RE, blob)
-            return ("Tenis", "🎾", comp, is_fav, True)
-
-    if any(p.search(blob) for p, _ in BASKET_COMPETITIONS):
-        comp_match = None
-        for pattern, name in BASKET_COMPETITIONS:
-            if pattern.search(blob):
-                comp_match = name
-                break
-        if comp_match:
-            if comp_match not in ["Euroliga Femenina", "Basketball Champions League"]:
-                if comp_match not in ["Euroliga", "Liga Endesa"] or contains(BARCA_REAL_RE, blob):
-                    is_fav = contains(REAL_MADRID_RE, blob)
-                    return ("Baloncesto", "🏀", comp_match, is_fav, True)
-
-    is_women = contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS)
-    if is_women:
-        comp_match = None
-        for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
-            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
-                comp_match = name
-                break
-        if comp_match and contains(REAL_MADRID_RE, blob):
-            return ("Fútbol", "⚽", comp_match, True, True)
-
-    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if contains(CASTILLA_RE, blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True)
-
-    comp_match = None
-    for pattern, name in MEN_FOOTBALL_COMPETITIONS:
-        if pattern.search(blob):
-            comp_match = name
-            break
-    if comp_match:
-        if comp_match == "España - LaLiga Hypermotion":
-            return ("Fútbol", "⚽", "España - LaLiga Hypermotion", False, True)
-
-        valid = False
-        if comp_match == "España - La Liga":
-            valid = True
-        elif comp_match == "Francia - Ligue 1":
-            valid = contains(PSG_RE, blob)
-        elif comp_match == "Inglaterra - Premier League":
-            valid = contains(ARSENAL_RE, blob)
-        elif comp_match == "Alemania - Bundesliga":
-            valid = contains(BAYERN_RE, blob)
-
-        if valid:
-            is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob) or ("bahia" in blob and "flamengo" in blob)
-            return ("Fútbol", "⚽", comp_match, is_fav, True)
-
-    if contains(MOTOR_GENERAL_RE, blob):
-        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
-        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        is_indycar = "indycar" in blob or "indy car" in blob
-        is_formulae = "formula e" in blob
-
-        if is_f1:
-            return ("Motor", "🏆", "Fórmula 1", False, True)
-        elif is_motogp:
-            return ("Motor", "🏆", "MotoGP", False, True)
-        elif is_indycar:
-            return ("Motor", "🏆", "Indycar", False, True)
-        elif is_formulae:
-            return ("Motor", "🏆", "Formula E", False, True)
-
-    sport, icon = detect_general_sport(blob, raw_tournament)
-    comp = clean_tournament(raw_tournament, f"{sport} General")
-    return (sport, icon, comp, False, False)
-
-
-def parse_row_elements(item) -> tuple[str, str, list[str], str]:
-    text_full = item.get_text(" | ", strip=True)
-    time_match = TIME_RE.search(text_full)
-    time_clean = time_match.group(0) if time_match else ""
-
-    raw_parts = [
-        part.strip()
-        for part in item.get_text("\n", strip=True).split("\n")
-        if part.strip()
-    ]
-    if not 2 <= len(raw_parts) <= 25:
-        return "", "", [], ""
-
-    channels: list[str] = []
-    text_lines = []
-
-    competition_terms = (
-        "liga", "primera", "segunda", "tercera", "federacion",
-        "division", "grupo", "torneo", "serie a", "premier",
-        "endesa", "bundesliga", "atp", "wta", "masters",
-        "copa", "champions", "superbike", "gran premio",
-        "gp ", "eredivisie", "euroliga", "euroleague", "pro league"
-    )
-
-    for part in raw_parts:
-        part_lower = normalize_search_text(part)
-        if TIME_RE.fullmatch(part) or part_lower in {
-            "ver partido", "directo", "(ver en directo)", "ver gratis",
-            "(ver)", "acceder", "(acceder)"
-        }:
-            continue
-        if re.fullmatch(r"[\s,.|;:/-]*", part):
-            continue
-        if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
-            continue
-
-        looks_like_channel = (
-            TV_IDENTIFIERS_RE.search(part)
-            or CHANNEL_LINE_RE.search(part_lower)
-            or any(term in part_lower for term in (
-                "m+", "dazn", "youtube", "fanatiz", "onefootball",
-                "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "hbo max", "primera federacion"
-            ))
-        )
-        if looks_like_channel:
-            clean_part = CLEAN_TV_RE.sub("", part).strip()
-            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
-            clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
-
-            sub_parts = re.split(r"[,|\n]+", clean_part)
-            for channel in sub_parts:
-                channel = channel.strip().rstrip(":").strip()
-                channel_lower = normalize_search_text(channel)
-                
-                if "españa -" in channel_lower or ("grupo" in channel_lower and "primera federacion" in channel_lower and len(channel_lower) > 20):
-                    continue
-
-                if (
-                    channel
-                    and not is_excluded_channel(channel)
-                    and channel not in channels
-                    and not re.fullmatch(r"\(?[mo]\+?\d+.*\)?", channel_lower)
-                    and channel_lower not in {"acceder", "(acceder)", "ver en directo"}
-                ):
-                    channels.append(channel)
-            continue
-
-        text_lines.append(part)
-
-    tournament_candidates = []
-    matchup_candidates = []
-    for part in text_lines:
-        part_lower = normalize_search_text(part)
-        is_competition_line = any(term in part_lower for term in competition_terms)
-        has_match_separator = bool(
-            re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
-            or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
-        )
-        if is_competition_line and not has_match_separator:
-            tournament_candidates.append(part)
-        elif has_match_separator or len(part.split()) >= 2:
-            matchup_candidates.append(part)
-
-    matchup = matchup_candidates[0] if matchup_candidates else (text_lines[1] if len(text_lines) > 1 else "")
-    tournament = tournament_candidates[0] if tournament_candidates else (text_lines[0] if text_lines else "General")
-
-    if re.search(r"\s+-\s+|\s+vs\.?\s+", tournament, re.IGNORECASE) and not any(term in normalize_search_text(tournament) for term in competition_terms):
-        matchup, tournament = tournament, matchup
-
-    if matchup == tournament and len(text_lines) > 1:
-        matchup = text_lines[1]
-
-    return time_clean, matchup, channels, tournament
+def time_to_minutes(time_str: str) -> int:
+    try:
+        parts = time_str.strip().split(":")
+        return int(parts[0]) * 60 + int(parts[1])
+    except (AttributeError, ValueError, IndexError):
+        return 0
 
 
 def fetch_and_parse_agenda() -> list[dict]:
@@ -884,16 +522,8 @@ def fetch_and_parse_agenda() -> list[dict]:
 
         for item in soup.find_all(("div", "tr", "li")):
             try:
-                original_blob = normalize_search_text(item.get_text(" ", strip=True))
-                
                 time_clean, event_str, channels, tournament = parse_row_elements(item)
-                if not time_clean or not event_str: continue
-
-                if is_excluded_event(original_blob, tournament, event_str): continue
-
-                if is_excluded_basketball_champions_league(
-                    f"{event_str} {tournament}"
-                ):
+                if not time_clean or not event_str: 
                     continue
 
                 if not EVENT_TEXT_RE.search(event_str):
@@ -905,13 +535,16 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
-                if is_excluded_event(blob, tournament, event_str): continue
-
-                event_key = (time_clean, normalize_search_text(tournament) if tournament else normalize_search_text(event_str), normalize_search_text(event_str))
-                if event_key in seen_events: continue
-                seen_events.add(event_key)
-
+                # Evaluación estricta de la lista blanca
                 sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob)
+                
+                if not is_configured:
+                    continue  # Descarta instantáneamente todo lo que no esté en la lista blanca
+
+                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(event_str))
+                if event_key in seen_events: 
+                    continue
+                seen_events.add(event_key)
 
                 results.append({
                     "hora": time_clean,
@@ -1281,4 +914,4 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos encontrados: {len(events)}")
+    print(f"Archivo index.html generado con éxito bajo arquitectura de lista blanca. Eventos encontrados: {len(events)}")
