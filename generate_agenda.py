@@ -39,6 +39,7 @@ CHANNEL_DICT = {
     'dazn laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php', 'https://daddylive.pk/'],
     'm+ laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php', 'https://daddylive.pk/'],
     'm+ liga de campeones': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php', 'https://daddylive.pk/'],
+    'dazn': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
     'dazn 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-445.php', 'https://dlive.sx/hub/stream-445.php', 'https://dlive.sx/watch/stream-445.php', 'https://dlive.sx/cast/stream-445.php', 'https://daddylive.pk/'],
     'dazn 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-446.php', 'https://dlive.sx/hub/stream-446.php', 'https://dlive.sx/watch/stream-446.php', 'https://dlive.sx/cast/stream-446.php', 'https://daddylive.pk/'],
     'dazn 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-447.php', 'https://dlive.sx/hub/stream-447.php', 'https://dlive.sx/watch/stream-447.php', 'https://dlive.sx/cast/stream-447.php', 'https://daddylive.pk/'],
