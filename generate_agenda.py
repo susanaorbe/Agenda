@@ -200,7 +200,7 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(
     r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
-    re.IGNORECASE
+    res.IGNORECASE if 'res' in globals() else re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
 MOTOR_GROUP_CLEAN_RE = re.compile(
