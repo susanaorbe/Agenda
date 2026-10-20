@@ -105,11 +105,11 @@ EXCLUDED_CHANNELS = {
     "conmebol libertadores youtube", "dazn 1 bar(m148)", "dazn 1 bar", "dazn 2 bar(m149)",
     "dazn 2 bar", "deportes tvcanaria youtube", "eleventv youtube", "esport3 web",
     "esport3(cataluña)", "etb1(país vasco)", "fanatiz", "fanplay",
-    "fanplay tv", "fanseat", "fff tv youtube", "fiba youtube",
+    "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fff tv youtube", "fiba youtube",
     "flamengo tv youtube", "hbo max", "la 7", "la 7 tv",
     "la ocho mediterráneo", "la xarxa+", "laliga tv bar", "laliga tv m2",
     "laliga tv m3", "laliga tv m4", "laliga tv m5", "laliga+ plus",
-    "liga futve youtube", "ligafutve app", "lleida televisió", "m+ #vamos bar 2",
+    "liga futve youtube", "ligafutve app", "lleida televisió", "m+ #vamos bar", "m+ #vamos bar 2",
     "m+ #vamos bar 2(308)", "m+ #vamos bar(307)", "m+ laliga hdr", "m+ laliga hdr(m440 o111)",
     "mediaset infinity", "motogp videopass", "movistar+ lite", "nba league pass",
     "nwsl+", "onefootball", "onefootball ppv", "orange fútbol 1(107)",
@@ -193,7 +193,8 @@ LALIGA_RE = rx(
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"
+    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
+    r"\bwnba\b", r"\bbasketball champions league\b", r"\bbcl\b", r"\beurocup\b", r"\bnba\b"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -247,6 +248,14 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             comp_name = "Copa del Rey"
         elif contains(rx(r"\bsupercopa\b"), blob):
             comp_name = "Supercopa de España"
+        elif contains(rx(r"\bwnba\b"), blob):
+            comp_name = "WNBA"
+        elif contains(rx(r"\bbasketball champions league\b", r"\bbcl\b"), blob):
+            comp_name = "Basketball Champions League"
+        elif contains(rx(r"\beurocup\b"), blob):
+            comp_name = "Eurocup"
+        elif contains(rx(r"\bnba\b"), blob):
+            comp_name = "NBA"
         
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Baloncesto", "🏀", comp_name, is_fav, True)
@@ -296,7 +305,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True)
 
-    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob):
+    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bbcl\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True)
 
@@ -308,7 +317,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
         return ("Tenis", "🎾", comp, False, False)
 
-    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
+    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b", r"\bwnba\b", r"\bbcl\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
         return ("Baloncesto", "🏀", comp, False, False)
 
