@@ -200,7 +200,7 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(
     r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
-    res.IGNORECASE if 'res' in globals() else re.IGNORECASE
+    re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
 MOTOR_GROUP_CLEAN_RE = re.compile(
@@ -300,7 +300,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
         return ("Tenis", "🎾", comp, False, False)
 
-    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
+    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
         return ("Baloncesto", "🏀", comp, False, False)
 
