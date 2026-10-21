@@ -192,8 +192,6 @@ BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"
 )
 
-BCL_RE = rx(r"\bbasketball champions league\b", r"\bbcl\b")
-
 WOMEN_FOOTBALL_COMPETITIONS = (
     (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"), (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
     (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
@@ -228,15 +226,9 @@ CHANNEL_LINE_RE = rx(
 # NÚCLEO DE CLASIFICACIÓN
 # ============================================================================
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, channels: list[str] = None) -> tuple[str, str, str, bool, bool]:
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
         return ("", "", "", False, False)
-
-    # REGLA: Excluir Basketball Champions League si se emite ÚNICAMENTE en 'DAZN'
-    if BCL_RE.search(blob):
-        norm_channels = [normalize_search_text(ch) for ch in (channels or [])]
-        if norm_channels == ["dazn"]:
-            return ("", "", "", False, False)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
@@ -546,7 +538,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
 
-                sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob, channels)
+                sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob)
                 
                 if not sport:
                     continue
