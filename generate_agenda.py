@@ -106,7 +106,7 @@ EXCLUDED_CHANNELS = {
     "dazn 2 bar", "deportes tvcanaria youtube", "eleventv youtube", "esport3 web",
     "esport3(cataluña)", "etb1(país vasco)", "fanatiz", "fanplay",
     "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fff tv youtube", "fiba youtube",
-    "flamengo tv youtube", "hbo max", "la 7", "la 7 tv",
+    "flamengo tv youtube", "hbo max", "j.league international youtube", "la 7", "la 7 tv",
     "la ocho mediterráneo", "la xarxa+", "laliga tv bar", "laliga tv m2",
     "laliga tv m3", "laliga tv m4", "laliga tv m5", "laliga+ plus",
     "liga futve youtube", "ligafutve app", "lleida televisió", "m+ #vamos bar", "m+ #vamos bar 2",
@@ -153,7 +153,8 @@ BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
 
 EXCLUDED_SPORTS_RE = rx(
     r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
-    r"\bbalonmano\b", r"\bwaterpolo\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b"
+    r"\bbalonmano\b", r"\bwaterpolo\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
+    r"\behf\b", r"\bihf\b"
 )
 
 TENNIS_ALLOWED_PLAYERS_RE = rx(
@@ -226,7 +227,7 @@ CHANNEL_LINE_RE = rx(
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
-    if EXCLUDED_SPORTS_RE.search(blob):
+    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
         return ("", "", "", False, False)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
@@ -234,7 +235,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
         return ("Tenis", "🎾", comp, True, True)
 
-    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
+    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) and not contains(WOMEN_RE, blob):
         comp_name = "Liga Endesa"
         if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
             comp_name = "Euroliga"
@@ -269,6 +270,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 break
         if comp_match and contains(REAL_MADRID_RE, blob):
             return ("Fútbol", "⚽", comp_match, True, True)
+        return ("", "", "", False, False)
 
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
@@ -300,7 +302,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
         return ("Tenis", "🎾", comp, False, False)
 
-    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
+    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
         return ("Baloncesto", "🏀", comp, False, False)
 
@@ -308,7 +310,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"motor", ""} else "Motor"
         return ("Motor", "🏆", comp, False, False)
 
-    if contains(rx(r"\bfutbol\b", r"\bliga\b", r"\bchampions\b", r"\bcopa\b", r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bprimeira\b", r"\beredivisie\b", r"\bfa cup\b"), blob) or " - " in blob or " vs " in blob:
+    if contains(rx(r"\bfutbol\b", r"\bliga\b", r"\bchampions\b", r"\bcopa\b", r"\bpremier\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bprimeira\b", r"\beredivisie\b", r"\bfa cup\b"), blob) and not contains(WOMEN_RE, blob) or " - " in blob or " vs " in blob:
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False)
 
@@ -355,7 +357,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "hbo max", "primera federacion"
+                "cmmplay", "etb1", "tvg", "tv3", "hbo max", "primera federacion", "ehf tv"
             ))
         )
         if looks_like_channel:
