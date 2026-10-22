@@ -189,8 +189,7 @@ LALIGA_RE = rx(
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
-    r"\bwnba\b"
+    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -238,9 +237,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
 
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
         comp_name = "Liga Endesa"
-        if contains(rx(r"\bwnba\b"), blob):
-            comp_name = "WNBA"
-        elif contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
+        if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
             comp_name = "Euroliga"
         elif contains(rx(r"\bcopa del rey\b", r"\bcopa acb\b"), blob):
             comp_name = "Copa del Rey"
@@ -305,7 +302,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
         return ("Tenis", "🎾", comp, False, False)
 
-    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b", r"\bwnba\b"), blob):
+    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
         return ("Baloncesto", "🏀", comp, False, False)
 
@@ -339,7 +336,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
         "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "gran premio",
-        "gp ", "eredivisie", "euroliga", "euroleague", "pro league", "wnba"
+        "gp ", "eredivisie", "euroliga", "euroleague", "pro league"
     )
 
     for part in raw_parts:
