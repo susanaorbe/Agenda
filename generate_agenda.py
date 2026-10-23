@@ -244,18 +244,17 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN DIRECTA DE EVENTOS DE MOTOR DESDE MUNDO DEPORTIVO
+# EXTRACCIÓN DIRECTA DE EMISIONES EN DIRECTO (MUNDO DEPORTIVO)
 # ============================================================================
 
 def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: list[str]) -> list[dict]:
-    """Extrae directamente las sesiones de Motor desde Mundo Deportivo."""
+    """Extrae EXCLUSIVAMENTE emisiones que contengan el distintivo 'EN DIRECTO'."""
     motor_events = []
     try:
         response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Buscar bloques de emisión en la parrilla de Mundo Deportivo
         items = soup.find_all(["li", "div", "article", "tr"], class_=re.compile("program|item|event|row|guia", re.IGNORECASE))
         if not items:
             items = soup.find_all(True)
@@ -263,6 +262,12 @@ def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: lis
         seen_times = set()
         for item in items:
             text_block = item.get_text(" ", strip=True)
+            text_lower = text_block.lower()
+
+            # Exigir estrictamente que la etiqueta de 'EN DIRECTO' esté presente en el elemento
+            if "en directo" not in text_lower:
+                continue
+
             time_match = TIME_RE.search(text_block)
             if not time_match:
                 continue
@@ -271,24 +276,14 @@ def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: lis
             if time_clean in seen_times:
                 continue
 
-            # Extraer el título limpiando la hora y términos secundarios
+            # Extraer el título del evento eliminando "en directo", horas y textos secundarios de la web
             title = text_block.replace(time_match.group(0), "").strip()
-            title = re.sub(r"^(?:deporte|termina|\d{2}:\d{2}|[–\-\:\s])+", "", title).strip()
+            title = re.sub(r"(?i)en directo|deporte|termina\s*\d{2}:\d{2}|\d{2}:\d{2}|[–\-\:\s]+", " ", title).strip()
             title = re.sub(r"\s+", " ", title)
 
-            # Filtrar solo sesiones con sentido (evitar programas genéricos o vacíos)
-            if not title or len(title) < 3 or title.lower() in {"deporte", "programacion", "tv"}:
-                continue
-
-            # Validar que se refiera a sesiones de interés (libres, clasificación, carrera, previo, etc.)
-            clean_norm = normalize_search_text(title)
-            is_valid_session = any(k in clean_norm for k in [
-                "fp1", "fp2", "fp3", "libres", "practice", "qualifying", "clasificacion",
-                "sprint", "carrera", "race", "warm up", "moto3", "moto2", "motogp", "f1", "formula 1"
-            ])
-
-            if is_valid_session:
+            if title and len(title) > 2:
                 seen_times.add(time_clean)
+                clean_norm = normalize_search_text(title)
                 is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
                 
                 motor_events.append({
@@ -302,7 +297,7 @@ def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: lis
                     "is_configured": True,
                 })
     except Exception as e:
-        print(f"Aviso: No se pudo cargar parrilla directa de {comp_name} desde Mundo Deportivo: {e}")
+        print(f"Aviso: No se pudo cargar la parrilla en directo de {comp_name} desde Mundo Deportivo: {e}")
 
     return motor_events
 
@@ -323,7 +318,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
         
-        # Ignorar F1 y MotoGP del widget general para usar la parrilla completa directa de Mundo Deportivo
+        # Ignorar F1 y MotoGP del widget general para usar la parrilla en directo directa de Mundo Deportivo
         if is_f1 or is_motogp:
             return ("", "", "", False, False, "")
 
@@ -509,7 +504,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. Obtener eventos directamente de las parrillas oficiales de F1 y MotoGP en Mundo Deportivo
+    # 1. Obtener EXCLUSIVAMENTE retransmisiones EN DIRECTO desde Mundo Deportivo
     f1_direct_events = fetch_mundodeportivo_motor_events(
         MUNDO_DEPORTIVO_F1_URL, "Fórmula 1", ["DAZN F1", "DAZN"]
     )
@@ -523,7 +518,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             seen_events.add(event_key)
             results.append(ev)
 
-    # 2. Obtener resto de deportes (Fútbol, Baloncesto, Tenis, etc.) del widget principal
+    # 2. Obtener el resto de deportes (Fútbol, Baloncesto, Tenis) del widget principal
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
