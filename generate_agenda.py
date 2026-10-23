@@ -147,6 +147,7 @@ def rx(*patterns: str) -> re.Pattern:
 
 REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
 CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
+YOUTH_BASKET_RE = rx(r"\bsub\s*[-]?\d+\b", r"\bjunior\b", r"\bcadete\b", r"\binfantil\b")
 
 PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
 ARSENAL_RE = rx(r"\barsenal\b")
@@ -159,7 +160,7 @@ EXCLUDED_SPORTS_RE = rx(
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
-    r"\bnational league\b", r"\bvanarama national league\b"
+    r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b"
 )
 
 TENNIS_ALLOWED_PLAYERS_RE = rx(
@@ -194,8 +195,7 @@ LALIGA_RE = rx(
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
-    r"\bliga u\b"
+    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -212,11 +212,17 @@ CLEAN_TV_RE = re.compile(
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|primera federaci[oó]n)"
+    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|primera federaci[oó]n|videopass)"
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprimera federaci[oó]n\b"
+    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprimera federaci[oó]n\b", r"\bvideopass\b"
+)
+
+JUNK_RESIDUES_RE = rx(
+    r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)",
+    r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)",
+    r"\(\s*\d+\s*\)"
 )
 
 
@@ -244,7 +250,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif is_indycar: comp_name = "Indycar"
         elif is_formulae: comp_name = "Formula E"
 
-        # Construir evento eliminando cualquier línea que sea idéntica a la competición
+        # Construir evento limpio eliminando la categoría repetida si estuviera mezclada
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
         event_title = " - ".join(event_parts) if event_parts else comp_name
 
@@ -256,18 +262,16 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
         return ("Tenis", "🎾", comp, True, True, "")
 
-    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) or "liga u" in blob:
+    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
         comp_name = "Liga Endesa"
-        if "liga u" in blob:
-            comp_name = "Liga U"
-        elif contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
+        if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
             comp_name = "Euroliga"
         elif contains(rx(r"\bcopa del rey\b", r"\bcopa acb\b"), blob):
             comp_name = "Copa del Rey"
         elif contains(rx(r"\bsupercopa\b"), blob):
             comp_name = "Supercopa de España"
         
-        is_fav = contains(REAL_MADRID_RE, blob)
+        is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
 
     if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
@@ -311,11 +315,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
         return ("Tenis", "🎾", comp, False, False, "")
 
-    if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
+    if contains(rx(r"\bbaloncesto\b", r"\basket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
         return ("Baloncesto", "🏀", comp, False, False, "")
 
-    # Solo asignar fútbol si incluye términos explícitos de ligas principales
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
@@ -345,6 +348,11 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     )
 
     for part in raw_parts:
+        # Limpieza estricta de residuos de texto y coletillas en crudo
+        part = JUNK_RESIDUES_RE.sub("", part).strip()
+        if not part:
+            continue
+
         part_lower = normalize_search_text(part)
         if TIME_RE.fullmatch(part) or part_lower in {
             "ver partido", "directo", "(ver en directo)", "ver gratis",
@@ -362,11 +370,12 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv"
+                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass"
             ))
         )
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
+            clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
 
