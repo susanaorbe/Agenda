@@ -227,10 +227,43 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
+# FUNCIONES DE ENRIQUECIMIENTO DE SESIONES DE MOTOR
+# ============================================================================
+
+def enrich_motor_session_name(time_clean: str, comp_name: str, raw_event: str) -> str:
+    """Enriquece el nombre del evento de Motor según la hora y la competición cuando la web provee un nombre genérico."""
+    raw_norm = normalize_search_text(raw_event)
+    
+    # Si el evento ya especifica palabras clave claras, mantenerlo intacto
+    if any(k in raw_norm for k in ["fp1", "fp2", "fp3", "clasificacion", "sprint", "carrera", "warm-up", "warm up", "practica"]):
+        return raw_event
+
+    if comp_name == "Fórmula 1":
+        if time_clean in ["19:30", "18:30", "13:30"]:
+            return "Fórmula 1 - Entrenamientos Libres 1 (FP1)"
+        elif time_clean in ["23:00", "22:00", "17:00"]:
+            return "Fórmula 1 - Entrenamientos Libres 2 (FP2)"
+        elif time_clean in ["21:00", "15:00"]:
+            return "Fórmula 1 - Carrera Gran Premio"
+        return "Fórmula 1 - Sesión de GP"
+
+    elif comp_name == "MotoGP":
+        if time_clean in ["01:45", "01:10", "10:45"]:
+            return "MotoGP - Entrenamientos Libres / Práctica"
+        elif time_clean in ["06:00", "15:00"]:
+            return "MotoGP - Carrera Sprint / Clasificación"
+        elif time_clean in ["04:00", "14:00"]:
+            return "MotoGP - Carrera Principal GP"
+        return "MotoGP - Sesión de GP"
+
+    return raw_event
+
+
+# ============================================================================
 # NÚCLEO DE CLASIFICACIÓN
 # ============================================================================
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str], time_clean: str = "") -> tuple[str, str, str, bool, bool, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
         return ("", "", "", False, False, "")
 
@@ -250,21 +283,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif is_indycar: comp_name = "Indycar"
         elif is_formulae: comp_name = "Formula E"
 
-        # Preservar todas las líneas reales del evento (ej: G.P. Australia - Libres 1)
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
-        event_title = " - ".join(event_parts) if event_parts else comp_name
-
-        # Lógica de Favoritos configurada por categoría y tipo de sesión
-        is_fav = False
-        event_lower = normalize_search_text(event_title)
+        raw_event_title = " - ".join(event_parts) if event_parts else comp_name
         
-        if is_f1:
-            # F1: Clasificación (Sprint/Principal) y Carrera (Sprint/Principal), excluyendo Libres
-            is_fav = any(kw in event_lower for kw in ["clasificacion", "qualifying", "sprint", "carrera", "race"]) and "libres" not in event_lower
-        elif is_motogp:
-            # MotoGP: Únicamente Carrera Sprint y Carrera Principal, excluyendo Libres y Warm Up
-            is_fav = any(kw in event_lower for kw in ["carrera", "race", "sprint"]) and "libres" not in event_lower and "warm up" not in event_lower
+        # Enriquecer automáticamente la sesión de Motor si el texto original del widget es genérico
+        event_title = enrich_motor_session_name(time_clean, comp_name, raw_event_title)
 
+        is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"]) or (comp_name in ["Fórmula 1", "MotoGP"])
         return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
@@ -454,7 +479,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
                 sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
-                    blob, tournament, tv_blob, text_lines
+                    blob, tournament, tv_blob, text_lines, time_clean
                 )
                 
                 if not sport:
@@ -836,4 +861,4 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos totales (Fútbol, Baloncesto, Tenis y Motor): {len(events)}")
+    print(f"Archivo index.html generado con éxito. Eventos totales: {len(events)}")
