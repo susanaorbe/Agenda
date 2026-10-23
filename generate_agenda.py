@@ -27,7 +27,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# URLs de programación en español (Mundo Deportivo) para cruce de sesiones de Motor
+# URLs de programación directa de Mundo Deportivo para Motor
 MUNDO_DEPORTIVO_F1_URL = "https://www.mundodeportivo.com/guia-tv/canal/dazn-formula-1"
 MUNDO_DEPORTIVO_MOTOGP_URL = "https://www.mundodeportivo.com/guia-tv/canal/dazn-moto-gp"
 
@@ -244,35 +244,71 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# FUNCIONES DE EXTRACCIÓN DE PROGRAMACIÓN (MUNDO DEPORTIVO EN ESPAÑOL)
+# EXTRACCIÓN DIRECTA DE EVENTOS DE MOTOR DESDE MUNDO DEPORTIVO
 # ============================================================================
 
-@functools.lru_cache(maxsize=4)
-def fetch_mundodeportivo_sessions(url: str) -> dict:
-    """Extrae la programación diaria de un canal desde Mundo Deportivo (en español)."""
-    sessions_map = {}
+def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: list[str]) -> list[dict]:
+    """Extrae directamente las sesiones de Motor desde Mundo Deportivo."""
+    motor_events = []
     try:
         response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        for row in soup.find_all(["li", "div", "article"], class_=re.compile("program|item|event|row", re.IGNORECASE)):
-            text_block = row.get_text(" ", strip=True)
+        # Buscar bloques de emisión en la parrilla de Mundo Deportivo
+        items = soup.find_all(["li", "div", "article", "tr"], class_=re.compile("program|item|event|row|guia", re.IGNORECASE))
+        if not items:
+            items = soup.find_all(True)
+
+        seen_times = set()
+        for item in items:
+            text_block = item.get_text(" ", strip=True)
             time_match = TIME_RE.search(text_block)
-            if time_match:
-                t_str = clean_time(time_match.group(0))
-                clean_title = text_block.replace(time_match.group(0), "").strip()
-                clean_title = re.sub(r"^(?:deporte|termina|\d{2}:\d{2}|[–\-\:\s])+", "", clean_title).strip()
+            if not time_match:
+                continue
+
+            time_clean = clean_time(time_match.group(0))
+            if time_clean in seen_times:
+                continue
+
+            # Extraer el título limpiando la hora y términos secundarios
+            title = text_block.replace(time_match.group(0), "").strip()
+            title = re.sub(r"^(?:deporte|termina|\d{2}:\d{2}|[–\-\:\s])+", "", title).strip()
+            title = re.sub(r"\s+", " ", title)
+
+            # Filtrar solo sesiones con sentido (evitar programas genéricos o vacíos)
+            if not title or len(title) < 3 or title.lower() in {"deporte", "programacion", "tv"}:
+                continue
+
+            # Validar que se refiera a sesiones de interés (libres, clasificación, carrera, previo, etc.)
+            clean_norm = normalize_search_text(title)
+            is_valid_session = any(k in clean_norm for k in [
+                "fp1", "fp2", "fp3", "libres", "practice", "qualifying", "clasificacion",
+                "sprint", "carrera", "race", "warm up", "moto3", "moto2", "motogp", "f1", "formula 1"
+            ])
+
+            if is_valid_session:
+                seen_times.add(time_clean)
+                is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
                 
-                if clean_title and len(clean_title) > 2:
-                    sessions_map[t_str] = clean_title
+                motor_events.append({
+                    "hora": time_clean,
+                    "deporte": "Motor",
+                    "icono": "🏆",
+                    "competicion": comp_name,
+                    "evento": f"{comp_name} - {title}",
+                    "tv_list": tv_channels,
+                    "is_filtered": is_fav,
+                    "is_configured": True,
+                })
     except Exception as e:
-        print(f"Aviso: No se pudo obtener la guía desde Mundo Deportivo ({url}): {e}")
-    return sessions_map
+        print(f"Aviso: No se pudo cargar parrilla directa de {comp_name} desde Mundo Deportivo: {e}")
+
+    return motor_events
 
 
 # ============================================================================
-# NÚCLEO DE CLASIFICACIÓN
+# NÚCLEO DE CLASIFICACIÓN (PARA RESTO DE DEPORTES DEL WIDGET)
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
@@ -282,17 +318,20 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # TRATAMIENTO ESPECIAL PARA MOTOR
+    # TRATAMIENTO PARA OTROS EVENTOS DE MOTOR DEL WIDGET (INDYCAR, FORMULA E, ETC.)
     if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
+        
+        # Ignorar F1 y MotoGP del widget general para usar la parrilla completa directa de Mundo Deportivo
+        if is_f1 or is_motogp:
+            return ("", "", "", False, False, "")
+
         is_indycar = "indycar" in blob or "indy car" in blob
         is_formulae = "formula e" in blob
 
         comp_name = "Motor"
-        if is_f1: comp_name = "Fórmula 1"
-        elif is_motogp: comp_name = "MotoGP"
-        elif is_indycar: comp_name = "Indycar"
+        if is_indycar: comp_name = "Indycar"
         elif is_formulae: comp_name = "Formula E"
 
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
@@ -470,10 +509,21 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # Cargar programaciones desde Mundo Deportivo (en español)
-    f1_md_sessions = fetch_mundodeportivo_sessions(MUNDO_DEPORTIVO_F1_URL)
-    motogp_md_sessions = fetch_mundodeportivo_sessions(MUNDO_DEPORTIVO_MOTOGP_URL)
+    # 1. Obtener eventos directamente de las parrillas oficiales de F1 y MotoGP en Mundo Deportivo
+    f1_direct_events = fetch_mundodeportivo_motor_events(
+        MUNDO_DEPORTIVO_F1_URL, "Fórmula 1", ["DAZN F1", "DAZN"]
+    )
+    motogp_direct_events = fetch_mundodeportivo_motor_events(
+        MUNDO_DEPORTIVO_MOTOGP_URL, "MotoGP", ["DAZN MotoGP", "DAZN"]
+    )
 
+    for ev in f1_direct_events + motogp_direct_events:
+        event_key = (ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+        if event_key not in seen_events:
+            seen_events.add(event_key)
+            results.append(ev)
+
+    # 2. Obtener resto de deportes (Fútbol, Baloncesto, Tenis, etc.) del widget principal
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -500,15 +550,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 final_event = custom_event if custom_event else event_str
 
-                # CRUCE DE SESIONES DE MOTOR CON MUNDO DEPORTIVO
-                if sport == "Motor":
-                    if "fórmula 1" in competition.lower() and time_clean in f1_md_sessions:
-                        session_desc = f1_md_sessions[time_clean]
-                        final_event = f"{competition} - {session_desc}"
-                    elif competition.lower() == "motogp" and time_clean in motogp_md_sessions:
-                        session_desc = motogp_md_sessions[time_clean]
-                        final_event = f"{competition} - {session_desc}"
-
                 if not EVENT_TEXT_RE.search(final_event):
                     continue
 
@@ -531,8 +572,10 @@ def fetch_and_parse_agenda() -> list[dict]:
                 continue
 
     except Exception as e:
-        print(f"Error cargando la agenda: {e}")
+        print(f"Error cargando la agenda del widget: {e}")
 
+    # Ordenar resultados de la agenda cronológicamente por hora
+    results.sort(key=lambda x: x["hora"])
     return results
 
 
