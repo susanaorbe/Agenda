@@ -224,17 +224,37 @@ CHANNEL_LINE_RE = rx(
 # NÚCLEO DE CLASIFICACIÓN
 # ============================================================================
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> tuple[str, str, str, bool, bool]:
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
-        return ("", "", "", False, False)
+        return ("", "", "", False, False, "")
 
     if EXCLUDED_COMPETITIONS_RE.search(blob):
-        return ("", "", "", False, False)
+        return ("", "", "", False, False, "")
+
+    # TRATAMIENTO ESPECIAL PARA MOTOR
+    if contains(MOTOR_GENERAL_RE, blob):
+        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
+        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
+        is_indycar = "indycar" in blob or "indy car" in blob
+        is_formulae = "formula e" in blob
+
+        comp_name = "Motor"
+        if is_f1: comp_name = "Fórmula 1"
+        elif is_motogp: comp_name = "MotoGP"
+        elif is_indycar: comp_name = "Indycar"
+        elif is_formulae: comp_name = "Formula E"
+
+        # Construir evento eliminando cualquier línea que sea idéntica a la competición
+        event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
+        event_title = " - ".join(event_parts) if event_parts else comp_name
+
+        is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"])
+        return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
-        return ("Tenis", "🎾", comp, True, True)
+        return ("Tenis", "🎾", comp, True, True, "")
 
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) or "liga u" in blob:
         comp_name = "Liga Endesa"
@@ -248,25 +268,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
             comp_name = "Supercopa de España"
         
         is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Baloncesto", "🏀", comp_name, is_fav, True)
-
-    if contains(MOTOR_GENERAL_RE, blob):
-        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
-        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        is_indycar = "indycar" in blob or "indy car" in blob
-        is_formulae = "formula e" in blob
-
-        # Marcar favorito solo si es evento relevante de carrera/clasificación
-        is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"])
-
-        if is_f1:
-            return ("Motor", "🏆", "Fórmula 1", is_fav, True)
-        elif is_motogp:
-            return ("Motor", "🏆", "MotoGP", is_fav, True)
-        elif is_indycar:
-            return ("Motor", "🏆", "Indycar", is_fav, True)
-        elif is_formulae:
-            return ("Motor", "🏆", "Formula E", is_fav, True)
+        return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
 
     if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
@@ -275,57 +277,53 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str) -> t
                 comp_match = name
                 break
         if comp_match and contains(REAL_MADRID_RE, blob):
-            return ("Fútbol", "⚽", comp_match, True, True)
-        return ("", "", "", False, False)
+            return ("Fútbol", "⚽", comp_match, True, True, "")
+        return ("", "", "", False, False, "")
 
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True)
-        return ("", "", "", False, False)
+            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "")
+        return ("", "", "", False, False, "")
 
     if LALIGA_RE.search(blob):
         is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Fútbol", "⚽", "España - La Liga", is_fav, True)
+        return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
     if not contains(WOMEN_RE, blob):
         if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
-            return ("Fútbol", "⚽", "Francia - Ligue 1", False, True)
+            return ("Fútbol", "⚽", "Francia - Ligue 1", False, True, "")
         
         if contains(rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), blob) and contains(ARSENAL_RE, blob):
-            return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True)
+            return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True, "")
 
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
-            return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True)
+            return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
 
     if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bbcl\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
-        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True)
+        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob):
         is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True)
+        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
-        return ("Tenis", "🎾", comp, False, False)
+        return ("Tenis", "🎾", comp, False, False, "")
 
     if contains(rx(r"\bbaloncesto\b", r"\bbasket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
-        return ("Baloncesto", "🏀", comp, False, False)
-
-    if contains(rx(r"\bformula\b", r"\bf1\b", r"\bmotogp\b", r"\bmoto2\b", r"\bmoto3\b", r"\brally\b", r"\bindycar\b", r"\bnascar\b", r"\bsuperbike\b", r"\bwec\b", r"\bformula e\b"), blob):
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"motor", ""} else "Motor"
-        return ("Motor", "🏆", comp, False, False)
+        return ("Baloncesto", "🏀", comp, False, False, "")
 
     # Solo asignar fútbol si incluye términos explícitos de ligas principales
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
-        return ("Fútbol", "⚽", comp, False, False)
+        return ("Fútbol", "⚽", comp, False, False, "")
 
-    return ("", "", "", False, False)
+    return ("", "", "", False, False, "")
 
 
-def parse_row_elements(item) -> tuple[str, str, list[str], str]:
+def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     text_full = item.get_text(" | ", strip=True)
     time_match = TIME_RE.search(text_full)
     time_clean = time_match.group(0) if time_match else ""
@@ -336,15 +334,14 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         if part.strip()
     ]
     if not 2 <= len(raw_parts) <= 25:
-        return "", "", [], ""
+        return "", "", [], "", []
 
     channels: list[str] = []
     text_lines = []
 
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "gran premio",
-        "gp ", "g.p.", "eredivisie", "euroliga", "euroleague", "pro league"
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague"
     )
 
     for part in raw_parts:
@@ -394,9 +391,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
         text_lines.append(part)
 
     if not text_lines:
-        return "", "", [], ""
+        return "", "", [], "", []
 
-    # Detección y conservación limpia de Motor, Tenis y Fútbol
     tournament_candidates = []
     matchup_candidates = []
     for part in text_lines:
@@ -412,15 +408,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str]:
             matchup_candidates.append(part)
 
     tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
-    
-    # Construir el evento combinando las líneas sobrantes
     remaining_lines = [p for p in text_lines if p != tournament]
-    if remaining_lines:
-        matchup = " - ".join(remaining_lines)
-    else:
-        matchup = tournament
+    matchup = " - ".join(remaining_lines) if remaining_lines else tournament
 
-    return time_clean, matchup, channels, tournament
+    return time_clean, matchup, channels, tournament, text_lines
 
 
 def fetch_and_parse_agenda() -> list[dict]:
@@ -434,25 +425,29 @@ def fetch_and_parse_agenda() -> list[dict]:
 
         for item in soup.find_all(("div", "tr", "li")):
             try:
-                time_clean, event_str, channels, tournament = parse_row_elements(item)
-                if not time_clean or not event_str: 
-                    continue
-
-                if not EVENT_TEXT_RE.search(event_str):
+                time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
+                if not time_clean or not text_lines: 
                     continue
 
                 if not channels:
                     continue
 
                 tv_blob = " ".join(channels).lower()
-                blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
+                blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                sport, icon, competition, is_favorite, is_configured = get_sport_and_competition(blob, tournament, tv_blob)
+                sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
+                    blob, tournament, tv_blob, text_lines
+                )
                 
                 if not sport:
                     continue
 
-                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(event_str))
+                final_event = custom_event if custom_event else event_str
+
+                if not EVENT_TEXT_RE.search(final_event):
+                    continue
+
+                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(final_event))
                 if event_key in seen_events: 
                     continue
                 seen_events.add(event_key)
@@ -462,7 +457,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "deporte": sport,
                     "icono": icon,
                     "competicion": competition,
-                    "evento": event_str,
+                    "evento": final_event,
                     "tv_list": channels,
                     "is_filtered": is_favorite,
                     "is_configured": is_configured,
