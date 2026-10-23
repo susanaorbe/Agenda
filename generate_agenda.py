@@ -1,7 +1,7 @@
 from collections import Counter
 from datetime import datetime
-from html import escape
 import functools
+from html import escape
 import zoneinfo
 import re
 
@@ -18,9 +18,6 @@ WIDGET_URL = (
     "?color=005df8&culture=es-ES"
 )
 
-MOVISTAR_F1_URL = "https://www.movistarplus.es/programacion-tv/mvf1"
-MOVISTAR_MOTOGP_URL = "https://www.movistarplus.es/programacion-tv/dazmot"
-
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -29,6 +26,10 @@ REQUEST_HEADERS = {
 }
 
 REQUEST_TIMEOUT = 15
+
+# URLs de programación para cruce de sesiones de Motor
+MOVISTAR_F1_URL = "https://www.movistarplus.es/programacion-tv/mvf1"
+SKY_MOTOGP_IT_URL = "https://www.superguidatv.it/programmazione-canale/oggi/guida-programmi-tv-sky-sport-motogp/sky-sport/44/"
 
 CHANNEL_DICT = {
     'la 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://daddylive.pk/'],
@@ -74,6 +75,7 @@ def normalize_search_text(text: str) -> str:
 
 
 def clean_time(time_str: str) -> str:
+    """Normaliza las horas para asegurar siempre dos dígitos (ej. 06:00 en lugar de 6:00)."""
     if not time_str:
         return ""
     parts = time_str.split(":")
@@ -242,162 +244,78 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# CONSULTA Y PARSEO DE MOVISTAR+ PARA MOTOR
+# FUNCIONES DE EXTRACCIÓN Y TRADUCCIÓN EXTERNA (SKY MOTOGP & MOVISTAR F1)
 # ============================================================================
 
-@functools.lru_cache(maxsize=4)
-def fetch_movistar_motor_sessions(url: str) -> dict[str, str]:
-    """
-    Devuelve {HH:MM: título} a partir de la programación de Movistar Plus+.
-    Primero analiza los bloques de programación y, si la estructura HTML cambia,
-    utiliza una extracción de texto como alternativa. No necesita JavaScript.
-    """
-    sessions_map: dict[str, str] = {}
+ITALIAN_MOTOR_TRANSLATIONS = {
+    "prove libere 1": "Entrenamientos Libres 1",
+    "prove libere 2": "Entrenamientos Libres 2",
+    "prove libere 3": "Entrenamientos Libres 3",
+    "prove libere": "Entrenamientos Libres",
+    "prove": "Entrenamientos",
+    "qualifiche": "Clasificación",
+    "gara": "Carrera",
+    "sprint race": "Carrera Sprint",
+    "sprint": "Sprint",
+    "warm up": "Warm Up",
+    "paddock live": "Paddock Live",
+    "conferenza stampa": "Conferencia de Prensa"
+}
 
+
+def translate_italian_session(title: str) -> str:
+    """Traduce términos de motor en italiano al español."""
+    clean_t = title.lower()
+    for it_term, es_term in ITALIAN_MOTOR_TRANSLATIONS.items():
+        if it_term in clean_t:
+            clean_t = clean_t.replace(it_term, es_term)
+    return clean_t.title()
+
+
+@functools.lru_cache(maxsize=4)
+def fetch_sky_motogp_it_sessions() -> dict:
+    """Extrae la programación diaria de Sky Sport MotoGP (Italia) traducida al español."""
+    sessions_map = {}
     try:
-        response = requests.get(
-            url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT
-        )
+        response = requests.get(SKY_MOTOGP_IT_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Guardamos candidatos por hora y después elegimos el título más útil.
-        candidates: dict[str, list[str]] = {}
-
-        selectors = soup.find_all(
-            ["li", "div", "article", "tr"],
-            class_=re.compile(
-                r"program|item|ficha|horario|evento|row|grid|emision|emisión",
-                re.IGNORECASE,
-            ),
-        )
-
-        for row in selectors:
-            text_block = re.sub(r"\s+", " ", row.get_text(" ", strip=True))
-            if not text_block:
-                continue
-
-            # Una fila puede contener varios horarios por ser un contenedor padre.
-            matches = list(TIME_RE.finditer(text_block))
-            for match in matches:
-                time_str = clean_time(match.group(0))
-                title = text_block[:match.start()].strip(" –-:|")
-                # En algunos diseños la hora precede al título.
-                if not title or len(title) < 4:
-                    title = text_block[match.end():].strip(" –-:|")
-                title = re.sub(r"^(?:Deportes|Motor|Motociclismo)\s+", "", title,
-                               flags=re.IGNORECASE).strip()
-                if title and len(title) >= 4:
-                    candidates.setdefault(time_str, []).append(title)
-
-        # Fallback: extrae las horas del texto visible si cambiaron las clases CSS.
-        if not candidates:
-            lines = [
-                re.sub(r"\s+", " ", line).strip()
-                for line in soup.get_text("\n", strip=True).splitlines()
-                if line.strip()
-            ]
-            previous_text = ""
-            for line in lines:
-                match = TIME_RE.search(line)
-                if match:
-                    time_str = clean_time(match.group(0))
-                    title = line[:match.start()].strip(" –-:|")
-                    if len(title) < 4:
-                        title = line[match.end():].strip(" –-:|")
-                    if len(title) < 4 and previous_text:
-                        title = previous_text
-                    if title and len(title) >= 4:
-                        candidates.setdefault(time_str, []).append(title)
-                previous_text = line
-
-        # Evita que un contenedor padre sobrescriba el título de una fila concreta.
-        session_re = re.compile(
-            r"libres|fp\d|clasificaci[oó]n|qualifying|sprint|carrera|race|warm.?up|"
-            r"previo|post",
-            re.IGNORECASE,
-        )
-        for time_str, titles in candidates.items():
-            cleaned = []
-            for title in titles:
-                title = re.sub(r"\s+", " ", title).strip(" –-:|")
-                if title and title not in cleaned:
-                    cleaned.append(title)
-
-            if not cleaned:
-                continue
-
-            # Si hay varios candidatos, prioriza el título de sesión más corto,
-            # que suele corresponder a la fila concreta y no a un contenedor padre.
-            with_session = [title for title in cleaned if session_re.search(title)]
-            pool = with_session or cleaned
-            sessions_map[time_str] = min(pool, key=len)
-
-    except (requests.RequestException, ValueError) as exc:
-        print(f"Error consultando programación de Movistar+ ({url}): {exc}")
-    except Exception as exc:
-        print(f"Error analizando programación de Movistar+ ({url}): {exc}")
-
-    if not sessions_map:
-        print(f"Aviso: no se pudieron extraer horarios de Movistar+ desde {url}")
-
+        for row in soup.find_all(["div", "li", "tr", "article"]):
+            text_block = row.get_text(" ", strip=True)
+            time_match = TIME_RE.search(text_block)
+            if time_match:
+                t_str = clean_time(time_match.group(0))
+                clean_title = text_block.replace(time_match.group(0), "").strip()
+                clean_title = re.sub(r"^[–\-\:\s]+|[–\-\:\s]+$", "", clean_title).strip()
+                if clean_title and len(clean_title) > 2:
+                    sessions_map[t_str] = translate_italian_session(clean_title)
+    except Exception as e:
+        print(f"Aviso: No se pudo obtener la guía de Sky Sport MotoGP Italia: {e}")
     return sessions_map
 
 
-def find_motor_session(sessions_map: dict[str, str], event_time: str, allow_previous: bool = True) -> str:
-    """
-    Busca la sesión correspondiente a la hora del evento.
-    Prioriza la hora exacta; como alternativa, devuelve la sesión identificada
-    más reciente anterior al evento, siempre que no hayan pasado más de 3 horas.
-    """
-    if not sessions_map or not event_time:
-        return ""
+@functools.lru_cache(maxsize=4)
+def fetch_movistar_f1_sessions() -> dict:
+    """Extrae la programación diaria de DAZN F1 desde Movistar+."""
+    sessions_map = {}
+    try:
+        response = requests.get(MOVISTAR_F1_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-    session_re = re.compile(
-        r"libres|fp\\d|clasificaci[oó]n|qualifying|sprint|carrera|race|warm.?up|"
-        r"previo|post",
-        re.IGNORECASE,
-    )
-    if event_time in sessions_map and session_re.search(sessions_map[event_time]):
-        return sessions_map[event_time]
-
-    # La programación de MotoGP incluye muchas emisiones genéricas de DAZN MotoGP.
-    # No se debe asignarles por proximidad la última sesión identificada: puede
-    # provocar que "Sábado al Sprint" aparezca en una hora que corresponde a otra
-    # sesión. Para MotoGP, solo aceptamos coincidencias exactas.
-    if not allow_previous:
-        return ""
-
-    def to_minutes(value: str):
-        try:
-            hours, minutes = value.split(":", 1)
-            return int(hours) * 60 + int(minutes)
-        except (ValueError, AttributeError):
-            return -1
-
-    event_minutes = to_minutes(event_time)
-    if event_minutes < 0:
-        return ""
-
-    session_re = re.compile(
-        r"libres|fp\d|clasificaci[oó]n|qualifying|sprint|carrera|race|warm.?up",
-        re.IGNORECASE,
-    )
-    candidates = []
-    for start_time, title in sessions_map.items():
-        start_minutes = to_minutes(start_time)
-        if start_minutes < 0 or not session_re.search(title):
-            continue
-
-        # Trata los programas posteriores a medianoche como continuidad del día.
-        if start_minutes > event_minutes:
-            start_minutes -= 24 * 60
-
-        elapsed = event_minutes - start_minutes
-        if 0 <= elapsed <= 180:
-            candidates.append((elapsed, title))
-
-    return min(candidates, key=lambda item: item[0])[1] if candidates else ""
+        for row in soup.find_all(["div", "li", "tr", "article"]):
+            text_block = row.get_text(" ", strip=True)
+            time_match = TIME_RE.search(text_block)
+            if time_match:
+                t_str = clean_time(time_match.group(0))
+                clean_title = text_block.replace(time_match.group(0), "").strip()
+                clean_title = re.sub(r"^[–\-\:\s]+|[–\-\:\s]+$", "", clean_title).strip()
+                if clean_title and len(clean_title) > 2:
+                    sessions_map[t_str] = clean_title
+    except Exception as e:
+        print(f"Aviso: No se pudo obtener la guía de Movistar DAZN F1: {e}")
+    return sessions_map
 
 
 # ============================================================================
@@ -424,25 +342,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif is_indycar: comp_name = "Indycar"
         elif is_formulae: comp_name = "Formula E"
 
-        session_name = ""
-        session_patterns = [
-            r"entrenamientos libres \d+", r"libres \d+", r"fp\d+", 
-            r"clasificacion", r"qualifying", r"sprint shootout", 
-            r"sprint", r"carrera", r"race", r"warm up"
-        ]
-        for pat in session_patterns:
-            match_ses = re.search(pat, blob, re.IGNORECASE)
-            if match_ses:
-                session_name = match_ses.group(0).capitalize()
-                break
-
+        # Construir evento limpio
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
-        base_title = " - ".join(event_parts) if event_parts else comp_name
-        
-        if session_name and session_name.lower() not in base_title.lower():
-            event_title = f"{comp_name} - {session_name}" if base_title == comp_name else f"{base_title} ({session_name})"
-        else:
-            event_title = base_title
+        event_title = " - ".join(event_parts) if event_parts else comp_name
 
         is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"])
         return ("Motor", "🏆", comp_name, is_fav, True, event_title)
@@ -616,8 +518,9 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    f1_movistar_sessions = fetch_movistar_motor_sessions(MOVISTAR_F1_URL)
-    motogp_movistar_sessions = fetch_movistar_motor_sessions(MOVISTAR_MOTOGP_URL)
+    # Cargar programaciones externas para cruce de sesiones de motor
+    motogp_sky_sessions = fetch_sky_motogp_it_sessions()
+    f1_movistar_sessions = fetch_movistar_f1_sessions()
 
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
@@ -645,38 +548,14 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 final_event = custom_event if custom_event else event_str
 
-                if sport == "Motor" and time_clean:
-                    target_map = {}
-                    if "fórmula 1" in competition.lower() or "f1" in blob:
-                        target_map = f1_movistar_sessions
-                    elif "motogp" in competition.lower():
-                        target_map = motogp_movistar_sessions
-
-                    is_motogp_event = "motogp" in competition.lower()
-                    movistar_session_title = find_motor_session(
-                        target_map,
-                        time_clean,
-                        allow_previous=not is_motogp_event,
-                    )
-                    if movistar_session_title:
-                        # Evita añadir el título si ya está reflejado en el evento.
-                        if normalize_search_text(movistar_session_title) not in normalize_search_text(final_event):
-                            final_event = f"{final_event} ({movistar_session_title})"
-
-                    # DAZN MotoGP no emite carreras durante las 24 horas.
-                    # Descarta las entradas genéricas "MotoGP" cuando no se ha
-                    # podido asociar una sesión real de la programación al horario.
-                    # Si la fuente ya aporta una sesión concreta (Sprint, Carrera,
-                    # Moto3/Moto2, Warm Up, clasificación, etc.), se conserva.
-                    if is_motogp_event:
-                        event_has_session = bool(re.search(
-                            r"sprint|carrera|motogp\s*[-–:]|moto[23]|warm.?up|"
-                            r"clasificaci[oó]n|qualifying|entrenamientos|libres|fp\d",
-                            final_event,
-                            re.IGNORECASE,
-                        ))
-                        if not event_has_session and not movistar_session_title:
-                            continue
+                # CRUCE DE SESIONES DE MOTOR (MOTOGP Y FÓRMULA 1)
+                if sport == "Motor":
+                    if competition.lower() == "motogp" and time_clean in motogp_sky_sessions:
+                        session_desc = motogp_sky_sessions[time_clean]
+                        final_event = f"{competition} - {session_desc}"
+                    elif "fórmula 1" in competition.lower() and time_clean in f1_movistar_sessions:
+                        session_desc = f1_movistar_sessions[time_clean]
+                        final_event = f"{competition} - {session_desc}"
 
                 if not EVENT_TEXT_RE.search(final_event):
                     continue
