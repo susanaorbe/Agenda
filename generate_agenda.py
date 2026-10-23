@@ -27,9 +27,9 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# URLs de programación para cruce de sesiones de Motor
-MOVISTAR_F1_URL = "https://www.movistarplus.es/programacion-tv/mvf1"
-SKY_MOTOGP_IT_URL = "https://www.superguidatv.it/programmazione-canale/oggi/guida-programmi-tv-sky-sport-motogp/sky-sport/44/"
+# URLs de programación en español (Mundo Deportivo) para cruce de sesiones de Motor
+MUNDO_DEPORTIVO_F1_URL = "https://www.mundodeportivo.com/guia-tv/canal/dazn-formula-1"
+MUNDO_DEPORTIVO_MOTOGP_URL = "https://www.mundodeportivo.com/guia-tv/canal/dazn-moto-gp"
 
 CHANNEL_DICT = {
     'la 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://daddylive.pk/'],
@@ -244,77 +244,30 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# FUNCIONES DE EXTRACCIÓN Y TRADUCCIÓN EXTERNA (SKY MOTOGP & MOVISTAR F1)
+# FUNCIONES DE EXTRACCIÓN DE PROGRAMACIÓN (MUNDO DEPORTIVO EN ESPAÑOL)
 # ============================================================================
 
-ITALIAN_MOTOR_TRANSLATIONS = {
-    "prove libere 1": "Entrenamientos Libres 1",
-    "prove libere 2": "Entrenamientos Libres 2",
-    "prove libere 3": "Entrenamientos Libres 3",
-    "prove libere": "Entrenamientos Libres",
-    "prove": "Entrenamientos",
-    "qualifiche": "Clasificación",
-    "gara": "Carrera",
-    "sprint race": "Carrera Sprint",
-    "sprint": "Sprint",
-    "warm up": "Warm Up",
-    "paddock live": "Paddock Live",
-    "conferenza stampa": "Conferencia de Prensa"
-}
-
-
-def translate_italian_session(title: str) -> str:
-    """Traduce términos de motor en italiano al español."""
-    clean_t = title.lower()
-    for it_term, es_term in ITALIAN_MOTOR_TRANSLATIONS.items():
-        if it_term in clean_t:
-            clean_t = clean_t.replace(it_term, es_term)
-    return clean_t.title()
-
-
 @functools.lru_cache(maxsize=4)
-def fetch_sky_motogp_it_sessions() -> dict:
-    """Extrae la programación diaria de Sky Sport MotoGP (Italia) traducida al español."""
+def fetch_mundodeportivo_sessions(url: str) -> dict:
+    """Extrae la programación diaria de un canal desde Mundo Deportivo (en español)."""
     sessions_map = {}
     try:
-        response = requests.get(SKY_MOTOGP_IT_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        for row in soup.find_all(["div", "li", "tr", "article"]):
+        for row in soup.find_all(["li", "div", "article"], class_=re.compile("program|item|event|row", re.IGNORECASE)):
             text_block = row.get_text(" ", strip=True)
             time_match = TIME_RE.search(text_block)
             if time_match:
                 t_str = clean_time(time_match.group(0))
                 clean_title = text_block.replace(time_match.group(0), "").strip()
-                clean_title = re.sub(r"^[–\-\:\s]+|[–\-\:\s]+$", "", clean_title).strip()
-                if clean_title and len(clean_title) > 2:
-                    sessions_map[t_str] = translate_italian_session(clean_title)
-    except Exception as e:
-        print(f"Aviso: No se pudo obtener la guía de Sky Sport MotoGP Italia: {e}")
-    return sessions_map
-
-
-@functools.lru_cache(maxsize=4)
-def fetch_movistar_f1_sessions() -> dict:
-    """Extrae la programación diaria de DAZN F1 desde Movistar+."""
-    sessions_map = {}
-    try:
-        response = requests.get(MOVISTAR_F1_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
-
-        for row in soup.find_all(["div", "li", "tr", "article"]):
-            text_block = row.get_text(" ", strip=True)
-            time_match = TIME_RE.search(text_block)
-            if time_match:
-                t_str = clean_time(time_match.group(0))
-                clean_title = text_block.replace(time_match.group(0), "").strip()
-                clean_title = re.sub(r"^[–\-\:\s]+|[–\-\:\s]+$", "", clean_title).strip()
+                clean_title = re.sub(r"^(?:deporte|termina|\d{2}:\d{2}|[–\-\:\s])+", "", clean_title).strip()
+                
                 if clean_title and len(clean_title) > 2:
                     sessions_map[t_str] = clean_title
     except Exception as e:
-        print(f"Aviso: No se pudo obtener la guía de Movistar DAZN F1: {e}")
+        print(f"Aviso: No se pudo obtener la guía desde Mundo Deportivo ({url}): {e}")
     return sessions_map
 
 
@@ -342,7 +295,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif is_indycar: comp_name = "Indycar"
         elif is_formulae: comp_name = "Formula E"
 
-        # Construir evento limpio
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
         event_title = " - ".join(event_parts) if event_parts else comp_name
 
@@ -518,9 +470,9 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # Cargar programaciones externas para cruce de sesiones de motor
-    motogp_sky_sessions = fetch_sky_motogp_it_sessions()
-    f1_movistar_sessions = fetch_movistar_f1_sessions()
+    # Cargar programaciones desde Mundo Deportivo (en español)
+    f1_md_sessions = fetch_mundodeportivo_sessions(MUNDO_DEPORTIVO_F1_URL)
+    motogp_md_sessions = fetch_mundodeportivo_sessions(MUNDO_DEPORTIVO_MOTOGP_URL)
 
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
@@ -548,13 +500,13 @@ def fetch_and_parse_agenda() -> list[dict]:
 
                 final_event = custom_event if custom_event else event_str
 
-                # CRUCE DE SESIONES DE MOTOR (MOTOGP Y FÓRMULA 1)
+                # CRUCE DE SESIONES DE MOTOR CON MUNDO DEPORTIVO
                 if sport == "Motor":
-                    if competition.lower() == "motogp" and time_clean in motogp_sky_sessions:
-                        session_desc = motogp_sky_sessions[time_clean]
+                    if "fórmula 1" in competition.lower() and time_clean in f1_md_sessions:
+                        session_desc = f1_md_sessions[time_clean]
                         final_event = f"{competition} - {session_desc}"
-                    elif "fórmula 1" in competition.lower() and time_clean in f1_movistar_sessions:
-                        session_desc = f1_movistar_sessions[time_clean]
+                    elif competition.lower() == "motogp" and time_clean in motogp_md_sessions:
+                        session_desc = motogp_md_sessions[time_clean]
                         final_event = f"{competition} - {session_desc}"
 
                 if not EVENT_TEXT_RE.search(final_event):
