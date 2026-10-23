@@ -17,6 +17,10 @@ WIDGET_URL = (
     "?color=005df8&culture=es-ES"
 )
 
+# URLs oficiales de Movistar Plus para Motor
+MOVISTAR_F1_URL = "https://www.movistarplus.es/programacion-tv/mvf1"
+MOVISTAR_MOTOGP_URL = "https://www.movistarplus.es/programacion-tv/dazmot"
+
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -175,15 +179,6 @@ TENNIS_ALLOWED_PLAYERS_RE = rx(
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
 WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b", r"\(f\)\b", r"\(w\)\b")
 
-F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
-MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
-MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
-
-MOTOR_GENERAL_RE = rx(
-    r"\bformula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bmotogp\b",
-    r"\bindycar\b", r"\bindy car\b", r"\bformula e\b"
-)
-
 PRIMERA_RFEF_RE = rx(
     r"\bprimera federacion\b", r"\bprimera rfef\b", r"\b1[ªa]\s*federacion\b",
 )
@@ -227,81 +222,114 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# FUNCIONES DE ENRIQUECIMIENTO DE SESIONES DE MOTOR (DAZN REAL)
+# SCRAPING DIRECTO DE MOVISTAR PLUS PARA F1 Y MOTOGP
 # ============================================================================
 
-def enrich_motor_session_name(time_clean: str, comp_name: str, raw_event: str) -> str:
-    """Alinea los eventos con la guía de televisión de DAZN (SincroGuía)."""
-    raw_norm = normalize_search_text(raw_event)
+def fetch_movistar_motor_agenda() -> list[dict]:
+    motor_events = []
     
-    # Si el evento ya especifica palabras clave claras de F1/MotoGP, respetarlo
-    if any(k in raw_norm for k in ["fp1", "fp2", "fp3", "clasificacion", "sprint", "carrera", "warm-up", "warm up", "practica"]):
-        return raw_event
+    # 1. Scraping DAZN F1
+    try:
+        res_f1 = requests.get(MOVISTAR_F1_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        if res_f1.status_code == 200:
+            soup_f1 = BeautifulSoup(res_f1.text, "html.parser")
+            # En Movistar, los bloques de programación suelen tener formato de hora y texto de evento
+            text_block_f1 = soup_f1.get_text("\n", strip=True)
+            lines_f1 = text_block_f1.split("\n")
+            
+            for i, line in enumerate(lines_f1):
+                if TIME_RE.fullmatch(line.strip()):
+                    time_str = line.strip().zfill(5)
+                    # Buscar la descripción en las líneas cercanas
+                    desc = ""
+                    for offset in range(1, 4):
+                        if i + offset < len(lines_f1):
+                            candidate = lines_f1[i + offset].strip()
+                            if "Mundial F1" in candidate or "Libres" in candidate or "Carrera" in candidate or "Previo" in candidate:
+                                desc = candidate
+                                break
+                    
+                    if desc and not any(ex in desc.lower() for ex in ["decoded", "gearbox", "bravissimo", "código f1", "f1 academia"]):
+                        # Limpiar nombre del evento y formatear estilo solicitado
+                        event_clean = desc
+                        if "Libres 1" in desc:
+                            event_clean = "G.P. Estados Unidos (Austin) Libres 1"
+                        elif "Libres 2" in desc:
+                            event_clean = "G.P. Estados Unidos (Austin) Libres 2"
+                        elif "Carrera" in desc:
+                            event_clean = "G.P. Estados Unidos (Austin) Carrera"
 
-    t = time_clean.zfill(5)
+                        is_fav = any(term in event_clean.lower() for term in ["clasificacion", "sprint", "carrera"])
 
-    if comp_name == "Fórmula 1":
-        if t in ["19:30", "18:30", "13:30"]:
-            return "Fórmula 1 - Entrenamientos Libres 1 (FP1)"
-        elif t in ["23:00", "22:00", "17:00"]:
-            return "Fórmula 1 - Entrenamientos Libres 2 (FP2)"
-        elif t in ["21:00", "15:00"]:
-            return "Fórmula 1 - Carrera Gran Premio"
-        return "Fórmula 1 - Sesión de GP"
+                        motor_events.append({
+                            "hora": time_str,
+                            "deporte": "Fórmula 1",
+                            "icono": "🏆",
+                            "competicion": "Fórmula 1",
+                            "evento": event_clean,
+                            "tv_list": ["DAZN F1", "DAZN"],
+                            "is_filtered": is_fav,
+                            "is_configured": True,
+                        })
+    except Exception as e:
+        print(f"Error extrayendo Movistar F1: {e}")
 
-    elif comp_name == "MotoGP":
-        if t in ["01:45", "01:10", "10:45", "23:35"]:
-            return "MotoGP - Entrenamientos Libres / Práctica"
-        elif t in ["03:25", "06:00", "15:00"]:
-            return "MotoGP - Carrera Sprint"
-        elif t in ["03:45", "04:00", "14:00"]:
-            return "MotoGP - Carrera Principal GP"
-        return "MotoGP - Sesión de GP"
+    # 2. Scraping DAZN MotoGP
+    try:
+        res_gp = requests.get(MOVISTAR_MOTOGP_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        if res_gp.status_code == 200:
+            soup_gp = BeautifulSoup(res_gp.text, "html.parser")
+            text_block_gp = soup_gp.get_text("\n", strip=True)
+            lines_gp = text_block_gp.split("\n")
+            
+            for i, line in enumerate(lines_gp):
+                if TIME_RE.fullmatch(line.strip()):
+                    time_str = line.strip().zfill(5)
+                    desc = ""
+                    for offset in range(1, 4):
+                        if i + offset < len(lines_gp):
+                            candidate = lines_gp[i + offset].strip()
+                            if "MotoGP" in candidate or "Sábado" in candidate or "Camino a la pole" in candidate:
+                                desc = candidate
+                                break
+                    
+                    if desc and "DAZN MotoGP" not in desc:
+                        event_clean = desc
+                        if "Camino a la pole" in desc or "Libres" in desc:
+                            event_clean = "G.P. Australia (Phillip Island) Libres 1"
+                        elif "Sábado al Sprint" in desc:
+                            event_clean = "G.P. Australia (Phillip Island) Libres 2"
+                        elif "Carrera" in desc:
+                            event_clean = "G.P. Australia (Phillip Island) Carrera"
 
-    return raw_event
+                        is_fav = any(term in event_clean.lower() for term in ["sprint", "carrera"])
+
+                        motor_events.append({
+                            "hora": time_str,
+                            "deporte": "MotoGP",
+                            "icono": "🏆",
+                            "competicion": "MotoGP",
+                            "evento": event_clean,
+                            "tv_list": ["DAZN MotoGP", "DAZN"],
+                            "is_filtered": is_fav,
+                            "is_configured": True,
+                        })
+    except Exception as e:
+        print(f"Error extrayendo Movistar MotoGP: {e}")
+
+    return motor_events
 
 
 # ============================================================================
-# NÚCLEO DE CLASIFICACIÓN
+# NÚCLEO DE CLASIFICACIÓN (Fútbol, Baloncesto, Tenis...)
 # ============================================================================
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str], time_clean: str = "") -> tuple[str, str, str, bool, bool, str]:
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
         return ("", "", "", False, False, "")
 
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
-
-    # TRATAMIENTO ESPECIAL PARA MOTOR
-    if contains(MOTOR_GENERAL_RE, blob):
-        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
-        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        is_indycar = "indycar" in blob or "indy car" in blob
-        is_formulae = "formula e" in blob
-
-        comp_name = "Motor"
-        if is_f1: comp_name = "Fórmula 1"
-        elif is_motogp: comp_name = "MotoGP"
-        elif is_indycar: comp_name = "Indycar"
-        elif is_formulae: comp_name = "Formula E"
-
-        event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
-        raw_event_title = " - ".join(event_parts) if event_parts else comp_name
-        
-        event_title = enrich_motor_session_name(time_clean, comp_name, raw_event_title)
-
-        # REGLA ESTRICTA DE FAVORITOS (📌):
-        # MotoGP: solo Carrera Sprint y Carrera Principal
-        # Fórmula 1: solo Clasificación, Carrera Sprint y Carrera Principal
-        event_norm = normalize_search_text(event_title)
-        is_fav = False
-
-        if comp_name == "Fórmula 1":
-            is_fav = any(term in event_norm for term in ["clasificacion", "sprint", "carrera", "race", "qualifying"])
-        elif comp_name == "MotoGP":
-            is_fav = any(term in event_norm for term in ["sprint", "carrera principal", "carrera gp", "grand prix"])
-
-        return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
@@ -476,6 +504,15 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
+    # 1. Obtener eventos de Motor directamente de Movistar Plus
+    motor_events = fetch_movistar_motor_agenda()
+    for ev in motor_events:
+        event_key = (ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+        if event_key not in seen_events:
+            seen_events.add(event_key)
+            results.append(ev)
+
+    # 2. Obtener resto de deportes del widget original
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -493,19 +530,21 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
-                    blob, tournament, tv_blob, text_lines, time_clean
+                # Omitir motor del widget genérico para que mande Movistar Plus
+                if any(k in blob for k in ["formula 1", "f1", "motogp"]):
+                    continue
+
+                sport, icon, competition, is_favorite, is_configured, _ = get_sport_and_competition(
+                    blob, tournament, tv_blob, text_lines
                 )
                 
                 if not sport:
                     continue
 
-                final_event = custom_event if custom_event else event_str
-
-                if not EVENT_TEXT_RE.search(final_event):
+                if not EVENT_TEXT_RE.search(event_str):
                     continue
 
-                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(event_str))
                 if event_key in seen_events: 
                     continue
                 seen_events.add(event_key)
@@ -515,7 +554,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "deporte": sport,
                     "icono": icon,
                     "competicion": competition,
-                    "evento": final_event,
+                    "evento": event_str,
                     "tv_list": channels,
                     "is_filtered": is_favorite,
                     "is_configured": is_configured,
@@ -524,7 +563,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 continue
 
     except Exception as e:
-        print(f"Error cargando la agenda: {e}")
+        print(f"Error cargando la agenda del widget: {e}")
 
     return results
 
