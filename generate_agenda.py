@@ -250,11 +250,21 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif is_indycar: comp_name = "Indycar"
         elif is_formulae: comp_name = "Formula E"
 
-        # Construir evento limpio eliminando la categoría repetida si estuviera mezclada
+        # Preservar todas las líneas reales del evento (ej: G.P. Australia - Libres 1)
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
         event_title = " - ".join(event_parts) if event_parts else comp_name
 
-        is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"])
+        # Lógica de Favoritos configurada por categoría y tipo de sesión
+        is_fav = False
+        event_lower = normalize_search_text(event_title)
+        
+        if is_f1:
+            # F1: Clasificación (Sprint/Principal) y Carrera (Sprint/Principal), excluyendo Libres
+            is_fav = any(kw in event_lower for kw in ["clasificacion", "qualifying", "sprint", "carrera", "race"]) and "libres" not in event_lower
+        elif is_motogp:
+            # MotoGP: Únicamente Carrera Sprint y Carrera Principal, excluyendo Libres y Warm Up
+            is_fav = any(kw in event_lower for kw in ["carrera", "race", "sprint"]) and "libres" not in event_lower and "warm up" not in event_lower
+
         return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
@@ -348,7 +358,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     )
 
     for part in raw_parts:
-        # Limpieza estricta de residuos de texto y coletillas en crudo
         part = JUNK_RESIDUES_RE.sub("", part).strip()
         if not part:
             continue
