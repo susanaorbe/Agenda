@@ -663,6 +663,21 @@ def fetch_and_parse_agenda() -> list[dict]:
                         if normalize_search_text(movistar_session_title) not in normalize_search_text(final_event):
                             final_event = f"{final_event} ({movistar_session_title})"
 
+                    # DAZN MotoGP no emite carreras durante las 24 horas.
+                    # Descarta las entradas genéricas "MotoGP" cuando no se ha
+                    # podido asociar una sesión real de la programación al horario.
+                    # Si la fuente ya aporta una sesión concreta (Sprint, Carrera,
+                    # Moto3/Moto2, Warm Up, clasificación, etc.), se conserva.
+                    if is_motogp_event:
+                        event_has_session = bool(re.search(
+                            r"sprint|carrera|motogp\s*[-–:]|moto[23]|warm.?up|"
+                            r"clasificaci[oó]n|qualifying|entrenamientos|libres|fp\d",
+                            final_event,
+                            re.IGNORECASE,
+                        ))
+                        if not event_has_session and not movistar_session_title:
+                            continue
+
                 if not EVENT_TEXT_RE.search(final_event):
                     continue
 
