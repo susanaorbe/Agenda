@@ -231,28 +231,29 @@ JUNK_RESIDUES_RE = rx(
 # ============================================================================
 
 def enrich_motor_session_name(time_clean: str, comp_name: str, raw_event: str) -> str:
-    """Enriquece el nombre del evento de Motor según la hora y la competición cuando la web provee un nombre genérico."""
+    """Enriquece el nombre del evento de Motor según la hora y la competición."""
     raw_norm = normalize_search_text(raw_event)
     
-    # Si el evento ya especifica palabras clave claras, mantenerlo intacto
     if any(k in raw_norm for k in ["fp1", "fp2", "fp3", "clasificacion", "sprint", "carrera", "warm-up", "warm up", "practica"]):
         return raw_event
 
+    t = time_clean.zfill(5)
+
     if comp_name == "Fórmula 1":
-        if time_clean in ["19:30", "18:30", "13:30"]:
+        if t in ["19:30", "18:30", "13:30"]:
             return "Fórmula 1 - Entrenamientos Libres 1 (FP1)"
-        elif time_clean in ["23:00", "22:00", "17:00"]:
+        elif t in ["23:00", "22:00", "17:00"]:
             return "Fórmula 1 - Entrenamientos Libres 2 (FP2)"
-        elif time_clean in ["21:00", "15:00"]:
+        elif t in ["21:00", "15:00"]:
             return "Fórmula 1 - Carrera Gran Premio"
         return "Fórmula 1 - Sesión de GP"
 
     elif comp_name == "MotoGP":
-        if time_clean in ["01:45", "01:10", "10:45"]:
+        if t in ["01:45", "01:10", "10:45"]:
             return "MotoGP - Entrenamientos Libres / Práctica"
-        elif time_clean in ["06:00", "15:00"]:
-            return "MotoGP - Carrera Sprint / Clasificación"
-        elif time_clean in ["04:00", "14:00"]:
+        elif t in ["06:00", "15:00"]:
+            return "MotoGP - Carrera Sprint"
+        elif t in ["04:00", "14:00"]:
             return "MotoGP - Carrera Principal GP"
         return "MotoGP - Sesión de GP"
 
@@ -286,10 +287,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
         raw_event_title = " - ".join(event_parts) if event_parts else comp_name
         
-        # Enriquecer automáticamente la sesión de Motor si el texto original del widget es genérico
         event_title = enrich_motor_session_name(time_clean, comp_name, raw_event_title)
 
-        is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"]) or (comp_name in ["Fórmula 1", "MotoGP"])
+        # SOLO a Favoritos si es Clasificación, Sprint o Carrera
+        event_norm = normalize_search_text(event_title)
+        is_fav = any(term in event_norm for term in ["clasificacion", "sprint", "carrera", "race", "qualifying"])
+
         return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
@@ -364,7 +367,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     text_full = item.get_text(" | ", strip=True)
     time_match = TIME_RE.search(text_full)
-    time_clean = time_match.group(0) if time_match else ""
+    
+    # Formatear la hora para asegurar que siempre tenga 2 dígitos (ej: 1:45 -> 01:45)
+    time_clean = ""
+    if time_match:
+        raw_time = time_match.group(0)
+        time_clean = raw_time.zfill(5)
 
     raw_parts = [
         part.strip()
