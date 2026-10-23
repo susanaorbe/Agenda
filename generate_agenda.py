@@ -246,28 +246,151 @@ JUNK_RESIDUES_RE = rx(
 # ============================================================================
 
 @functools.lru_cache(maxsize=4)
-def fetch_movistar_motor_sessions(url: str) -> dict:
-    sessions_map = {}
+def fetch_movistar_motor_sessions(url: str) -> dict[str, str]:
+    """
+    Devuelve {HH:MM: título} a partir de la programación de Movistar Plus+.
+    Primero analiza los bloques de programación y, si la estructura HTML cambia,
+    utiliza una extracción de texto como alternativa. No necesita JavaScript.
+    """
+    sessions_map: dict[str, str] = {}
+
     try:
-        response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        response = requests.get(
+            url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT
+        )
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
-        
-        for row in soup.find_all(["li", "div", "article", "tr"], class_=re.compile("program|item|ficha|horario|evento|row|grid", re.IGNORECASE)):
-            text_block = row.get_text(" ", strip=True)
-            time_match = TIME_RE.search(text_block)
-            if time_match:
-                time_str = time_match.group(0)
-                time_normalized = clean_time(time_str)
-                clean_title = text_block.replace(time_str, "").strip()
-                clean_title = re.sub(r"^[–\-\:\s]+|[–\-\:\s]+$", "", clean_title).strip()
-                
-                if clean_title and len(clean_title) > 3:
-                    sessions_map[time_normalized] = clean_title
-    except Exception as e:
-        print(f"Error consultando programación de Movistar+ ({url}): {e}")
-        
+
+        # Guardamos candidatos por hora y después elegimos el título más útil.
+        candidates: dict[str, list[str]] = {}
+
+        selectors = soup.find_all(
+            ["li", "div", "article", "tr"],
+            class_=re.compile(
+                r"program|item|ficha|horario|evento|row|grid|emision|emisión",
+                re.IGNORECASE,
+            ),
+        )
+
+        for row in selectors:
+            text_block = re.sub(r"\s+", " ", row.get_text(" ", strip=True))
+            if not text_block:
+                continue
+
+            # Una fila puede contener varios horarios por ser un contenedor padre.
+            matches = list(TIME_RE.finditer(text_block))
+            for match in matches:
+                time_str = clean_time(match.group(0))
+                title = text_block[:match.start()].strip(" –-:|")
+                # En algunos diseños la hora precede al título.
+                if not title or len(title) < 4:
+                    title = text_block[match.end():].strip(" –-:|")
+                title = re.sub(r"^(?:Deportes|Motor|Motociclismo)\s+", "", title,
+                               flags=re.IGNORECASE).strip()
+                if title and len(title) >= 4:
+                    candidates.setdefault(time_str, []).append(title)
+
+        # Fallback: extrae las horas del texto visible si cambiaron las clases CSS.
+        if not candidates:
+            lines = [
+                re.sub(r"\s+", " ", line).strip()
+                for line in soup.get_text("\n", strip=True).splitlines()
+                if line.strip()
+            ]
+            previous_text = ""
+            for line in lines:
+                match = TIME_RE.search(line)
+                if match:
+                    time_str = clean_time(match.group(0))
+                    title = line[:match.start()].strip(" –-:|")
+                    if len(title) < 4:
+                        title = line[match.end():].strip(" –-:|")
+                    if len(title) < 4 and previous_text:
+                        title = previous_text
+                    if title and len(title) >= 4:
+                        candidates.setdefault(time_str, []).append(title)
+                previous_text = line
+
+        # Evita que un contenedor padre sobrescriba el título de una fila concreta.
+        session_re = re.compile(
+            r"libres|fp\d|clasificaci[oó]n|qualifying|sprint|carrera|race|warm.?up|"
+            r"previo|post",
+            re.IGNORECASE,
+        )
+        for time_str, titles in candidates.items():
+            cleaned = []
+            for title in titles:
+                title = re.sub(r"\s+", " ", title).strip(" –-:|")
+                if title and title not in cleaned:
+                    cleaned.append(title)
+
+            if not cleaned:
+                continue
+
+            # Si hay varios candidatos, prioriza el título de sesión más corto,
+            # que suele corresponder a la fila concreta y no a un contenedor padre.
+            with_session = [title for title in cleaned if session_re.search(title)]
+            pool = with_session or cleaned
+            sessions_map[time_str] = min(pool, key=len)
+
+    except (requests.RequestException, ValueError) as exc:
+        print(f"Error consultando programación de Movistar+ ({url}): {exc}")
+    except Exception as exc:
+        print(f"Error analizando programación de Movistar+ ({url}): {exc}")
+
+    if not sessions_map:
+        print(f"Aviso: no se pudieron extraer horarios de Movistar+ desde {url}")
+
     return sessions_map
+
+
+def find_motor_session(sessions_map: dict[str, str], event_time: str) -> str:
+    """
+    Busca la sesión correspondiente a la hora del evento.
+    Prioriza la hora exacta; como alternativa, devuelve la sesión identificada
+    más reciente anterior al evento, siempre que no hayan pasado más de 3 horas.
+    """
+    if not sessions_map or not event_time:
+        return ""
+
+    session_re = re.compile(
+        r"libres|fp\\d|clasificaci[oó]n|qualifying|sprint|carrera|race|warm.?up|"
+        r"previo|post",
+        re.IGNORECASE,
+    )
+    if event_time in sessions_map and session_re.search(sessions_map[event_time]):
+        return sessions_map[event_time]
+
+    def to_minutes(value: str) -> int:
+        try:
+            hours, minutes = value.split(":", 1)
+            return int(hours) * 60 + int(minutes)
+        except (ValueError, AttributeError):
+            return -1
+
+    event_minutes = to_minutes(event_time)
+    if event_minutes < 0:
+        return ""
+
+    session_re = re.compile(
+        r"libres|fp\d|clasificaci[oó]n|qualifying|sprint|carrera|race|warm.?up",
+        re.IGNORECASE,
+    )
+    candidates = []
+    for start_time, title in sessions_map.items():
+        start_minutes = to_minutes(start_time)
+        if start_minutes < 0 or not session_re.search(title):
+            continue
+
+        # Trata los programas posteriores a medianoche como continuidad del día.
+        if start_minutes > event_minutes:
+            start_minutes -= 24 * 60
+
+        elapsed = event_minutes - start_minutes
+        if 0 <= elapsed <= 180:
+            candidates.append((elapsed, title))
+
+    return min(candidates, key=lambda item: item[0])[1] if candidates else ""
 
 
 # ============================================================================
@@ -522,9 +645,10 @@ def fetch_and_parse_agenda() -> list[dict]:
                     elif "motogp" in competition.lower():
                         target_map = motogp_movistar_sessions
 
-                    if target_map and time_clean in target_map:
-                        movistar_session_title = target_map[time_clean]
-                        if movistar_session_title.lower() not in final_event.lower():
+                    movistar_session_title = find_motor_session(target_map, time_clean)
+                    if movistar_session_title:
+                        # Evita añadir el título si ya está reflejado en el evento.
+                        if normalize_search_text(movistar_session_title) not in normalize_search_text(final_event):
                             final_event = f"{final_event} ({movistar_session_title})"
 
                 if not EVENT_TEXT_RE.search(final_event):
