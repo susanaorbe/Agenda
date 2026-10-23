@@ -244,11 +244,11 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN DIRECTA DE EMISIONES EN DIRECTO (MUNDO DEPORTIVO)
+# EXTRACCIÓN FILTRADA DE SESIONES OFICIALES EN DIRECTO (F1 Y MOTOGP)
 # ============================================================================
 
 def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: list[str]) -> list[dict]:
-    """Extrae EXCLUSIVAMENTE emisiones que contengan el distintivo 'EN DIRECTO'."""
+    """Extrae EXCLUSIVAMENTE sesiones oficiales en directo (Libres, Clasificación y Carreras)."""
     motor_events = []
     try:
         response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
@@ -264,8 +264,16 @@ def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: lis
             text_block = item.get_text(" ", strip=True)
             text_lower = text_block.lower()
 
-            # Exigir estrictamente que la etiqueta de 'EN DIRECTO' esté presente en el elemento
+            # 1. EXIGIR ETIQUETA EN DIRECTO
             if "en directo" not in text_lower:
+                continue
+
+            # 2. EXCLUIR OTRAS CATEGORÍAS (Moto2, Moto3, F2, F3, Rookies, etc.)
+            if any(cat in text_lower for cat in ["moto2", "moto 2", "moto3", "moto 3", "f2", "f3", "rookies", "academy"]):
+                continue
+
+            # 3. EXCLUIR PROGRAMAS DE PREVIO Y POST
+            if any(junk in text_lower for junk in ["previo", "post", "rueda de prensa", "podio", "bravissimo", "reportaje"]):
                 continue
 
             time_match = TIME_RE.search(text_block)
@@ -276,14 +284,21 @@ def fetch_mundodeportivo_motor_events(url: str, comp_name: str, tv_channels: lis
             if time_clean in seen_times:
                 continue
 
-            # Extraer el título del evento eliminando "en directo", horas y textos secundarios de la web
+            # Extraer y limpiar el título de la sesión
             title = text_block.replace(time_match.group(0), "").strip()
             title = re.sub(r"(?i)en directo|deporte|termina\s*\d{2}:\d{2}|\d{2}:\d{2}|[–\-\:\s]+", " ", title).strip()
             title = re.sub(r"\s+", " ", title)
 
-            if title and len(title) > 2:
+            clean_norm = normalize_search_text(title)
+
+            # 4. EXIGIR QUE SEA UNA SESIÓN OFICIAL (LIBRES, CLASIFICACIÓN O CARRERA)
+            is_valid_session = any(k in clean_norm for k in [
+                "fp1", "fp2", "fp3", "libres", "practice", "qualifying", "clasificacion",
+                "sprint", "carrera", "race", "warm up"
+            ])
+
+            if is_valid_session and title and len(title) > 2:
                 seen_times.add(time_clean)
-                clean_norm = normalize_search_text(title)
                 is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
                 
                 motor_events.append({
@@ -504,7 +519,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. Obtener EXCLUSIVAMENTE retransmisiones EN DIRECTO desde Mundo Deportivo
+    # 1. Obtener EXCLUSIVAMENTE sesiones oficiales en directo desde Mundo Deportivo
     f1_direct_events = fetch_mundodeportivo_motor_events(
         MUNDO_DEPORTIVO_F1_URL, "Fórmula 1", ["DAZN F1", "DAZN"]
     )
