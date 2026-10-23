@@ -344,7 +344,7 @@ def fetch_movistar_motor_sessions(url: str) -> dict[str, str]:
     return sessions_map
 
 
-def find_motor_session(sessions_map: dict[str, str], event_time: str) -> str:
+def find_motor_session(sessions_map: dict[str, str], event_time: str, allow_previous: bool = True) -> str:
     """
     Busca la sesión correspondiente a la hora del evento.
     Prioriza la hora exacta; como alternativa, devuelve la sesión identificada
@@ -361,7 +361,14 @@ def find_motor_session(sessions_map: dict[str, str], event_time: str) -> str:
     if event_time in sessions_map and session_re.search(sessions_map[event_time]):
         return sessions_map[event_time]
 
-    def to_minutes(value: str) -> int:
+    # La programación de MotoGP incluye muchas emisiones genéricas de DAZN MotoGP.
+    # No se debe asignarles por proximidad la última sesión identificada: puede
+    # provocar que "Sábado al Sprint" aparezca en una hora que corresponde a otra
+    # sesión. Para MotoGP, solo aceptamos coincidencias exactas.
+    if not allow_previous:
+        return ""
+
+    def to_minutes(value: str):
         try:
             hours, minutes = value.split(":", 1)
             return int(hours) * 60 + int(minutes)
@@ -645,7 +652,12 @@ def fetch_and_parse_agenda() -> list[dict]:
                     elif "motogp" in competition.lower():
                         target_map = motogp_movistar_sessions
 
-                    movistar_session_title = find_motor_session(target_map, time_clean)
+                    is_motogp_event = "motogp" in competition.lower()
+                    movistar_session_title = find_motor_session(
+                        target_map,
+                        time_clean,
+                        allow_previous=not is_motogp_event,
+                    )
                     if movistar_session_title:
                         # Evita añadir el título si ya está reflejado en el evento.
                         if normalize_search_text(movistar_session_title) not in normalize_search_text(final_event):
