@@ -242,7 +242,7 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN DE MOTOR LIMPIA DESDE FUTBOLENLATV.ES
+# EXTRACCIÓN DE MOTOR DESDE FUTBOLENLATV.ES
 # ============================================================================
 
 def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict]:
@@ -252,9 +252,11 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Buscar elementos específicos de partidos/eventos en el HTML
-        items = soup.find_all(["tr", "li", "div"], class_=re.compile(r"\b(?:partido|match|evento|row)\b", re.IGNORECASE))
-        
+        # Buscar bloques de eventos principales
+        items = soup.find_all(["tr", "li", "article", "div"], class_=re.compile(r"match|item|event|row|partido|guia", re.IGNORECASE))
+        if not items:
+            items = soup.find_all(True)
+
         seen_times = set()
         for item in items:
             text_block = item.get_text(" ", strip=True)
@@ -276,7 +278,7 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
                 if "formula e" not in text_lower and "fórmula e" not in text_lower:
                     continue
                 comp_name = "Fórmula E"
-                default_channels = ["Eurosport 1", "Eurosport 2", "DAZN"]
+                default_channels = ["Eurosport 1", "DAZN"]
             elif target_category == "Indycar":
                 if "indycar" not in text_lower and "indy car" not in text_lower:
                     continue
@@ -294,28 +296,26 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
 
             time_clean = clean_time(time_match.group(0))
 
-            # Extraer solo la línea corta del título del evento
+            # Limpiar el nombre del evento
             title = text_block.replace(time_match.group(0), "").strip()
             title = re.sub(r"(?i)en directo|deporte|termina\s*\d{2}:\d{2}|\d{2}:\d{2}|[–\-\:\s]+", " ", title).strip()
-            # Limpiar textos largos corporativos que se cuelen
+            title = re.sub(r"\s+", " ", title)
             if len(title) > 90:
                 title = title[:90].strip() + "..."
-            
+
             clean_norm = normalize_search_text(title)
             is_valid_session = any(k in clean_norm for k in [
                 "fp1", "fp2", "fp3", "libres", "practice", "qualifying", "clasificacion",
                 "sprint", "carrera", "race", "warm up"
             ])
 
-            if is_valid_session:
+            if is_valid_session and len(title) > 2:
                 event_key = (time_clean, comp_name, clean_norm)
                 if event_key in seen_times:
                     continue
                 seen_times.add(event_key)
 
-                # REGLAS DE FAVORITOS SOLICITADAS:
-                # - F1: Clasificaciones, Sprints y Carreras
-                # - MotoGP, FE e Indycar: Solo Carreras
+                # Reglas de Favoritos
                 is_fav = False
                 if comp_name == "Fórmula 1":
                     is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
@@ -339,7 +339,7 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
 
 
 # ============================================================================
-# NÚCLEO DE CLASIFICACIÓN (FÚTBOL, BALONCESTO, TENIS Y OTROS MOTORES)
+# NÚCLEO DE CLASIFICACIÓN (TODOS LOS DEPORTES + MOTOR DEL WIDGET)
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
@@ -349,28 +349,29 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # TRATAMIENTO PARA EVENTOS DE MOTOR DEL WIDGET
+    # MOTOR QUE VIENE DIRECTO DEL WIDGET GENERAL
     if contains(MOTOR_GENERAL_RE, blob):
         is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
         is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        
-        # Ignorar F1 y MotoGP si vienen del widget para tratarlos de forma precisa con las URLs dedicadas
-        if is_f1 or is_motogp:
-            return ("", "", "", False, False, "")
-
         is_indycar = "indycar" in blob or "indy car" in blob
         is_formulae = "formula e" in blob or "fórmula e" in blob
 
-        if not (is_indycar or is_formulae):
-            return ("", "", "", False, False, "")
-
-        comp_name = "Indycar" if is_indycar else "Fórmula E"
+        comp_name = "Motor"
+        if is_f1: comp_name = "Fórmula 1"
+        elif is_motogp: comp_name = "MotoGP"
+        elif is_indycar: comp_name = "Indycar"
+        elif is_formulae: comp_name = "Fórmula E"
 
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
         event_title = " - ".join(event_parts) if event_parts else comp_name
         clean_norm = normalize_search_text(event_title)
 
-        is_fav = any(term in clean_norm for term in ["carrera", "race"])
+        is_fav = False
+        if comp_name == "Fórmula 1":
+            is_fav = any(term in clean_norm for term in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
+        else:
+            is_fav = any(term in clean_norm for term in ["carrera", "race"])
+
         return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
     if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
@@ -542,19 +543,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. Obtener sesiones de motor desde futbolenlatv.es de forma limpia
-    f1_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
-    motogp_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
-    fe_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
-    indy_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Indycar")
-
-    for ev in f1_events + motogp_events + fe_events + indy_events:
-        event_key = (ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
-        if event_key not in seen_events:
-            seen_events.add(event_key)
-            results.append(ev)
-
-    # 2. Obtener Fútbol, Baloncesto, Tenis y resto de deportes del widget principal
+    # 1. Obtener eventos de Motor del WIDGET GENERAL (Fuente principal muy segura)
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -602,12 +591,24 @@ def fetch_and_parse_agenda() -> list[dict]:
     except Exception as e:
         print(f"Error cargando la agenda del widget: {e}")
 
+    # 2. Complementar con las URLs específicas de Motor de futbolenlatv.es
+    f1_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
+    motogp_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
+    fe_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
+    indy_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Indycar")
+
+    for ev in f1_events + motogp_events + fe_events + indy_events:
+        event_key = (ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+        if event_key not in seen_events:
+            seen_events.add(event_key)
+            results.append(ev)
+
     results.sort(key=lambda x: x["hora"])
     return results
 
 
 # ============================================================================
-# GENERACIÓN DE HTML COMPLETO MULTIDEPORTE
+# GENERACIÓN DE HTML COMPLETO
 # ============================================================================
 
 def generate_html(events):
