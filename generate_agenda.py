@@ -75,7 +75,6 @@ def normalize_search_text(text: str) -> str:
 
 
 def clean_time(time_str: str) -> str:
-    """Normaliza las horas para asegurar siempre dos dígitos (ej. 06:00 en lugar de 6:00)."""
     if not time_str:
         return ""
     parts = time_str.split(":")
@@ -97,19 +96,6 @@ def get_channel_urls(channel_name: str) -> list[str]:
     for k, v in CHANNEL_DICT.items():
         if normalize_search_text(k) == clean_name or clean_name in normalize_search_text(k):
             return v
-            
-    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
-        if "m+ vamos" in CHANNEL_DICT:
-            return CHANNEL_DICT["m+ vamos"]
-    elif clean_name in {"movistar plus", "movistar+"}:
-        if "movistar plus+" in CHANNEL_DICT:
-            return CHANNEL_DICT["movistar plus+"]
-    elif clean_name in {"tennis channel", "tennis channel orange tv"}:
-        if "tennis channel - orange tv" in CHANNEL_DICT:
-            return CHANNEL_DICT["tennis channel - orange tv"]
-    elif clean_name in {"tdp", "teledeporte spain (tdp)"}:
-        if "teledeporte" in CHANNEL_DICT:
-            return CHANNEL_DICT["teledeporte"]
 
     return ['https://hubu.ru/fctvlink', 'https://daddylive.pk/']
 
@@ -154,72 +140,9 @@ def contains(pattern: re.Pattern, text: str) -> bool:
     return bool(pattern.search(text))
 
 
-# ============================================================================
-# REGEX DE PATRONES
-# ============================================================================
-
 def rx(*patterns: str) -> re.Pattern:
     return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
 
-
-REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
-CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
-YOUTH_BASKET_RE = rx(r"\bsub\s*[-]?\d+\b", r"\bjunior\b", r"\bcadete\b", r"\binfantil\b")
-
-PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
-ARSENAL_RE = rx(r"\barsenal\b")
-BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
-
-EXCLUDED_SPORTS_RE = rx(
-    r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
-    r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
-    r"\behf\b", r"\bihf\b"
-)
-
-EXCLUDED_COMPETITIONS_RE = rx(
-    r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b"
-)
-
-TENNIS_ALLOWED_PLAYERS_RE = rx(
-    r"\bjannik sinner\b", r"\bsinner\b", r"\balexander zverev\b", r"\bzverev\b",
-    r"\belena rybakina\b", r"\brybakina\b", r"\baryna sabalenka\b", r"\bsabalenka\b",
-    r"\bcarlos alcaraz\b", r"\balcaraz\b", r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina bucsa\b", r"\bbucsa\b", r"\bpaula badosa\b", r"\bbadosa\b",
-    r"\bjaume munar\b", r"\bmunar\b", r"\bjessica bouzas\b", r"\bbouzas\b",
-    r"\brafael jodar\b", r"\bjodar\b"
-)
-
-WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
-WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b", r"\(f\)\b", r"\(w\)\b")
-
-F1_RE = re.compile(r"\bf1(?![\s\-]*(?:academy|2|3|f2|f3))\b", re.IGNORECASE)
-MOTO2_RE = re.compile(r"\bmoto2\b", re.IGNORECASE)
-MOTO3_RE = re.compile(r"\bmoto3\b", re.IGNORECASE)
-
-MOTOR_GENERAL_RE = rx(
-    r"\bformula 1\b", r"\bf1(?![\s\-]*(?:academy))\b", r"\bmotogp\b",
-    r"\bindycar\b", r"\bindy car\b", r"\bformula e\b"
-)
-
-PRIMERA_RFEF_RE = rx(
-    r"\bprimera federacion\b", r"\bprimera rfef\b", r"\b1[ªa]\s*federacion\b",
-)
-
-LALIGA_RE = rx(
-    r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
-    r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
-)
-
-BASKET_ALLOWED_COMPETITIONS_RE = rx(
-    r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b"
-)
-
-WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"), (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
-    (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
-    (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
-)
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 CLEAN_TV_RE = re.compile(
@@ -244,19 +167,16 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN FILTRADA DE SESIONES OFICIALES EN DIRECTO (F1 Y MOTOGP) DESDE FUTBOLENLATV.ES
+# EXTRACCIÓN DE MOTOR (F1, MotoGP, Fórmula E, Indycar)
 # ============================================================================
 
 def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict]:
-    """Extrae sesiones oficiales de motor desde las secciones de futbolenlatv.es,[cite: 1]
-    filtrando categorías inferiores y validando sesiones principales."""
     motor_events = []
     try:
         response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Buscar bloques de eventos en la página
         items = soup.find_all(["li", "div", "article", "tr"], class_=re.compile("match|item|event|row|partido|guia", re.IGNORECASE))
         if not items:
             items = soup.find_all(True)
@@ -266,7 +186,6 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
             text_block = item.get_text(" ", strip=True)
             text_lower = text_block.lower()
 
-            # Filtrar según la categoría objetivo (F1 o MotoGP)
             if target_category == "Fórmula 1":
                 if not ("formula 1" in text_lower or "f1" in text_lower) or "academy" in text_lower:
                     continue
@@ -275,15 +194,23 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
             elif target_category == "MotoGP":
                 if "motogp" not in text_lower:
                     continue
-                # Excluir categorías menores
                 if any(cat in text_lower for cat in ["moto2", "moto 2", "moto3", "moto 3", "rookies"]):
                     continue
                 comp_name = "MotoGP"
                 default_channels = ["DAZN MotoGP", "DAZN"]
+            elif target_category == "Fórmula E":
+                if "formula e" not in text_lower and "fórmula e" not in text_lower:
+                    continue
+                comp_name = "Fórmula E"
+                default_channels = ["Eurosport 1", "Eurosport 2", "DAZN"]
+            elif target_category == "Indycar":
+                if "indycar" not in text_lower and "indy car" not in text_lower:
+                    continue
+                comp_name = "Indycar"
+                default_channels = ["M+ Deportes", "DAZN"]
             else:
                 continue
 
-            # Excluir programas de previo o post
             if any(junk in text_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
                 continue
 
@@ -295,15 +222,13 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
             if time_clean in seen_times:
                 continue
 
-            # Extraer canales si se mencionan o asignar por defecto
             channels = []
             for ch in default_channels:
-                if ch.lower() in text_lower or "dazn" in text_lower:
+                if ch.lower() in text_lower or "dazn" in text_lower or "eurosport" in text_lower or "movistar" in text_lower:
                     channels.append(ch)
             if not channels:
                 channels = default_channels
 
-            # Limpiar el título de la sesión
             title = text_block.replace(time_match.group(0), "").strip()
             title = re.sub(r"(?i)en directo|deporte|termina\s*\d{2}:\d{2}|\d{2}:\d{2}|[–\-\:\s]+", " ", title).strip()
             title = re.sub(r"\s+", " ", title)
@@ -316,8 +241,16 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
 
             if is_valid_session and title and len(title) > 2:
                 seen_times.add(time_clean)
-                is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
                 
+                # REGLAS DE FAVORITOS SOLICITADAS:
+                # - F1: solo clasificaciones (qualifying/clasificacion), sprint y carreras (race/carrera)
+                # - MotoGP, Fórmula E, Indycar: solo todas las carreras (race/carrera)
+                is_fav = False
+                if comp_name == "Fórmula 1":
+                    is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
+                else:
+                    is_fav = any(k in clean_norm for k in ["carrera", "race"])
+
                 motor_events.append({
                     "hora": time_clean,
                     "deporte": "Motor",
@@ -335,104 +268,42 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
 
 
 # ============================================================================
-# NÚCLEO DE CLASIFICACIÓN (PARA RESTO DE DEPORTES DEL WIDGET)
+# NÚCLEO DE CLASIFICACIÓN (EXCLUYENDO TODO LO QUE NO SEA MOTOR SOLICITADO)
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
-    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
-        return ("", "", "", False, False, "")
-
-    if EXCLUDED_COMPETITIONS_RE.search(blob):
-        return ("", "", "", False, False, "")
-
-    # TRATAMIENTO PARA OTROS EVENTOS DE MOTOR DEL WIDGET (INDYCAR, FORMULA E, ETC.)
+    # Como SOLO quieres Motor (F1, MotoGP, Fórmula E, Indycar), descartamos todo lo demás del widget general.
+    MOTOR_GENERAL_RE = rx(r"\bformula 1\b", r"\bf1\b", r"\bmotogp\b", r"\bindycar\b", r"\bindy car\b", r"\bformula e\b", r"\bfórmula e\b")
+    
     if contains(MOTOR_GENERAL_RE, blob):
-        is_f1 = ("formula 1" in blob or F1_RE.search(blob)) and "academy" not in blob
-        is_motogp = "motogp" in blob and not MOTO2_RE.search(blob) and not MOTO3_RE.search(blob) and "rookies" not in blob
-        
-        # Ignorar F1 y MotoGP del widget general para usar las secciones específicas de futbolenlatv.es
-        if is_f1 or is_motogp:
+        is_f1 = ("formula 1" in blob or "f1" in blob) and "academy" not in blob
+        is_motogp = "motogp" in blob and "moto2" not in blob and "moto3" not in blob
+        is_indycar = "indycar" in blob or "indy car" in blob
+        is_formulae = "formula e" in blob or "fórmula e" in blob
+
+        if not (is_f1 or is_motogp or is_indycar or is_formulae):
             return ("", "", "", False, False, "")
 
-        is_indycar = "indycar" in blob or "indy car" in blob
-        is_formulae = "formula e" in blob
-
         comp_name = "Motor"
-        if is_indycar: comp_name = "Indycar"
-        elif is_formulae: comp_name = "Formula E"
+        if is_f1: comp_name = "Fórmula 1"
+        elif is_motogp: comp_name = "MotoGP"
+        elif is_indycar: comp_name = "Indycar"
+        elif is_formulae: comp_name = "Fórmula E"
 
         event_parts = [p for p in text_lines if normalize_search_text(p) != normalize_search_text(comp_name)]
         event_title = " - ".join(event_parts) if event_parts else comp_name
+        clean_norm = normalize_search_text(event_title)
 
-        is_fav = any(term in blob for term in ["carrera", "race", "clasificacion", "qualifying", "sprint", "shootout"])
+        # Aplicar reglas de favoritos también aquí si procede del widget general
+        is_fav = False
+        if comp_name == "Fórmula 1":
+            is_fav = any(term in clean_norm for term in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
+        else:
+            is_fav = any(term in clean_norm for term in ["carrera", "race"])
+
         return ("Motor", "🏆", comp_name, is_fav, True, event_title)
 
-    if contains(TENNIS_ALLOWED_PLAYERS_RE, blob):
-        tour = "WTA" if WTA_RE.search(blob) else "ATP"
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
-        return ("Tenis", "🎾", comp, True, True, "")
-
-    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
-        comp_name = "Liga Endesa"
-        if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
-            comp_name = "Euroliga"
-        elif contains(rx(r"\bcopa del rey\b", r"\bcopa acb\b"), blob):
-            comp_name = "Copa del Rey"
-        elif contains(rx(r"\bsupercopa\b"), blob):
-            comp_name = "Supercopa de España"
-        
-        is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
-        return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
-
-    if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
-        comp_match = None
-        for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
-            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
-                comp_match = name
-                break
-        if comp_match and contains(REAL_MADRID_RE, blob):
-            return ("Fútbol", "⚽", comp_match, True, True, "")
-        return ("", "", "", False, False, "")
-
-    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if contains(CASTILLA_RE, blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "")
-        return ("", "", "", False, False, "")
-
-    if LALIGA_RE.search(blob):
-        is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
-
-    if not contains(WOMEN_RE, blob):
-        if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
-            return ("Fútbol", "⚽", "Francia - Ligue 1", False, True, "")
-        
-        if contains(rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), blob) and contains(ARSENAL_RE, blob):
-            return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True, "")
-
-        if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
-            return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
-
-    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bbcl\b"), blob):
-        is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
-        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
-
-    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob):
-        is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
-
-    if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Tenis Tour"
-        return ("Tenis", "🎾", comp, False, False, "")
-
-    if contains(rx(r"\bbaloncesto\b", r"\basket\b", r"\bbasketball\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\bnba\b", r"\bleb\b", r"\bfiba\b"), blob):
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"baloncesto", "basket", ""} else "Baloncesto"
-        return ("Baloncesto", "🏀", comp, False, False, "")
-
-    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
-        return ("Fútbol", "⚽", comp, False, False, "")
-
+    # Bloquear cualquier otro deporte (Fútbol, Baloncesto, Tenis, etc.)
     return ("", "", "", False, False, "")
 
 
@@ -452,11 +323,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     channels: list[str] = []
     text_lines = []
 
-    competition_terms = (
-        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague"
-    )
-
     for part in raw_parts:
         part = JUNK_RESIDUES_RE.sub("", part).strip()
         if not part:
@@ -470,39 +336,19 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             continue
         if re.fullmatch(r"[\s,.|;:/-]*", part):
             continue
-        if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
-            continue
 
         looks_like_channel = (
             TV_IDENTIFIERS_RE.search(part)
             or CHANNEL_LINE_RE.search(part_lower)
-            or any(term in part_lower for term in (
-                "m+", "dazn", "youtube", "fanatiz", "onefootball",
-                "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass"
-            ))
+            or any(term in part_lower for term in ("m+", "dazn", "eurosport", "youtube"))
         )
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
-            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
-            clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
-
             sub_parts = re.split(r"[,|\n]+", clean_part)
             for channel in sub_parts:
                 channel = channel.strip().rstrip(":").strip()
-                channel_lower = normalize_search_text(channel)
-                
-                if "españa -" in channel_lower or ("grupo" in channel_lower and "primera federacion" in channel_lower and len(channel_lower) > 20):
-                    continue
-
-                if (
-                    channel
-                    and not is_excluded_channel(channel)
-                    and channel not in channels
-                    and not re.fullmatch(r"\(?[mo]\+?\d+.*\)?", channel_lower)
-                    and channel_lower not in {"acceder", "(acceder)", "ver en directo"}
-                ):
+                if channel and not is_excluded_channel(channel) and channel not in channels:
                     channels.append(channel)
             continue
 
@@ -511,23 +357,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     if not text_lines:
         return "", "", [], "", []
 
-    tournament_candidates = []
-    matchup_candidates = []
-    for part in text_lines:
-        part_lower = normalize_search_text(part)
-        is_competition_line = any(term in part_lower for term in competition_terms)
-        has_match_separator = bool(
-            re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
-            or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
-        )
-        if is_competition_line and not has_match_separator:
-            tournament_candidates.append(part)
-        else:
-            matchup_candidates.append(part)
-
-    tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
-    remaining_lines = [p for p in text_lines if p != tournament]
-    matchup = " - ".join(remaining_lines) if remaining_lines else tournament
+    tournament = text_lines[0]
+    matchup = " - ".join(text_lines[1:]) if len(text_lines) > 1 else tournament
 
     return time_clean, matchup, channels, tournament, text_lines
 
@@ -536,21 +367,19 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. Obtener sesiones de motor desde las URLs de futbolenlatv.es[cite: 1]
-    f1_direct_events = fetch_futbolenlatv_motor_events(
-        FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1"
-    )
-    motogp_direct_events = fetch_futbolenlatv_motor_events(
-        FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP"
-    )
+    # Obtener eventos de las páginas específicas de motor de futbolenlatv.es[cite: 1]
+    f1_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
+    motogp_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
+    fe_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
+    indy_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Indycar")
 
-    for ev in f1_direct_events + motogp_direct_events:
+    for ev in f1_events + motogp_events + fe_events + indy_events:
         event_key = (ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
         if event_key not in seen_events:
             seen_events.add(event_key)
             results.append(ev)
 
-    # 2. Obtener el resto de deportes (Fútbol, Baloncesto, Tenis) del widget principal
+    # También explorar el widget general por si incluye Indycar o Fórmula E de forma directa
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -559,10 +388,7 @@ def fetch_and_parse_agenda() -> list[dict]:
         for item in soup.find_all(("div", "tr", "li")):
             try:
                 time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
-                if not time_clean or not text_lines: 
-                    continue
-
-                if not channels:
+                if not time_clean or not text_lines or not channels: 
                     continue
 
                 tv_blob = " ".join(channels).lower()
@@ -576,10 +402,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                     continue
 
                 final_event = custom_event if custom_event else event_str
-
-                if not EVENT_TEXT_RE.search(final_event):
-                    continue
-
                 event_key = (time_clean, normalize_search_text(competition), normalize_search_text(final_event))
                 if event_key in seen_events: 
                     continue
@@ -597,17 +419,15 @@ def fetch_and_parse_agenda() -> list[dict]:
                 })
             except Exception:
                 continue
-
     except Exception as e:
-        print(f"Error cargando la agenda del widget: {e}")
+        print(f"Error cargando el widget general: {e}")
 
-    # Ordenar resultados de la agenda cronológicamente por hora
     results.sort(key=lambda x: x["hora"])
     return results
 
 
 # ============================================================================
-# GENERACIÓN DE HTML
+# GENERACIÓN DE HTML (Adaptado solo a Motor)
 # ============================================================================
 
 def generate_html(events):
@@ -616,14 +436,10 @@ def generate_html(events):
     
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    sport_counts = Counter(event["deporte"] for event in events if event["is_configured"])
-
-    def clean_key(s):
-        return normalize_search_text(s)
 
     rows_list = []
     if not events:
-        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
+        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos de motor disponibles en este momento.</td></tr>')
     else:
         for ev in events:
             tv_badges_list = []
@@ -647,39 +463,23 @@ def generate_html(events):
                         )
                     else:
                         safe_url = escape(urls[0], quote=True)
-                        is_dlive = "dlive.sx" in urls[0]
-                        css_cls = "tv-badge alt-link" if is_dlive else "tv-badge"
                         tv_badges_list.append(
-                            f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
-                            f'class="{css_cls}" title="Abrir canal {safe_channel}">'
-                            f'{safe_channel} 🔗</a>'
+                            f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" class="tv-badge" title="Abrir canal {safe_channel}">{safe_channel} 🔗</a>'
                         )
                 else:
-                    tv_badges_list.append(
-                        f'<span class="tv-badge alt-link" style="cursor:default;" title="Canal sin enlace">'
-                        f'{safe_channel}</span>'
-                    )
+                    tv_badges_list.append(f'<span class="tv-badge" style="cursor:default;">{safe_channel}</span>')
 
             tv_badges = "".join(tv_badges_list)
-            search_text = normalize_search_text(" ".join(
-                [ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
-            ))
-            safe_search = escape(search_text, quote=True)
-            safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
-            safe_time = escape(str(ev["hora"]))
-            safe_icon = escape(str(ev["icono"]))
-            safe_sport = escape(str(ev["deporte"]))
-            safe_competition = escape(str(ev["competicion"]))
-            safe_event = escape(str(ev["evento"]))
-
+            search_text = normalize_search_text(" ".join([ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]))
+            
             rows_list.append(
                 f"""
-                <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-filtered="{str(ev['is_filtered']).lower()}" data-search="{escape(search_text, quote=True)}">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">{safe_time}</span></td>
-                    <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
-                    <td class="comp-col"><div class="comp-title">{safe_competition}</div></td>
-                    <td class="event-col"><div class="event-title">{safe_event}</div></td>
+                    <td class="time-col"><span class="time-badge">{escape(str(ev['hora']))}</span></td>
+                    <td class="sport-col"><span class="sport-tag">{escape(str(ev['icono']))} {escape(str(ev['competicion']))}</span></td>
+                    <td class="comp-col"><div class="comp-title">{escape(str(ev['competicion']))}</div></td>
+                    <td class="event-col"><div class="event-title">{escape(str(ev['evento']))}</div></td>
                     <td class="tv-col"><div class="tv-container">{tv_badges}</div></td>
                 </tr>
                 """
@@ -692,7 +492,7 @@ def generate_html(events):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Deportiva - Hoy</title>
+    <title>Agenda Motor - Hoy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
@@ -700,109 +500,48 @@ def generate_html(events):
         body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }}
         .container {{ width: 100%; max-width: 1150px; }}
         header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
-        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #ef4444, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
         .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
-        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
-        .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }}
-        .btn-alt:hover {{ background: #4f46e5; }}
+        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }}
+        .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; }}
         .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
         
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
-        .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }}
+        .stat-card {{ background: var(--card-bg); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
         .stat-card.active-card {{ border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
-        .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
-        .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
+        .stat-card .val {{ font-size: 1.2rem; font-weight: 700; color: var(--accent-blue); }}
+        .stat-card .lbl {{ font-size: 0.8rem; color: var(--text-muted); }}
         
         .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
-        .search-input:focus {{ border-color: var(--accent-blue); }}
         
-        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
+        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; margin-bottom: 80px; }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
         th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
         tr.event-row:hover {{ background-color: #243146; }}
         
-        .sport-col {{ width: 155px !important; min-width: 155px !important; white-space: nowrap; }}
+        .sport-col {{ width: 155px !important; white-space: nowrap; }}
         .time-col, .date-col {{ white-space: nowrap; }}
-        .sport-tag {{ font-weight: 600; white-space: nowrap; }}
-        .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
-        .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
-        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
+        .date-badge {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }}
+        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
         .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
+        .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; text-decoration: none; }}
         
-        .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
-        .tv-badge:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
-
-        .alt-link {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }}
-        .alt-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }}
-
         .dropdown-tv {{ position: relative; display: inline-block; }}
-        .tv-dropdown-btn {{ background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; white-space: nowrap; }}
-        .dropdown-content {{ 
-            display: none; 
-            position: absolute; 
-            background-color: #111827; 
-            min-width: 220px; 
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); 
-            z-index: 1000; 
-            border: 1px solid var(--border-color); 
-            border-radius: 8px; 
-            padding: 4px 0; 
-            left: 0; 
-            top: 100%; 
-        }}
-        .dropdown-tv.dropup .dropdown-content {{
-            top: auto;
-            bottom: 100%;
-            margin-bottom: 4px;
-        }}
-        .dropdown-content a {{ color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; transition: background 0.2s; white-space: nowrap; }}
-        .dropdown-content a:hover {{ background-color: #1e293b; color: #60a5fa; }}
+        .tv-dropdown-btn {{ background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; }}
+        .dropdown-content {{ display: none; position: absolute; background-color: #111827; min-width: 220px; z-index: 1000; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 0; left: 0; top: 100%; }}
         .dropdown-tv.show .dropdown-content {{ display: block; }}
-
-        .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
-
-        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
-            body {{ padding: 8px 6px; }}
-            h1 {{ font-size: 1.25rem; }}
-            .stats-grid {{ grid-template-columns: repeat(3, 1fr); gap: 6px; }}
-            .stat-card {{ padding: 6px 8px; }}
-            
-            thead {{ display: none; }}
-            table, tbody {{ display: block; width: 100%; }}
-            .table-card {{ background: transparent; border: none; box-shadow: none; }}
-            
-            tr.event-row {{
-                display: flex;
-                flex-direction: column;
-                background: var(--card-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 12px;
-                padding: 12px;
-                margin-bottom: 10px;
-                gap: 6px;
-            }}
-            
-            td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
-            .date-col {{ display: none; }}
-            .time-col {{ order: 1; display: inline-block; }}
-            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
-            .comp-col {{ order: 3; margin-top: 4px; }}
-            .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
-            .event-col {{ order: 4; margin: 2px 0 4px 0; }}
-            .event-title {{ font-size: 1rem; line-height: 1.35; }}
-            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }}
-            .tv-badge {{ font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }}
-        }}
+        .dropdown-content a {{ color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; }}
+        .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); }}
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
+        <div><h1>🏁 Agenda Motor - F1, MotoGP, FE, Indycar</h1></div>
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
@@ -812,26 +551,14 @@ def generate_html(events):
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📺</div>
+            <div><div class="lbl">Todos los Eventos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📺</div>
         </div>
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
-            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
-        </div>
-        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
-        </div>
-        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
-        </div>
-        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
-        </div>
-        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏆</div>
+            <div><div class="lbl">Favoritos (Clasics. & Carreras)</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
     </div>
     <div class="filter-container">
-        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar sesión, campeonato o canal TV...">
     </div>
     <div class="table-card">
         <table>
@@ -839,7 +566,7 @@ def generate_html(events):
                 <tr>
                     <th class="date-col" style="width: 70px;">Fecha</th>
                     <th class="time-col" style="width: 70px;">Hora</th>
-                    <th class="sport-col" style="width: 155px;">Deporte</th>
+                    <th class="sport-col" style="width: 155px;">Categoría</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
                     <th>Evento</th>
                     <th style="width: 250px;">Canal TV</th>
@@ -860,30 +587,13 @@ function toggleDropdown(event) {{
     event.stopPropagation();
     const btn = event.currentTarget;
     const dropdown = btn.parentElement;
-    
-    document.querySelectorAll('.dropdown-tv').forEach(item => {{
-        if (item !== dropdown) {{
-            item.classList.remove('show', 'dropup');
-        }}
-    }});
-
-    const rect = btn.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    
-    if (spaceBelow < 160) {{
-        dropdown.classList.add('dropup');
-    }} else {{
-        dropdown.classList.remove('dropup');
-    }}
-
+    document.querySelectorAll('.dropdown-tv').forEach(item => {{ if (item !== dropdown) item.classList.remove('show'); }});
     dropdown.classList.toggle('show');
 }}
 
 window.onclick = function(event) {{
     if (!event.target.matches('.tv-dropdown-btn')) {{
-        document.querySelectorAll('.dropdown-tv').forEach(item => {{
-            item.classList.remove('show', 'dropup');
-        }});
+        document.querySelectorAll('.dropdown-tv').forEach(item => item.classList.remove('show'));
     }}
 }}
 
@@ -892,8 +602,7 @@ let currentFilter = 'todos';
 function setFilter(filterType) {{
     currentFilter = cleanStr(filterType);
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
-    const activeCard = document.getElementById('card-' + currentFilter);
-    if (activeCard) activeCard.classList.add('active-card');
+    document.getElementById('card-' + currentFilter).classList.add('active-card');
     applyFilters();
 }}
 
@@ -909,20 +618,10 @@ function applyFilters() {{
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
 
-        const rowSport = cleanStr(tr.getAttribute('data-sport'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
-        const isConfigured = tr.getAttribute('data-configured') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
-        let matchesFilter = false;
-        if (currentFilter === 'todos') {{
-            matchesFilter = true;
-        }} else if (currentFilter === 'favoritos') {{
-            matchesFilter = isFiltered;
-        }} else {{
-            matchesFilter = (rowSport === currentFilter && isConfigured);
-        }}
-
+        let matchesFilter = (currentFilter === 'todos') || (currentFilter === 'favoritos' && isFiltered);
         const matchesSearch = text.includes(searchFilter);
 
         if (matchesFilter && matchesSearch) {{
@@ -953,4 +652,4 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos totales (Fútbol, Baloncesto, Tenis y Motor): {len(events)}")
+    print(f"Archivo index.html generado con éxito. Total eventos de Motor: {len(events)}")
