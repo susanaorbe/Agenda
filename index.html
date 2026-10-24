@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Motor - Hoy</title>
+    <title>Agenda Deportiva - Hoy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }
@@ -11,65 +11,138 @@
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 1150px; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }
-        h1 { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #ef4444, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        h1 { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .btn-update { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
-        .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; }
+        .btn-update { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
+        .btn-alt:hover { background: #4f46e5; }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }
         
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-        .stat-card { background: var(--card-bg); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }
+        .stat-card { background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
         .stat-card.active-card { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
-        .stat-card .val { font-size: 1.2rem; font-weight: 700; color: var(--accent-blue); }
-        .stat-card .lbl { font-size: 0.8rem; color: var(--text-muted); }
+        .stat-card .val { font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }
+        .stat-card .lbl { font-size: 0.72rem; color: var(--text-muted); }
         
         .filter-container { display: flex; gap: 10px; margin-bottom: 14px; }
         .search-input { padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }
+        .search-input:focus { border-color: var(--accent-blue); }
         
-        .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; margin-bottom: 80px; }
+        .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
         table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
         th { background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
         td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }
         tr.event-row:hover { background-color: #243146; }
         
-        .sport-col { width: 155px !important; white-space: nowrap; }
+        .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
         .time-col, .date-col { white-space: nowrap; }
-        .date-badge { background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-        .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; }
+        .sport-tag { font-weight: 600; white-space: nowrap; }
+        .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
+        .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
+        .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
         .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
         .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; }
         .tv-container { display: flex; flex-direction: column; gap: 4px; }
-        .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; text-decoration: none; }
         
+        .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
+        .tv-badge:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
+
+        .alt-link { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+        .alt-link:hover { background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }
+
         .dropdown-tv { position: relative; display: inline-block; }
-        .tv-dropdown-btn { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; }
-        .dropdown-content { display: none; position: absolute; background-color: #111827; min-width: 220px; z-index: 1000; border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 0; left: 0; top: 100%; }
+        .tv-dropdown-btn { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; white-space: nowrap; }
+        .dropdown-content { 
+            display: none; 
+            position: absolute; 
+            background-color: #111827; 
+            min-width: 220px; 
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); 
+            z-index: 1000; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            padding: 4px 0; 
+            left: 0; 
+            top: 100%; 
+        }
+        .dropdown-tv.dropup .dropdown-content {
+            top: auto;
+            bottom: 100%;
+            margin-bottom: 4px;
+        }
+        .dropdown-content a { color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; transition: background 0.2s; white-space: nowrap; }
+        .dropdown-content a:hover { background-color: #1e293b; color: #60a5fa; }
         .dropdown-tv.show .dropdown-content { display: block; }
-        .dropdown-content a { color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; }
-        .empty-state { text-align: center; padding: 30px; color: var(--text-muted); }
+
+        .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
+
+        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {
+            body { padding: 8px 6px; }
+            h1 { font-size: 1.25rem; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .stat-card { padding: 6px 8px; }
+            
+            thead { display: none; }
+            table, tbody { display: block; width: 100%; }
+            .table-card { background: transparent; border: none; box-shadow: none; }
+            
+            tr.event-row {
+                display: flex;
+                flex-direction: column;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 10px;
+                gap: 6px;
+            }
+            
+            td { padding: 0; border: none; width: auto !important; white-space: normal; }
+            .date-col { display: none; }
+            .time-col { order: 1; display: inline-block; }
+            .sport-col { order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }
+            .comp-col { order: 3; margin-top: 4px; }
+            .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+            .event-col { order: 4; margin: 2px 0 4px 0; }
+            .event-title { font-size: 1rem; line-height: 1.35; }
+            .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }
+            .tv-badge { font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <div><h1>🏁 Agenda Motor - F1, MotoGP, FE, Indycar</h1></div>
+        <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
-        <div class="last-update">Última actualización: <strong>24/10/2026 - 11:43 (España)</strong></div>
+        <div class="last-update">Última actualización: <strong>24/10/2026 - 11:56 (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos los Eventos</div><div class="val">46</div></div><div style="font-size:1.1rem">📺</div>
+            <div><div class="lbl">Todos</div><div class="val">37</div></div><div style="font-size:1.1rem">📺</div>
         </div>
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
-            <div><div class="lbl">Favoritos (Clasics. & Carreras)</div><div class="val" style="color:#a78bfa">15</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">2</div></div><div style="font-size:1.1rem">📌</div>
+        </div>
+        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">5</div></div><div style="font-size:1.1rem">⚽</div>
+        </div>
+        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">3</div></div><div style="font-size:1.1rem">🏀</div>
+        </div>
+        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">1</div></div><div style="font-size:1.1rem">🎾</div>
+        </div>
+        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">0</div></div><div style="font-size:1.1rem">🏆</div>
         </div>
     </div>
     <div class="filter-container">
-        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar sesión, campeonato o canal TV...">
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
     </div>
     <div class="table-card">
         <table>
@@ -77,7 +150,7 @@
                 <tr>
                     <th class="date-col" style="width: 70px;">Fecha</th>
                     <th class="time-col" style="width: 70px;">Hora</th>
-                    <th class="sport-col" style="width: 155px;">Categoría</th>
+                    <th class="sport-col" style="width: 155px;">Deporte</th>
                     <th class="comp-col" style="width: 140px;">Competición</th>
                     <th>Evento</th>
                     <th style="width: 250px;">Canal TV</th>
@@ -85,418 +158,337 @@
             </thead>
             <tbody id="agendaTable">
                 
-                <tr class="event-row" data-filtered="true" data-search="00 50 motor formula e formula e - automovilismo en la tele en españa programacion tv futbol en la tv guia de partidos televisados futbol hoy equipos real madrid fc barcelona at. madrid valencia cf real betis sevilla fc mas equipos competiciones la liga ea sports laliga hypermotion copa del rey champions league europa league premier league mas competiciones canales tv m+ laliga (m54 o110) dazn (ver ) dazn laliga (m55 o113) m+ liga de campeones (m60 o115) replay m+ vamos (8 y 50) mas canales otros s automovilismo balonmano baloncesto beisbol boxeo futbol americano futbol sala hockey patines motociclismo rugby u tenis ciclismo golf mma padel agenda completa noticias widget fia formula 2 fia formula e formula 1 6 horas de monza f1 academy nascar cup series supercars championship mas competiciones automovilismo hoy en tv × partidos de hoy sabado 24 10 2026 f1 academy g.p. estados unidos (austin) opening race dazn (ver ) f1 academy youtube dazn f1 (m70 o104) supercars championship surfers paradise street circuit carrera 1 dazn (ver ) dazn app gratis (ver gratis) formula 1 g.p. estados unidos (austin) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. estados unidos (austin) clasificacion dazn (ver ) dazn f1 (m70 o104) mañana domingo 25 10 2026 f1 academy g.p. estados unidos (austin) 6. station reverse grid race dazn (ver ) f1 academy youtube dazn f1 (m70 o104) supercars championship surfers paradise street circuit carrera 2 dazn (ver ) dazn app gratis (ver gratis) f1 academy g.p. estados unidos (austin) carrera 2 dazn (ver ) f1 academy youtube dazn f1 (m70 o104) nascar cup series talladega superspeedway carrera dazn (ver ) formula 1 g.p. estados unidos (austin) carrera dazn (ver ) dazn f1 (m70 o104) viernes 30 10 2026 formula 1 g.p. mexico (ciudad de mexico) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. mexico (ciudad de mexico) libres 2 dazn (ver ) dazn f1 (m70 o104) sabado 31 10 2026 formula 1 g.p. mexico (ciudad de mexico) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. mexico (ciudad de mexico) clasificacion dazn (ver ) dazn f1 (m70 o104) domingo 01 11 2026 nascar cup series martinsville speedway carrera dazn (ver ) formula 1 g.p. mexico (ciudad de mexico) carrera dazn (ver ) dazn f1 (m70 o104) viernes 06 11 2026 formula 1 g.p. brasil (interlagos) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. brasil (interlagos) libres 2 dazn (ver ) dazn f1 (m70 o104) sabado 07 11 2026 formula 1 g.p. brasil (interlagos) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. brasil (interlagos) clasificacion dazn (ver ) dazn f1 (m70 o104) domingo 08 11 2026 6 horas de monza campeonato mundial de resistencia fia carrera hbo max formula 1 g.p. brasil (interlagos) carrera dazn (ver ) dazn f1 (m70 o104) nascar cup series championship race carrera dazn (ver ) viernes 20 11 2026 formula 1 g.p. las vegas (las vegas) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. las vegas (las vegas) libres 2 dazn (ver ) dazn f1 (m70 o104) pd f1 academy g.p. las vegas (las vegas) clasificacion dazn (ver ) f1 academy youtube dazn f1 (m70 o104) sabado 21 11 2026 formula 1 g.p. las vegas (las vegas) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. las vegas (las vegas) clasificacion dazn (ver ) dazn f1 (m70 o104) pd f1 academy g.p. las vegas (las vegas) carrera 1 dazn (ver ) f1 academy youtube dazn f1 (m70 o104) domingo 22 11 2026 formula 1 g.p. las vegas (las vegas) carrera dazn (ver ) dazn f1 (m70 o104) pd f1 academy g.p. las vegas (las vegas) carrera 2 dazn (ver ) f1 academy youtube dazn f1 (m70 o104) viernes 27 11 2026 formula 1 g.p. catar (losail) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. catar (losail) libres 2 dazn (ver ) dazn f1 (m70 o104) sabado 28 11 2026 formula 1 g.p. catar (losail) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. catar (losail) clasificacion dazn (ver ) dazn f1 (m70 o104) domingo 29 11 2026 pd fia formula 2 g.p. catar (losail) carrera dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. catar (losail) carrera dazn (ver ) dazn f1 (m70 o104) viernes 04 12 2026 formula 1 g.p. abu dhabi (yas marina) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. abu dhabi (yas marina) libres 2 dazn (ver ) dazn f1 (m70 o104) sabado 05 12 2026 formula 1 g.p. abu dhabi (yas marina) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. abu dhabi (yas marina) clasificacion dazn (ver ) dazn f1 (m70 o104) domingo 06 12 2026 pd fia formula 2 g.p. abu dhabi (yas marina) carrera dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. abu dhabi (yas marina) carrera dazn (ver ) dazn f1 (m70 o104) viernes 18 12 2026 pd fia formula e jeddah (arabia saudi) carrera disney+ sabado 19 12 2026 pd fia formula e jeddah (arabia saudi) carrera disney+ sabado 16 01 2027 pd fia formula e ciudad de mexico (mexico) carrera disney+ sabado 06 02 2027 pd fia formula e austin (estados unidos) carrera disney+ sabado 20 02 2027 pd fia formula e miami (estados unidos) carrera disney+ sabado 13 03 2027 pd fia formula e são paulo (brasil) carrera disney+ sabado 17 04 2027 pd fia formula e sanya (china) carrera disney+ sabado 01 05 2027 pd fia formula e monaco (monaco) carrera disney+ domingo 02 05 2027 pd fia formula e monaco (monaco) carrera disney+ sabado 08 05 2027 pd fia formula e berlin (alemania) carrera disney+ domingo 09 05 2027 pd fia formula e berlin (alemania) carrera disney+ sabado 29 05 2027 pd fia formula e londres (gran bretaña) carrera disney+ domingo 30 05 2027 pd fia formula e londres (gran bretaña) carrera disney+ viernes 18 06 2027 pd fia formula e zandvoort (holanda) carrera disney+ sabado 19 06 2027 pd fia formula e zandvoort (holanda) carrera disney+ sabado 26 06 2027 pd fia formula e madrid (españa) carrera disney+ domingo 27 06 2027 pd fia formula e madrid (españa) carrera disney+ sabado 10 07 2027 pd fia formula e shanghai (china) carrera disney+ domingo 11 07 2027 pd fia formula e shanghai (china) carrera disney+ sabado 24 07 2027 pd fia formula e tokio (japon) carrera disney+ domingo 25 07 2027 pd fia formula e tokio (japon) carrera disney+ mas dias mas dias mas dias actualmente hay 63 eventos televisados de 7 competiciones distintas y 6 canales de tv emitiran cada uno de ellos. destacamos que 8 son televisados en abierto . el proximo evento del que podras disfrutar sera el f1 academy (g.p. estados unidos (austin) opening race) que se disputara el proximo sabado 24 de octubre de 2026 a las 0 50 y que sera televisado por dazn (ver ) f1 academy youtube dazn f1 (m70 o104) . la primera competicion de automovilismo fue la paris rouen . estuvo organizada en 1894 por la revista francesa le petit journal . 69 vehiculos iniciaron una ruta de 50 kilometros para determinar cuales serian los elegidos para participar en la carrera. solo 25 consiguieron entrar. el marques jules albert de dion fue el ganador al completar los 127 kilometros que separan ambos ciudades en un tiempo de seis horas y 48 minutos pero fue descalificado al no cumplir la reglamentacion tecnica. el club del automovil frances fue el propulsor de las primeras pruebas internacionales. generalmente tenian inicio o final en la capital de francia. algunas llegaron incluso a traspasar continentes como la de 1907 entre pekin y paris (9.317 millas) o la de 1908 desde nueva york hasta paris. esta carrera con inicio en estados unidos es la mas larga de la historia con un recorrido de 22.000 millas. los vencedores tardaron un total de 169 dias en finalizarla. el aumento de popularidad y los problemas de seguridad derivaron en la construccion de los primeros circuitos. brooklands fue el primero pensado para albergar carreras de vehiculos motorizados. se inauguro en 1907 con una longitud de 4 43 kilometros y tres curvas. dentro del automovilismo de competicion existen diferentes categorias segun el tipo de vehiculo la ubicacion y la ruta o el criterio para determinar el vencedor. las de monoplazas se corren con coches diseñados exclusivamente para estos eventos. utilizan neumaticos especiales y tienen elementos como los alerones para buscar la mayor aerodinamica y velocidad posible. se disputan en circuitos con un limite de vueltas o de tiempo. el ganador es el que cruza la meta en primera posicion. la competicion mas popular de este tipo es la formula 1 . las de rally se disputan por tramos y el conductor esta asistido por un copiloto que le da indicaciones sobre la ruta. el objetivo es completarla en el menor tiempo posible. los registros de cada una de las secciones se suman al final del evento para confeccionar la clasificacion general. el vencedor es aquel que ha empleado un menor tiempo en completar el recorrido entero. las de resistencia buscan exprimir al maximo las capacidades del vehiculo especialmente las de durabilidad. pueden ser tanto en circuito como el mundial de resistencia (wec) o por tramos off road como el rally dakar . cambiar a tu zona horaria futbol en la tele en españa arab mena argentina australia bolivia brasil canada chile colombia costa rica danmark ecuador el salvador suomi france guatemala nederland honduras republic of ireland india italia 日本 mexico nicaragua norge österreich panama paraguay peru polska portugal sverige schweizer česko republica dominicana slovensko uruguay venezuela deutschland united kingdom usa usa (es) © wosti 2026 wosti.com aviso legal politica de cookies recomendados api contacto futbol en la tv guia de partidos televisados × futbol hoy equipos real madrid fc barcelona at. madrid valencia cf real betis sevilla fc mas equipos competiciones la liga ea sports laliga hypermotion copa del rey champions league europa league premier league mas competiciones canales tv m+ laliga (m54 o110) dazn (ver ) dazn laliga (m55 o113) m+ liga de campeones (m60 o115) replay m+ vamos (8 y 50) mas canales otros s automovilismo balonmano baloncesto beisbol boxeo futbol americano futbol sala hockey patines motociclismo rugby u tenis ciclismo golf mma padel agenda completa noticias widget eurosport 1 eurosport 2 dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="09 30 tenis wta ningbo leylah annie fernandez - marie bouzkova tennis channel - orange tv">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">00:50</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula E</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula E</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula E - Automovilismo En La Tele en España | Programación TV Fútbol en la TV Guía de Partidos Televisados Fútbol hoy Equipos Real Madrid FC Barcelona At. Madrid Valencia CF Real Betis Sevilla FC MÁS EQUIPOS Competiciones La Liga EA Sports LaLiga Hypermotion Copa del Rey Champions League Europa League Premier League MÁS COMPETICIONES Canales TV M+ LALIGA (M54 O110) DAZN (Ver ) DAZN LaLiga (M55 O113) M+ Liga de Campeones (M60 O115) Replay M+ Vamos (8 y 50) MÁS CANALES Otros s Automovilismo Balonmano Baloncesto Béisbol Boxeo Fútbol Americano Fútbol Sala Hockey Patines Motociclismo Rugby U Tenis Ciclismo Golf MMA Pádel AGENDA COMPLETA Noticias Widget FIA Fórmula 2 FIA Fórmula E Fórmula 1 6 Horas de Monza F1 Academy NASCAR Cup Series Supercars Championship MÁS COMPETICIONES Automovilismo hoy en TV × Partidos de hoy sábado, 24/10/2026 F1 Academy G.P. Estados Unidos (Austin) Opening Race DAZN (Ver ) F1 Academy YouTube DAZN F1 (M70 O104) Supercars Championship Surfers Paradise Street Circuit Carrera 1 DAZN (Ver ) DAZN App Gratis (Ver gratis) Fórmula 1 G.P. Estados Unidos (Austin) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Estados Unidos (Austin) Clasificación DAZN (Ver ) DAZN F1 (M70 O104) Mañana domingo, 25/10/2026 F1 Academy G.P. Estados Unidos (Austin) 6. Station Reverse Grid Race DAZN (Ver ) F1 Academy YouTube DAZN F1 (M70 O104) Supercars Championship Surfers Paradise Street Circuit Carrera 2 DAZN (Ver ) DAZN App Gratis (Ver gratis) F1 Academy G.P. Estados Unidos (Austin) Carrera 2 DAZN (Ver ) F1 Academy YouTube DAZN F1 (M70 O104) NASCAR Cup Series Talladega Superspeedway Carrera DAZN (Ver ) Fórmula 1 G.P. Estados Unidos (Austin) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Viernes, 30/10/2026 Fórmula 1 G.P. México (Ciudad de México) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. México (Ciudad de México) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104) Sábado, 31/10/2026 Fórmula 1 G.P. México (Ciudad de México) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. México (Ciudad de México) Clasificación DAZN (Ver ) DAZN F1 (M70 O104) Domingo, 01/11/2026 NASCAR Cup Series Martinsville Speedway Carrera DAZN (Ver ) Fórmula 1 G.P. México (Ciudad de México) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Viernes, 06/11/2026 Fórmula 1 G.P. Brasil (Interlagos) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Brasil (Interlagos) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104) Sábado, 07/11/2026 Fórmula 1 G.P. Brasil (Interlagos) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Brasil (Interlagos) Clasificación DAZN (Ver ) DAZN F1 (M70 O104) Domingo, 08/11/2026 6 Horas de Monza Campeonato Mundial de Resistencia FIA Carrera HBO MAX Fórmula 1 G.P. Brasil (Interlagos) Carrera DAZN (Ver ) DAZN F1 (M70 O104) NASCAR Cup Series Championship Race Carrera DAZN (Ver ) Viernes, 20/11/2026 Fórmula 1 G.P. Las Vegas (Las Vegas) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Las Vegas (Las Vegas) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104) PD F1 Academy G.P. Las Vegas (Las Vegas) Clasificación DAZN (Ver ) F1 Academy YouTube DAZN F1 (M70 O104) Sábado, 21/11/2026 Fórmula 1 G.P. Las Vegas (Las Vegas) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Las Vegas (Las Vegas) Clasificación DAZN (Ver ) DAZN F1 (M70 O104) PD F1 Academy G.P. Las Vegas (Las Vegas) Carrera 1 DAZN (Ver ) F1 Academy YouTube DAZN F1 (M70 O104) Domingo, 22/11/2026 Fórmula 1 G.P. Las Vegas (Las Vegas) Carrera DAZN (Ver ) DAZN F1 (M70 O104) PD F1 Academy G.P. Las Vegas (Las Vegas) Carrera 2 DAZN (Ver ) F1 Academy YouTube DAZN F1 (M70 O104) Viernes, 27/11/2026 Fórmula 1 G.P. Catar (Losail) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Catar (Losail) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104) Sábado, 28/11/2026 Fórmula 1 G.P. Catar (Losail) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Catar (Losail) Clasificación DAZN (Ver ) DAZN F1 (M70 O104) Domingo, 29/11/2026 PD FIA Fórmula 2 G.P. Catar (Losail) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Catar (Losail) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Viernes, 04/12/2026 Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104) Sábado, 05/12/2026 Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Abu Dhabi (Yas Marina) Clasificación DAZN (Ver ) DAZN F1 (M70 O104) Domingo, 06/12/2026 PD FIA Fórmula 2 G.P. Abu Dhabi (Yas Marina) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Abu Dhabi (Yas Marina) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Viernes, 18/12/2026 PD FIA Fórmula E Jeddah (Arabia Saudí) Carrera Disney+ Sábado, 19/12/2026 PD FIA Fórmula E Jeddah (Arabia Saudí) Carrera Disney+ Sábado, 16/01/2027 PD FIA Fórmula E Ciudad de México (México) Carrera Disney+ Sábado, 06/02/2027 PD FIA Fórmula E Austin (Estados Unidos) Carrera Disney+ Sábado, 20/02/2027 PD FIA Fórmula E Miami (Estados Unidos) Carrera Disney+ Sábado, 13/03/2027 PD FIA Fórmula E São Paulo (Brasil) Carrera Disney+ Sábado, 17/04/2027 PD FIA Fórmula E Sanya (China) Carrera Disney+ Sábado, 01/05/2027 PD FIA Fórmula E Mónaco (Mónaco) Carrera Disney+ Domingo, 02/05/2027 PD FIA Fórmula E Mónaco (Mónaco) Carrera Disney+ Sábado, 08/05/2027 PD FIA Fórmula E Berlín (Alemania) Carrera Disney+ Domingo, 09/05/2027 PD FIA Fórmula E Berlín (Alemania) Carrera Disney+ Sábado, 29/05/2027 PD FIA Fórmula E Londres (Gran Bretaña) Carrera Disney+ Domingo, 30/05/2027 PD FIA Fórmula E Londres (Gran Bretaña) Carrera Disney+ Viernes, 18/06/2027 PD FIA Fórmula E Zandvoort (Holanda) Carrera Disney+ Sábado, 19/06/2027 PD FIA Fórmula E Zandvoort (Holanda) Carrera Disney+ Sábado, 26/06/2027 PD FIA Fórmula E Madrid (España) Carrera Disney+ Domingo, 27/06/2027 PD FIA Fórmula E Madrid (España) Carrera Disney+ Sábado, 10/07/2027 PD FIA Fórmula E Shanghai (China) Carrera Disney+ Domingo, 11/07/2027 PD FIA Fórmula E Shanghai (China) Carrera Disney+ Sábado, 24/07/2027 PD FIA Fórmula E Tokio (Japón) Carrera Disney+ Domingo, 25/07/2027 PD FIA Fórmula E Tokio (Japón) Carrera Disney+ Más días Más días Más días Actualmente, hay 63 eventos televisados de 7 competiciones distintas y 6 canales de TV emitirán cada uno de ellos. Destacamos que 8 son televisados en abierto . El próximo evento del que podrás disfrutar será el F1 Academy (G.P. Estados Unidos (Austin) Opening Race) que se disputará el próximo sábado, 24 de octubre de 2026 a las 0 50 y que será televisado por DAZN (Ver ), F1 Academy YouTube, DAZN F1 (M70 O104) . La primera competición de automovilismo fue la Paris Rouen . Estuvo organizada en 1894 por la revista francesa Le Petit Journal . 69 vehículos iniciaron una ruta de 50 kilómetros para determinar cuáles serían los elegidos para participar en la carrera. Solo 25 consiguieron entrar. El marqués Jules Albert de Dion fue el ganador al completar los 127 kilómetros que separan ambos ciudades en un tiempo de seis horas y 48 minutos, pero fue descalificado al no cumplir la reglamentación técnica. El club del automóvil francés fue el propulsor de las primeras pruebas internacionales. Generalmente, tenían inicio o final en la capital de Francia. Algunas llegaron incluso a traspasar continentes, como la de 1907 entre Pekín y París (9.317 millas) o la de 1908 desde Nueva York hasta París. Esta carrera con inicio en Estados Unidos es la más larga de la historia con un recorrido de 22.000 millas. Los vencedores tardaron un total de 169 días en finalizarla. El aumento de popularidad y los problemas de seguridad derivaron en la construcción de los primeros circuitos. Brooklands fue el primero pensado para albergar carreras de vehículos motorizados. Se inauguró en 1907 con una longitud de 4,43 kilómetros y tres curvas. Dentro del automovilismo de competición existen diferentes categorías según el tipo de vehículo, la ubicación y la ruta o el criterio para determinar el vencedor. Las de monoplazas se corren con coches diseñados exclusivamente para estos eventos. Utilizan neumáticos especiales y tienen elementos, como los alerones, para buscar la mayor aerodinámica y velocidad posible. Se disputan en circuitos con un límite de vueltas o de tiempo. El ganador es el que cruza la meta en primera posición. La competición más popular de este tipo es la Fórmula 1 . Las de Rally se disputan por tramos y el conductor está asistido por un copiloto que le da indicaciones sobre la ruta. El objetivo es completarla en el menor tiempo posible. Los registros de cada una de las secciones se suman al final del evento para confeccionar la clasificación general. El vencedor es aquel que ha empleado un menor tiempo en completar el recorrido entero. Las de resistencia buscan exprimir al máximo las capacidades del vehículo, especialmente las de durabilidad. Pueden ser tanto en circuito, como el Mundial de Resistencia (WEC) o por tramos off road, como el Rally Dakar . Cambiar a tu zona horaria Fútbol en la tele en España Arab MENA Argentina Australia Bolivia Brasil Canada Chile Colombia Costa Rica Danmark Ecuador El Salvador Suomi France Guatemala Nederland Honduras Republic of Ireland India Italia 日本 México Nicaragua Norge Österreich Panamá Paraguay Perú Polska Portugal Sverige Schweizer Česko República Dominicana Slovensko Uruguay Venezuela Deutschland United Kingdom USA USA (ES) © WOSTI 2026 | wosti.com Aviso legal Política de cookies Recomendados API Contacto Fútbol en la TV Guía de Partidos Televisados × Fútbol hoy Equipos Real Madrid FC Barcelona At. Madrid Valencia CF Real Betis Sevilla FC MÁS EQUIPOS Competiciones La Liga EA Sports LaLiga Hypermotion Copa del Rey Champions League Europa League Premier League MÁS COMPETICIONES Canales TV M+ LALIGA (M54 O110) DAZN (Ver ) DAZN LaLiga (M55 O113) M+ Liga de Campeones (M60 O115) Replay M+ Vamos (8 y 50) MÁS CANALES Otros s Automovilismo Balonmano Baloncesto Béisbol Boxeo Fútbol Americano Fútbol Sala Hockey Patines Motociclismo Rugby U Tenis Ciclismo Golf MMA Pádel AGENDA COMPLETA Noticias Widget</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Eurosport 1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Eurosport 1 - Opción 1</a><a href="https://dlive.sx/stream/stream-524.php" target="_blank" rel="noopener noreferrer">Eurosport 1 - Opción 2</a><a href="https://dlive.sx/hub/stream-524.php" target="_blank" rel="noopener noreferrer">Eurosport 1 - Opción 3</a><a href="https://dlive.sx/watch/stream-524.php" target="_blank" rel="noopener noreferrer">Eurosport 1 - Opción 4</a><a href="https://dlive.sx/cast/stream-524.php" target="_blank" rel="noopener noreferrer">Eurosport 1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Eurosport 1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Eurosport 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Eurosport 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-525.php" target="_blank" rel="noopener noreferrer">Eurosport 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-525.php" target="_blank" rel="noopener noreferrer">Eurosport 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-525.php" target="_blank" rel="noopener noreferrer">Eurosport 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-525.php" target="_blank" rel="noopener noreferrer">Eurosport 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Eurosport 2 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">09:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">WTA Ningbo</div></td>
+                    <td class="event-col"><div class="event-title">Leylah Annie Fernandez - Marie Bouzkova</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="01 10 motor motogp motogp - motogp g.p. australia (phillip island) libres 2 motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-configured="true" data-search="11 40 tenis wta ningbo e. rybakina - diana shnaider tennis channel - orange tv">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">01:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Australia (Phillip Island) Libres 2 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">11:40</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">WTA Ningbo</div></td>
+                    <td class="event-col"><div class="event-title">E. Rybakina - Diana Shnaider</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="01 10 motor motogp (m71 o105) dazn dazn motogp">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="12 00 tenis atp almaty nikoloz basilashvili - stefanos tsitsipas m+ deportes 4">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">01:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">(M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">12:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Almaty</div></td>
+                    <td class="event-col"><div class="event-title">Nikoloz Basilashvili - Stefanos Tsitsipas</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 1</a><a href="https://dlive.sx/stream/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 2</a><a href="https://dlive.sx/hub/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 3</a><a href="https://dlive.sx/watch/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 4</a><a href="https://dlive.sx/cast/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="01 30 motor formula 1 formula 1 - formula 1 g.p. las vegas (las vegas) libres 1 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">01:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Las Vegas (Las Vegas) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="01 50 motor motogp motogp - motogp g.p. australia (phillip island) clasificacion motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">01:50</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Australia (Phillip Island) Clasificación MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="01 50 motor motogp (m71 o105) dazn dazn motogp">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">01:50</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">(M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="03 10 motor motogp motogp - motogp g.p. malasia (sepang) libres 2 motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">03:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Malasia (Sepang) Libres 2 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="03 45 motor motogp motogp - viernes 30 10 2026 motogp g.p. malasia (sepang) libres 1 motogp videopass dazn (ver ) dazn motogp (m71 o105) motogp g.p. malasia (sepang) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">03:45</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - Viernes, 30/10/2026 MotoGP G.P. Malasia (Sepang) Libres 1 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) MotoGP G.P. Malasia (Sepang) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="03 50 motor motogp motogp - motogp g.p. malasia (sepang) clasificacion motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">03:50</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Malasia (Sepang) Clasificación MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="true" data-search="04 00 motor motogp motogp - motogp g.p. australia (phillip island) carrera motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">04:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Australia (Phillip Island) Carrera MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="05 00 motor formula 1 formula 1 - formula 1 g.p. las vegas (las vegas) libres 2 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">05:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Las Vegas (Las Vegas) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="06 00 motor motogp motogp - motogp g.p. australia (phillip island) sprint motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">06:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Australia (Phillip Island) Sprint MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="06 00 motor motogp (m71 o105) dazn dazn motogp">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">06:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">(M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="08 00 motor motogp motogp - motogp g.p. malasia (sepang) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">08:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Malasia (Sepang) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="10 10 motor motogp motogp - motogp g.p. c. valenciana (ricardo tormo) libres 2 motogp videopass dazn (ver ) dazn motogp (m71 o105) be mad mediaset infinity dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. C. Valenciana (Ricardo Tormo) Libres 2 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) BE MAD Mediaset Infinity</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="10 30 motor formula 1 formula 1 - viernes 04 12 2026 formula 1 g.p. abu dhabi (yas marina) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. abu dhabi (yas marina) libres 2 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Viernes, 04/12/2026 Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="10 45 motor motogp motogp - viernes 27 11 2026 motogp g.p. c. valenciana (ricardo tormo) libres 1 motogp videopass dazn (ver ) dazn motogp (m71 o105) be mad mediaset infinity motogp g.p. c. valenciana (ricardo tormo) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) be mad mediaset infinity dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:45</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - Viernes, 27/11/2026 MotoGP G.P. C. Valenciana (Ricardo Tormo) Libres 1 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) BE MAD Mediaset Infinity MotoGP G.P. C. Valenciana (Ricardo Tormo) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) BE MAD Mediaset Infinity</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="10 50 motor motogp motogp - motogp g.p. c. valenciana (ricardo tormo) clasificacion motogp videopass dazn (ver ) dazn motogp (m71 o105) be mad mediaset infinity dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">10:50</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. C. Valenciana (Ricardo Tormo) Clasificación MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) BE MAD Mediaset Infinity</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="true" data-search="11 00 motor formula 1 formula 1 - domingo 08 11 2026 6 horas de monza campeonato mundial de resistencia fia carrera hbo max formula 1 g.p. brasil (interlagos) carrera dazn (ver ) dazn f1 (m70 o104) nascar cup series championship race carrera dazn (ver ) dazn f1 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">11:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Domingo, 08/11/2026 6 Horas de Monza Campeonato Mundial de Resistencia FIA Carrera HBO MAX Fórmula 1 G.P. Brasil (Interlagos) Carrera DAZN (Ver ) DAZN F1 (M70 O104) NASCAR Cup Series Championship Race Carrera DAZN (Ver )</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="11 10 motor motogp motogp - motogp g.p. portugal (algarve international) libres 2 motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">11:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Portugal (Algarve International) Libres 2 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="true" data-search="11 30 motor formula 1 formula 1 - sabado 05 12 2026 formula 1 g.p. abu dhabi (yas marina) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. abu dhabi (yas marina) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">11:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Sábado, 05/12/2026 Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Abu Dhabi (Yas Marina) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="11 45 motor motogp motogp - viernes 20 11 2026 motogp g.p. portugal (algarve international) libres 1 motogp videopass dazn (ver ) dazn motogp (m71 o105) motogp g.p. portugal (algarve international) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">11:45</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - Viernes, 20/11/2026 MotoGP G.P. Portugal (Algarve International) Libres 1 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) MotoGP G.P. Portugal (Algarve International) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="11 50 motor motogp motogp - motogp g.p. portugal (algarve international) clasificacion motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">11:50</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Portugal (Algarve International) Clasificación MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="13 00 motor motogp motogp - motogp g.p. catar (losail) libres 2 motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="13 00 futbol alemania - bundesliga ii hertha berlin - arminia bielefeld dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">13:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Catar (Losail) Libres 2 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga II</div></td>
+                    <td class="event-col"><div class="event-title">Hertha Berlín - Arminia Bielefeld</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="13 40 motor motogp motogp - motogp g.p. catar (losail) clasificacion motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="13 30 futbol inglaterra - premier league aston villa - manchester city m+ liga de campeones dazn dazn 1 movistar plus+">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">13:40</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Catar (Losail) Clasificación MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">13:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Inglaterra - Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Aston Villa - Manchester City</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Liga de Campeones ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 1</a><a href="https://dlive.sx/stream/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 2</a><a href="https://dlive.sx/hub/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 3</a><a href="https://dlive.sx/watch/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 4</a><a href="https://dlive.sx/cast/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN 1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 1</a><a href="https://dlive.sx/stream/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 2</a><a href="https://dlive.sx/hub/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 3</a><a href="https://dlive.sx/watch/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 4</a><a href="https://dlive.sx/cast/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Movistar Plus+ ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 1</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 2</a><a href="https://dlive.sx/hub/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 3</a><a href="https://dlive.sx/watch/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 4</a><a href="https://dlive.sx/cast/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="13 45 motor motogp motogp - viernes 06 11 2026 motogp g.p. catar (losail) libres 1 motogp videopass dazn (ver ) dazn motogp (m71 o105) motogp g.p. catar (losail) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">13:45</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - Viernes, 06/11/2026 MotoGP G.P. Catar (Losail) Libres 1 MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) MotoGP G.P. Catar (Losail) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="false" data-search="14 00 motor formula 1 formula 1 - formula 1 g.p. abu dhabi (yas marina) libres 2 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="14 00 tenis atp lyon tommy paul - taylor fritz m+ deportes 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">14:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Abu Dhabi (Yas Marina) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Lyon</div></td>
+                    <td class="event-col"><div class="event-title">Tommy Paul - Taylor Fritz</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="14 00 motor motogp motogp - motogp g.p. portugal (algarve international) carrera motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="true" data-search="14 00 futbol españa - la liga rayo vallecano - elche m+ laliga">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">14:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Portugal (Algarve International) Carrera MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - La Liga</div></td>
+                    <td class="event-col"><div class="event-title">Rayo Vallecano - Elche</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 1</a><a href="https://dlive.sx/stream/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 2</a><a href="https://dlive.sx/hub/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 3</a><a href="https://dlive.sx/watch/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 4</a><a href="https://dlive.sx/cast/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="14 30 motor formula 1 formula 1 - viernes 27 11 2026 formula 1 g.p. catar (losail) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. catar (losail) libres 2 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">14:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Viernes, 27/11/2026 Fórmula 1 G.P. Catar (Losail) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Catar (Losail) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-filtered="true" data-search="15 00 motor formula 1 formula 1 - formula 1 g.p. abu dhabi (yas marina) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="15 00 tenis atp almaty daniil medvedev - alexander bublik m+ deportes 4">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">15:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Abu Dhabi (Yas Marina) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Almaty</div></td>
+                    <td class="event-col"><div class="event-title">Daniil Medvedev - Alexander Bublik</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 1</a><a href="https://dlive.sx/stream/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 2</a><a href="https://dlive.sx/hub/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 3</a><a href="https://dlive.sx/watch/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 4</a><a href="https://dlive.sx/cast/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="15 00 motor motogp motogp - motogp g.p. c. valenciana (ricardo tormo) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) be mad mediaset infinity dazn motogp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 00 futbol italia - serie a cagliari - bolonia dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">15:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. C. Valenciana (Ricardo Tormo) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105) BE MAD Mediaset Infinity</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Cagliari - Bolonia</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="15 30 motor formula 1 formula 1 - sabado 07 11 2026 formula 1 g.p. brasil (interlagos) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. brasil (interlagos) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 00 futbol italia - serie a como - sassuolo dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Como - Sassuolo</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 30 futbol alemania - bundesliga i augsburgo - union berlin dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">15:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Sábado, 07/11/2026 Fórmula 1 G.P. Brasil (Interlagos) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Brasil (Interlagos) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga I</div></td>
+                    <td class="event-col"><div class="event-title">Augsburgo - Unión Berlín</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="16 00 motor motogp motogp - motogp g.p. portugal (algarve international) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 30 futbol alemania - bundesliga i colonia - schalke 04 dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga I</div></td>
+                    <td class="event-col"><div class="event-title">Colonia - Schalke 04</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 30 futbol alemania - bundesliga i mainz - werder bremen dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga I</div></td>
+                    <td class="event-col"><div class="event-title">Mainz - Werder Bremen</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 30 futbol alemania - bundesliga i rb leipzig - elversberg dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga I</div></td>
+                    <td class="event-col"><div class="event-title">RB Leipzig - Elversberg</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="15 30 futbol alemania - bundesliga i paderborn - hamburgo dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga I</div></td>
+                    <td class="event-col"><div class="event-title">Paderborn - Hamburgo</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="16 00 tenis atp bruselas francisco cerundolo - tallon griekspoor m+ deportes">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">16:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Portugal (Algarve International) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Bruselas</div></td>
+                    <td class="event-col"><div class="event-title">Francisco Cerundolo - Tallon Griekspoor</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="16 30 motor formula 1 formula 1 - viernes 06 11 2026 formula 1 g.p. brasil (interlagos) libres 1 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. brasil (interlagos) libres 2 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="16 00 tenis atp lyon flavio cobolli - lorenzo musetti m+ deportes 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">16:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Viernes, 06/11/2026 Fórmula 1 G.P. Brasil (Interlagos) Libres 1 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Brasil (Interlagos) Libres 2 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Lyon</div></td>
+                    <td class="event-col"><div class="event-title">Flavio Cobolli - Lorenzo Musetti</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="17 00 motor formula 1 formula 1 - domingo 29 11 2026 pd fia formula 2 g.p. catar (losail) carrera dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. catar (losail) carrera dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="16 00 futbol inglaterra - premier league coventry - fulham dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">17:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Domingo, 29/11/2026 PD FIA Fórmula 2 G.P. Catar (Losail) Carrera DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. Catar (Losail) Carrera DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Inglaterra - Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Coventry - Fulham</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="18 00 motor formula 1 formula 1 - formula 1 g.p. brasil (interlagos) carrera dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="true" data-configured="true" data-search="16 00 futbol inglaterra - premier league arsenal - everton dazn dazn 1">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Inglaterra - Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Arsenal - Everton</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN 1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 1</a><a href="https://dlive.sx/stream/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 2</a><a href="https://dlive.sx/hub/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 3</a><a href="https://dlive.sx/watch/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 4</a><a href="https://dlive.sx/cast/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="true" data-search="16 15 futbol españa - la liga racing santander - espanyol dazn dazn laliga">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - La Liga</div></td>
+                    <td class="event-col"><div class="event-title">Racing Santander - Espanyol</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN LaLiga ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN LaLiga - Opción 1</a><a href="https://dlive.sx/stream/stream-538.php" target="_blank" rel="noopener noreferrer">DAZN LaLiga - Opción 2</a><a href="https://dlive.sx/hub/stream-538.php" target="_blank" rel="noopener noreferrer">DAZN LaLiga - Opción 3</a><a href="https://dlive.sx/watch/stream-538.php" target="_blank" rel="noopener noreferrer">DAZN LaLiga - Opción 4</a><a href="https://dlive.sx/cast/stream-538.php" target="_blank" rel="noopener noreferrer">DAZN LaLiga - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN LaLiga - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="16 15 futbol españa - segunda division leganes - mallorca - orange futbol 2 dazn laliga tv hypermotion">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - Segunda División</div></td>
+                    <td class="event-col"><div class="event-title">Leganés - Mallorca - Orange Fútbol 2</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">LALIGA TV Hypermotion ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 1</a><a href="https://dlive.sx/stream/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 2</a><a href="https://dlive.sx/hub/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 3</a><a href="https://dlive.sx/watch/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 4</a><a href="https://dlive.sx/cast/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="18 00 baloncesto liga endesa manresa - san pablo burgos dazn dazn baloncesto">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">18:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Brasil (Interlagos) Carrera DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Endesa</div></td>
+                    <td class="event-col"><div class="event-title">Manresa - San Pablo Burgos</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN Baloncesto ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN Baloncesto - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN Baloncesto - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="18 00 motor motogp motogp - motogp g.p. catar (losail) libres motogp videopass dazn (ver ) dazn motogp (m71 o105) dazn motogp dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="18 00 futbol españa - tercera - grupo 8 arandina - cd atletico mansilles el futbol modesto youtube">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">18:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 MotoGP</span></td>
-                    <td class="comp-col"><div class="comp-title">MotoGP</div></td>
-                    <td class="event-col"><div class="event-title">MotoGP - MotoGP G.P. Catar (Losail) Libres MotoGP Videopass DAZN (Ver ) DAZN MotoGP (M71 O105)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN MotoGP ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN MotoGP - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - Tercera - Grupo 8</div></td>
+                    <td class="event-col"><div class="event-title">Arandina - CD Atlético Mansillés</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">El Fútbol Modesto YouTube ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">El Fútbol Modesto YouTube - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">El Fútbol Modesto YouTube - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="18 30 motor formula 1 formula 1 - sabado 31 10 2026 formula 1 g.p. mexico (ciudad de mexico) libres 3 dazn (ver ) dazn f1 (m70 o104) formula 1 g.p. mexico (ciudad de mexico) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="18 00 futbol italia - serie a napoles - roma dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Nápoles - Roma</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="18 30 futbol alemania - bundesliga i borussia dortmund - eintracht frankfurt - orange futbol 3 m+ liga de campeones dazn movistar plus+ m+ vamos 3">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">18:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Sábado, 31/10/2026 Fórmula 1 G.P. México (Ciudad de México) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104) Fórmula 1 G.P. México (Ciudad de México) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga I</div></td>
+                    <td class="event-col"><div class="event-title">Borussia Dortmund - Eintracht Frankfurt - Orange Fútbol 3</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Liga de Campeones ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 1</a><a href="https://dlive.sx/stream/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 2</a><a href="https://dlive.sx/hub/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 3</a><a href="https://dlive.sx/watch/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 4</a><a href="https://dlive.sx/cast/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Movistar Plus+ ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 1</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 2</a><a href="https://dlive.sx/hub/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 3</a><a href="https://dlive.sx/watch/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 4</a><a href="https://dlive.sx/cast/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Vamos 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Vamos 3 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Vamos 3 - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="19 00 motor formula 1 formula 1 - formula 1 g.p. brasil (interlagos) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="false" data-search="18 30 tenis atp bruselas arthur fils - jan-lennard struff m+ deportes">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">19:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Brasil (Interlagos) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Bruselas</div></td>
+                    <td class="event-col"><div class="event-title">Arthur Fils - Jan-Lennard Struff</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="19 30 motor formula 1 formula 1 - formula 1 g.p. estados unidos (austin) libres 3 dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="true" data-search="18 30 futbol españa - la liga valencia - villarreal m+ laliga 2">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - La Liga</div></td>
+                    <td class="event-col"><div class="event-title">Valencia - Villarreal</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA 2 - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="18 30 futbol inglaterra - premier league chelsea - tottenham dazn dazn 1">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Inglaterra - Premier League</div></td>
+                    <td class="event-col"><div class="event-title">Chelsea - Tottenham</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN 1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 1</a><a href="https://dlive.sx/stream/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 2</a><a href="https://dlive.sx/hub/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 3</a><a href="https://dlive.sx/watch/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 4</a><a href="https://dlive.sx/cast/stream-445.php" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN 1 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="19 30 baloncesto liga endesa ucam murcia - coruna dazn dazn baloncesto 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">19:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Estados Unidos (Austin) Libres 3 DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Endesa</div></td>
+                    <td class="event-col"><div class="event-title">UCAM Murcia - Coruna</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN Baloncesto 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN Baloncesto 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN Baloncesto 2 - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="19 30 motor formula 1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 30 futbol alemania - bundesliga ii nuremberg - kaiserslautern dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">19:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">(M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">20:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Alemania - Bundesliga II</div></td>
+                    <td class="event-col"><div class="event-title">Núremberg - Kaiserslautern</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="20 00 motor formula 1 formula 1 - domingo 01 11 2026 nascar cup series martinsville speedway carrera dazn (ver ) formula 1 g.p. mexico (ciudad de mexico) carrera dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 45 futbol francia - ligue 1 lens - paris fc dazn">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Domingo, 01/11/2026 NASCAR Cup Series Martinsville Speedway Carrera DAZN (Ver ) Fórmula 1 G.P. México (Ciudad de México) Carrera DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Francia - Ligue 1</div></td>
+                    <td class="event-col"><div class="event-title">Lens - Paris FC</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="21 00 motor formula 1 formula 1 - formula 1 g.p. estados unidos (austin) carrera dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 45 futbol italia - serie a lazio - parma dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Lazio - Parma</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="true" data-search="21 00 futbol españa - la liga atletico de madrid - deportivo a coruna - orange futbol 1 m+ laliga movistar plus+">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">21:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Estados Unidos (Austin) Carrera DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - La Liga</div></td>
+                    <td class="event-col"><div class="event-title">Atlético de Madrid - Deportivo A Coruna - Orange Fútbol 1</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 1</a><a href="https://dlive.sx/stream/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 2</a><a href="https://dlive.sx/hub/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 3</a><a href="https://dlive.sx/watch/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 4</a><a href="https://dlive.sx/cast/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Movistar Plus+ ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 1</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 2</a><a href="https://dlive.sx/hub/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 3</a><a href="https://dlive.sx/watch/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 4</a><a href="https://dlive.sx/cast/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="22 00 motor formula 1 formula 1 - formula 1 g.p. mexico (ciudad de mexico) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="21 00 baloncesto liga endesa barcelona - zaragoza dazn dazn baloncesto 3">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">22:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. México (Ciudad de México) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Liga Endesa</div></td>
+                    <td class="event-col"><div class="event-title">Barcelona - Zaragoza</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN Baloncesto 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN Baloncesto 3 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN Baloncesto 3 - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="true" data-search="23 00 motor formula 1 formula 1 - formula 1 g.p. estados unidos (austin) clasificacion dazn (ver ) dazn f1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="21 00 futbol españa - segunda division almeria - oviedo - orange futbol 2 dazn laliga tv hypermotion">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">23:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">Fórmula 1 - Fórmula 1 G.P. Estados Unidos (Austin) Clasificación DAZN (Ver ) DAZN F1 (M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">España - Segunda División</div></td>
+                    <td class="event-col"><div class="event-title">Almería - Oviedo - Orange Fútbol 2</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">LALIGA TV Hypermotion ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 1</a><a href="https://dlive.sx/stream/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 2</a><a href="https://dlive.sx/hub/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 3</a><a href="https://dlive.sx/watch/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 4</a><a href="https://dlive.sx/cast/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-filtered="false" data-search="23 00 motor formula 1 (m70 o104) dazn f1 dazn">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="21 30 futbol brasil - serie a vitoria - athletico paranaense m+ liga de campeones m+ vamos 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">23:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">🏆 Fórmula 1</span></td>
-                    <td class="comp-col"><div class="comp-title">Fórmula 1</div></td>
-                    <td class="event-col"><div class="event-title">(M70 O104)</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN F1 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 1</a><a href="https://dlive.sx/stream/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 2</a><a href="https://dlive.sx/hub/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 3</a><a href="https://dlive.sx/watch/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 4</a><a href="https://dlive.sx/cast/stream-537.php" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN F1 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">21:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Brasil - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Vitória - Athletico Paranaense</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Liga de Campeones ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 1</a><a href="https://dlive.sx/stream/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 2</a><a href="https://dlive.sx/hub/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 3</a><a href="https://dlive.sx/watch/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 4</a><a href="https://dlive.sx/cast/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Vamos 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Vamos 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Vamos 2 - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="23 30 futbol brasil - serie a palmeiras - bragantiño - (8 y 50) m+ vamos m+ liga de campeones 2">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">23:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Brasil - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Palmeiras - Bragantiño - (8 y 50)</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Vamos ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 1</a><a href="https://dlive.sx/stream/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 2</a><a href="https://dlive.sx/hub/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 3</a><a href="https://dlive.sx/watch/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 4</a><a href="https://dlive.sx/cast/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Liga de Campeones 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones 2 - Opción 2</a></div></div></div></td>
                 </tr>
                 
             </tbody>
@@ -512,13 +504,30 @@ function toggleDropdown(event) {
     event.stopPropagation();
     const btn = event.currentTarget;
     const dropdown = btn.parentElement;
-    document.querySelectorAll('.dropdown-tv').forEach(item => { if (item !== dropdown) item.classList.remove('show'); });
+    
+    document.querySelectorAll('.dropdown-tv').forEach(item => {
+        if (item !== dropdown) {
+            item.classList.remove('show', 'dropup');
+        }
+    });
+
+    const rect = btn.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    
+    if (spaceBelow < 160) {
+        dropdown.classList.add('dropup');
+    } else {
+        dropdown.classList.remove('dropup');
+    }
+
     dropdown.classList.toggle('show');
 }
 
 window.onclick = function(event) {
     if (!event.target.matches('.tv-dropdown-btn')) {
-        document.querySelectorAll('.dropdown-tv').forEach(item => item.classList.remove('show'));
+        document.querySelectorAll('.dropdown-tv').forEach(item => {
+            item.classList.remove('show', 'dropup');
+        });
     }
 }
 
@@ -527,7 +536,8 @@ let currentFilter = 'todos';
 function setFilter(filterType) {
     currentFilter = cleanStr(filterType);
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
-    document.getElementById('card-' + currentFilter).classList.add('active-card');
+    const activeCard = document.getElementById('card-' + currentFilter);
+    if (activeCard) activeCard.classList.add('active-card');
     applyFilters();
 }
 
@@ -543,10 +553,20 @@ function applyFilters() {
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
 
+        const rowSport = cleanStr(tr.getAttribute('data-sport'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isConfigured = tr.getAttribute('data-configured') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
-        let matchesFilter = (currentFilter === 'todos') || (currentFilter === 'favoritos' && isFiltered);
+        let matchesFilter = false;
+        if (currentFilter === 'todos') {
+            matchesFilter = true;
+        } else if (currentFilter === 'favoritos') {
+            matchesFilter = isFiltered;
+        } else {
+            matchesFilter = (rowSport === currentFilter && isConfigured);
+        }
+
         const matchesSearch = text.includes(searchFilter);
 
         if (matchesFilter && matchesSearch) {
