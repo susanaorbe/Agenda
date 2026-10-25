@@ -143,6 +143,12 @@ def is_excluded_channel(channel: str) -> bool:
     key = re.sub(r"[^a-z0-9]+", "", normalize_search_text(channel))
     if not key:
         return True
+    
+    # Bloquear explícitamente nombres de competiciones que se cuelan como canales (ej. Primera Federación, España - Primera Federación)
+    norm_ch = normalize_search_text(channel)
+    if "primera federacion" in norm_ch or "españa -" in norm_ch or "grupo" in norm_ch:
+        return True
+
     return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
 
 
@@ -230,7 +236,6 @@ JUNK_RESIDUES_RE = rx(
     r"\(\s*\d+\s*\)"
 )
 
-# Limpiador estricto para eliminar colas de canales o números sueltos al final de los nombres de eventos
 EVENT_CLEANUP_TRAIL_RE = re.compile(
     r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
     re.IGNORECASE
@@ -358,7 +363,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
-    # Fútbol general (Segunda División, etc.)
+    # Fútbol general
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
@@ -456,7 +461,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     remaining_lines = [p for p in text_lines if p != tournament]
     matchup = " - ".join(remaining_lines) if remaining_lines else tournament
 
-    # Aplicar limpieza de sufijos de canales o números sueltos en el nombre del evento
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
     return time_clean, matchup, channels, tournament, text_lines
@@ -480,9 +484,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                # ==========================================
-                # 1. PROCESAR MOTOR DIRECTAMENTE DEL WIDGET
-                # ==========================================
                 comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
                 if comp_name:
                     event_key = (time_clean, comp_name, normalize_search_text(motor_event_title))
@@ -502,9 +503,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                     })
                     continue
 
-                # ==========================================
-                # 2. RESTO DE DEPORTES (FÚTBOL, BALONCESTO, TENIS)
-                # ==========================================
                 sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
                 )
