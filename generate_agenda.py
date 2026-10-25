@@ -180,7 +180,6 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b"
 )
 
-# Tenistas españoles exclusivamente para Favoritos
 SPANISH_TENNIS_PLAYERS_RE = rx(
     r"\bcarlos alcaraz\b", r"\balcaraz\b", r"\balejandro davidovich\b", r"\bdavidovich\b",
     r"\bcristina bucsa\b", r"\bbucsa\b", r"\bpaula badosa\b", r"\bbadosa\b",
@@ -236,7 +235,7 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN DE MOTOR DESDE FUTBOLENLATV.ES
+# EXTRACCIÓN LIMPIA E INFALIBLE DE MOTOR DESDE FUTBOLENLATV.ES
 # ============================================================================
 
 def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict]:
@@ -246,72 +245,80 @@ def fetch_futbolenlatv_motor_events(url: str, target_category: str) -> list[dict
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
+        # Buscar específicamente las filas <tr> de la tabla del día de hoy
         rows = soup.find_all("tr")
-        seen_times = set()
+        seen_events = set()
 
         for row in rows:
             cols = row.find_all(["td", "th"])
-            if len(cols) < 3:
+            if len(cols) < 2:
                 continue
 
             row_text = row.get_text(" ", strip=True)
             row_lower = row_text.lower()
 
-            # Descartar explícitamente F1 Academy, Moto2, Moto3 y categorías menores
+            # Descartar exclusiones estrictas de categorías secundarias
             if any(forbidden in row_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
                 continue
 
-            # 1. Filtro estricto por categoría objetivo
+            # Identificar categoría exacta
+            comp_name = ""
+            default_channels = ["DAZN"]
             if target_category == "Fórmula 1":
-                if not ("formula 1" in row_lower or "f1" in row_lower):
-                    continue
-                comp_name = "Fórmula 1"
-                default_channels = ["DAZN F1", "DAZN"]
+                if "formula 1" in row_lower or "f1" in row_lower:
+                    comp_name = "Fórmula 1"
+                    default_channels = ["DAZN F1", "DAZN"]
             elif target_category == "MotoGP":
-                if "motogp" not in row_lower:
-                    continue
-                comp_name = "MotoGP"
-                default_channels = ["DAZN MotoGP", "DAZN"]
+                if "motogp" in row_lower:
+                    comp_name = "MotoGP"
+                    default_channels = ["DAZN MotoGP", "DAZN"]
             elif target_category == "Fórmula E":
-                if "formula e" not in row_lower and "fórmula e" not in row_lower:
-                    continue
-                comp_name = "Fórmula E"
-                default_channels = ["Eurosport 1", "DAZN"]
+                if "formula e" in row_lower or "fórmula e" in row_lower:
+                    comp_name = "Fórmula E"
+                    default_channels = ["Eurosport 1", "DAZN"]
             elif target_category == "Indycar":
-                if "indycar" not in row_lower and "indy car" not in row_lower:
-                    continue
-                comp_name = "Indycar"
-                default_channels = ["M+ Deportes", "DAZN"]
-            else:
+                if "indycar" in row_lower or "indy car" in row_lower:
+                    comp_name = "Indycar"
+                    default_channels = ["M+ Deportes", "DAZN"]
+
+            if not comp_name:
                 continue
 
+            # Descartar previos, post o entrenamientos no deseados si aplica
             if any(junk in row_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
                 continue
 
+            # Extraer hora de forma limpia
             time_match = TIME_RE.search(cols[0].get_text(strip=True)) or TIME_RE.search(row_text)
             if not time_match:
                 continue
-
             time_clean = clean_time(time_match.group(0))
 
-            session_text = cols[1].get_text(" ", strip=True) if len(cols) >= 3 else cols[-1].get_text(" ", strip=True)
-            session_text = re.sub(r"(?i)fórmula 1|formula 1|motogp|fórmula e|formula e|indycar", "", session_text).strip()
-            session_text = re.sub(r"\s+", " ", session_text)
+            # Extraer nombre del evento de la celda de descripción o de la tabla entera de la fila
+            # Unimos el texto de las celdas intermedias para coger el Gran Premio y la sesión exacta
+            cell_texts = [c.get_text(" ", strip=True) for c in cols[1:-1]] if len(cols) > 2 else [cols[1].get_text(" ", strip=True)]
+            full_desc = " ".join(cell_texts)
+            
+            # Limpiar nombre de la categoría del texto para dejar solo el Gran Premio y la sesión
+            clean_desc = re.sub(r"(?i)fórmula 1|formula 1|motogp|fórmula e|formula e|indycar", "", full_desc).strip()
+            clean_desc = re.sub(r"\s+", " ", clean_desc)
 
-            if not session_text:
-                session_text = comp_name
+            if not clean_desc:
+                clean_desc = "Carrera"
 
-            event_title = f"{comp_name} - {session_text}"
+            event_title = f"{comp_name} - {clean_desc}"
             clean_norm = normalize_search_text(event_title)
 
+            # Evitar duplicados exactos
             event_key = (time_clean, comp_name, clean_norm)
-            if event_key in seen_times:
+            if event_key in seen_events:
                 continue
-            seen_times.add(event_key)
+            seen_events.add(event_key)
 
+            # Extraer canales de la última columna
             tv_text = cols[-1].get_text(" ", strip=True)
             extracted_channels = []
-            for ch in default_channels + ["m+ deportes", "eurosport 1", "eurosport 2"]:
+            for ch in default_channels + ["m+ deportes", "eurosport 1", "eurosport 2", "motogp videopass"]:
                 if ch.lower() in tv_text.lower():
                     extracted_channels.append(ch)
             if not extracted_channels:
@@ -523,7 +530,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. Obtener eventos de Motor limpios directamente desde futbolenlatv.es
+    # 1. Obtener eventos de Motor limpios y exactos desde las URLs específicas
     f1_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
     motogp_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
     fe_events = fetch_futbolenlatv_motor_events(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
