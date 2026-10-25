@@ -232,14 +232,12 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# CLASIFICACIÓN DE MOTOR (EXTRACCIÓN DIRECTA Y LIMPIA DESDE EL WIDGET)
+# PARSER ROBUSTO DE MOTOR (DETECTANDO SESIÓN Y NOMBRE DEL WIDGET)
 # ============================================================================
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
-    """Valida y clasifica exclusivamente eventos de F1, MotoGP, Fórmula E e Indycar del día actual."""
     blob_lower = normalize_search_text(blob)
 
-    # Bloqueo total de categorías excluidas
     if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
         return ("", "", False)
 
@@ -259,13 +257,13 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     if not comp_name:
         return ("", "", False)
 
-    # Obtener el nombre limpio del evento
-    full_event_str = " - ".join(text_lines) if text_lines else raw_tournament
-    clean_desc = re.sub(r"(?i)fórmula 1|formula 1|motogp|fórmula e|formula e|indycar", "", full_event_str).strip()
-    clean_desc = re.sub(r"\s+", " ", clean_desc)
-    if not clean_desc:
+    # Extraer y limpiar el texto real que viene en el widget para construir el título de forma elegante
+    valid_lines = [l for l in text_lines if normalize_search_text(l) not in {normalize_search_text(comp_name), "motor", "automovilismo", "motociclismo"}]
+    clean_desc = " - ".join(valid_lines).strip()
+    
+    if not clean_desc or clean_desc == "-":
         clean_desc = "Carrera"
-
+    
     event_title = f"{comp_name} - {clean_desc}"
     clean_norm = normalize_search_text(event_title)
 
@@ -841,8 +839,8 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSport = cleanStr(tr.getAttribute('data-sport'));
-        const isFiltered = tr.getAttribute('data-filtered'] === 'true';
-        const isConfigured = tr.getAttribute('data-configured'] === 'true';
+        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isConfigured = tr.getAttribute('data-configured') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
         let matchesFilter = false;
