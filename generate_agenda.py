@@ -27,9 +27,6 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-FUTBOLENLATV_AUTOMOVILISMO_URL = "https://www.futbolenlatv.es/deporte/automovilismo"
-FUTBOLENLATV_MOTOCICLISMO_URL = "https://www.futbolenlatv.es/deporte/motociclismo"
-
 CHANNEL_DICT = {
     'la 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://daddylive.pk/'],
     'la 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php', 'https://daddylive.pk/'],
@@ -235,75 +232,53 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN ESTRICTA DE MOTOR (SOLO BLOQUE DE HOY DE LAS URLS)
+# CLASIFICACIÓN DE MOTOR (EXTRACCIÓN DIRECTA Y LIMPIA DESDE EL WIDGET)
 # ============================================================================
 
-def get_motor_dictionary_from_today_urls(url: str, target_category: str) -> dict:
-    """Extrae exclusivamente los eventos de HOY localizando el contenedor temporal actual de la página."""
-    mapping = {}
-    try:
-        response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
+def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
+    """Valida y clasifica exclusivamente eventos de F1, MotoGP, Fórmula E e Indycar del día actual."""
+    blob_lower = normalize_search_text(blob)
 
-        # En futbolenlatv.es, los eventos de hoy suelen estar en el primer contenedor de fecha o tabla principal
-        # Buscamos bloques que correspondan al día actual o recorremos las filas asegurando que pertenezcan a hoy.
-        # Una forma robusta es buscar el primer bloque de partidos o filtrar por la fecha actual del sistema.
-        today_str = datetime.now(zoneinfo.ZoneInfo("Europe/Madrid")).strftime("%d/%m")
-        
-        # Encontrar tablas o contenedores de filas
-        rows = soup.find_all("tr")
-        current_date_header = ""
+    # Bloqueo total de categorías excluidas
+    if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
+        return ("", "", False)
 
-        for row in rows:
-            # Detectar si hay cabecera de fecha en la tabla
-            date_th = row.find(["th", "h2", "h3", "div"], class_=re.compile(r"date|fecha|dia", re.IGNORECASE))
-            if date_th:
-                current_date_header = date_th.get_text(strip=True)
+    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
+        return ("", "", False)
 
-            row_text = row.get_text(" ", strip=True)
-            row_lower = row_text.lower()
+    comp_name = ""
+    if "formula 1" in blob_lower or "f1" in blob_lower:
+        comp_name = "Fórmula 1"
+    elif "motogp" in blob_lower:
+        comp_name = "MotoGP"
+    elif "formula e" in blob_lower or "fórmula e" in blob_lower:
+        comp_name = "Fórmula E"
+    elif "indycar" in blob_lower or "indy car" in blob_lower:
+        comp_name = "Indycar"
 
-            # Descartar exclusiones estrictas (Academy, Moto2, Moto3, etc.)
-            if any(forbidden in row_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
-                continue
+    if not comp_name:
+        return ("", "", False)
 
-            comp_name = ""
-            if target_category == "Fórmula 1" and ("formula 1" in row_lower or "f1" in row_lower):
-                comp_name = "Fórmula 1"
-            elif target_category == "MotoGP" and "motogp" in row_lower:
-                comp_name = "MotoGP"
-            elif target_category == "Fórmula E" and ("formula e" in row_lower or "fórmula e" in row_lower):
-                comp_name = "Fórmula E"
-            elif target_category == "Indycar" and ("indycar" in row_lower or "indy car" in row_lower):
-                comp_name = "Indycar"
+    # Obtener el nombre limpio del evento
+    full_event_str = " - ".join(text_lines) if text_lines else raw_tournament
+    clean_desc = re.sub(r"(?i)fórmula 1|formula 1|motogp|fórmula e|formula e|indycar", "", full_event_str).strip()
+    clean_desc = re.sub(r"\s+", " ", clean_desc)
+    if not clean_desc:
+        clean_desc = "Carrera"
 
-            if not comp_name:
-                continue
+    event_title = f"{comp_name} - {clean_desc}"
+    clean_norm = normalize_search_text(event_title)
 
-            if any(junk in row_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
-                continue
+    # Reglas de Favoritos Motor:
+    # - F1: Carreras, Sprints y Clasificaciones
+    # - MotoGP, Fórmula E e Indycar: Solo Carreras y Sprints
+    is_fav = False
+    if comp_name == "Fórmula 1":
+        is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
+    else:
+        is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
 
-            time_match = TIME_RE.search(row_text)
-            if not time_match:
-                continue
-            time_clean = clean_time(time_match.group(0))
-
-            cols = row.find_all(["td", "th"])
-            cell_texts = [c.get_text(" ", strip=True) for c in cols[1:-1]] if len(cols) > 2 else [cols[1].get_text(" ", strip=True)] if len(cols) > 1 else [row_text]
-            full_desc = " ".join(cell_texts)
-            
-            clean_desc = re.sub(r"(?i)fórmula 1|formula 1|motogp|fórmula e|formula e|indycar|\d{2}:\d{2}", "", full_desc).strip()
-            clean_desc = re.sub(r"\s+", " ", clean_desc)
-            if not clean_desc:
-                clean_desc = "Carrera"
-
-            # Guardar en el mapa por hora exacta
-            mapping[time_clean] = f"{comp_name} - {clean_desc}"
-    except Exception as e:
-        print(f"Aviso: No se pudo leer el diccionario de motor de {url}: {e}")
-
-    return mapping
+    return (comp_name, event_title, is_fav)
 
 
 # ============================================================================
@@ -487,13 +462,6 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. CONSTRUIR DICCIONARIOS DE MOTOR EXCLUSIVOS DE HOY DESDE LAS URLS OFICIALES
-    f1_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
-    motogp_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
-    fe_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
-    indy_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Indycar")
-
-    # 2. EXPLORAR EL WIDGET GENERAL PARA CAPTURAR HORAS Y CANALES REALES DE HOY
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -509,48 +477,11 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
                 # ==========================================
-                # CRUCE ESTRICTO DE MOTOR (WIDGET HORA + MAPA DE HOY)
+                # 1. PROCESAR MOTOR DIRECTAMENTE DEL WIDGET
                 # ==========================================
-                is_motor_widget = any(m in blob for m in ["formula 1", "motogp", "f1", "indycar", "formula e"])
-                if is_motor_widget or time_clean in f1_map or time_clean in motogp_map or time_clean in fe_map or time_clean in indy_map:
-                    matched_title = None
-                    comp_name = ""
-                    default_channels = ["DAZN"]
-
-                    # Comprobar exclusivamente si coincide con el mapa del día de hoy
-                    if time_clean in f1_map:
-                        matched_title = f1_map[time_clean]
-                        comp_name = "Fórmula 1"
-                        default_channels = ["DAZN F1", "DAZN"]
-                    elif time_clean in motogp_map:
-                        matched_title = motogp_map[time_clean]
-                        comp_name = "MotoGP"
-                        default_channels = ["DAZN MotoGP", "DAZN"]
-                    elif time_clean in fe_map:
-                        matched_title = fe_map[time_clean]
-                        comp_name = "Fórmula E"
-                        default_channels = ["Eurosport 1", "DAZN"]
-                    elif time_clean in indy_map:
-                        matched_title = indy_map[time_clean]
-                        comp_name = "Indycar"
-                        default_channels = ["M+ Deportes", "DAZN"]
-                    else:
-                        # Si el widget dice motor pero la hora no está en las carreras de hoy, se descarta por completo
-                        continue
-
-                    final_channels = channels if channels else default_channels
-                    clean_norm = normalize_search_text(matched_title)
-
-                    # Reglas de Favoritos Motor:
-                    # - F1: Carreras, Sprints y Clasificaciones
-                    # - MotoGP, Fórmula E e Indycar: Solo Carreras y Sprints
-                    is_fav = False
-                    if comp_name == "Fórmula 1":
-                        is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
-                    else:
-                        is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
-
-                    event_key = (time_clean, comp_name, clean_norm)
+                comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
+                if comp_name:
+                    event_key = (time_clean, comp_name, normalize_search_text(motor_event_title))
                     if event_key in seen_events:
                         continue
                     seen_events.add(event_key)
@@ -560,15 +491,15 @@ def fetch_and_parse_agenda() -> list[dict]:
                         "deporte": "Motor",
                         "icono": "🏆",
                         "competicion": comp_name,
-                        "evento": matched_title,
-                        "tv_list": final_channels,
+                        "evento": motor_event_title,
+                        "tv_list": channels,
                         "is_filtered": is_fav,
                         "is_configured": True,
                     })
                     continue
 
                 # ==========================================
-                # RESTO DE DEPORTES (FÚTBOL, BALONCESTO, TENIS)
+                # 2. RESTO DE DEPORTES (FÚTBOL, BALONCESTO, TENIS)
                 # ==========================================
                 sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
@@ -910,8 +841,8 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSport = cleanStr(tr.getAttribute('data-sport'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true';
-        const isConfigured = tr.getAttribute('data-configured') === 'true';
+        const isFiltered = tr.getAttribute('data-filtered'] === 'true';
+        const isConfigured = tr.getAttribute('data-configured'] === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
         let matchesFilter = false;
