@@ -143,12 +143,6 @@ def is_excluded_channel(channel: str) -> bool:
     key = re.sub(r"[^a-z0-9]+", "", normalize_search_text(channel))
     if not key:
         return True
-    
-    # Bloquear explícitamente nombres de competiciones que se cuelan como canales (ej. Primera Federación, España - Primera Federación)
-    norm_ch = normalize_search_text(channel)
-    if "primera federacion" in norm_ch or "españa -" in norm_ch or "grupo" in norm_ch:
-        return True
-
     return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
 
 
@@ -427,6 +421,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             for channel in sub_parts:
                 channel = channel.strip().rstrip(":").strip()
                 channel_lower = normalize_search_text(channel)
+
+                # Filtrar de forma segura los textos de competición que se cuelan como canales, sin rechazar la fila
+                if "primera federacion" in channel_lower or "españa -" in channel_lower or "grupo" in channel_lower:
+                    continue
 
                 if (
                     channel
