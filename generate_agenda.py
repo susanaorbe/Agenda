@@ -235,22 +235,36 @@ JUNK_RESIDUES_RE = rx(
 
 
 # ============================================================================
-# EXTRACCIÓN MAESTRA DE MOTOR: DICCIONARIO URLS + HORAS DEL WIDGET
+# EXTRACCIÓN ESTRICTA DE MOTOR (SOLO BLOQUE DE HOY DE LAS URLS)
 # ============================================================================
 
-def get_motor_dictionary_from_urls(url: str, target_category: str) -> dict:
-    """Extrae un diccionario { 'HH:MM': 'Nombre oficial limpio del evento' } de la URL específica."""
+def get_motor_dictionary_from_today_urls(url: str, target_category: str) -> dict:
+    """Extrae exclusivamente los eventos de HOY localizando el contenedor temporal actual de la página."""
     mapping = {}
     try:
         response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        for row in soup.find_all("tr"):
+        # En futbolenlatv.es, los eventos de hoy suelen estar en el primer contenedor de fecha o tabla principal
+        # Buscamos bloques que correspondan al día actual o recorremos las filas asegurando que pertenezcan a hoy.
+        # Una forma robusta es buscar el primer bloque de partidos o filtrar por la fecha actual del sistema.
+        today_str = datetime.now(zoneinfo.ZoneInfo("Europe/Madrid")).strftime("%d/%m")
+        
+        # Encontrar tablas o contenedores de filas
+        rows = soup.find_all("tr")
+        current_date_header = ""
+
+        for row in rows:
+            # Detectar si hay cabecera de fecha en la tabla
+            date_th = row.find(["th", "h2", "h3", "div"], class_=re.compile(r"date|fecha|dia", re.IGNORECASE))
+            if date_th:
+                current_date_header = date_th.get_text(strip=True)
+
             row_text = row.get_text(" ", strip=True)
             row_lower = row_text.lower()
 
-            # Descartar exclusiones estrictas
+            # Descartar exclusiones estrictas (Academy, Moto2, Moto3, etc.)
             if any(forbidden in row_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
                 continue
 
@@ -275,7 +289,6 @@ def get_motor_dictionary_from_urls(url: str, target_category: str) -> dict:
                 continue
             time_clean = clean_time(time_match.group(0))
 
-            # Extraer descripción limpia de la sesión y GP
             cols = row.find_all(["td", "th"])
             cell_texts = [c.get_text(" ", strip=True) for c in cols[1:-1]] if len(cols) > 2 else [cols[1].get_text(" ", strip=True)] if len(cols) > 1 else [row_text]
             full_desc = " ".join(cell_texts)
@@ -285,6 +298,7 @@ def get_motor_dictionary_from_urls(url: str, target_category: str) -> dict:
             if not clean_desc:
                 clean_desc = "Carrera"
 
+            # Guardar en el mapa por hora exacta
             mapping[time_clean] = f"{comp_name} - {clean_desc}"
     except Exception as e:
         print(f"Aviso: No se pudo leer el diccionario de motor de {url}: {e}")
@@ -473,11 +487,11 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    # 1. CONSTRUIR DICCIONARIOS OFICIALES DE MOTOR DESDE LAS URLS ESPECÍFICAS
-    f1_map = get_motor_dictionary_from_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
-    motogp_map = get_motor_dictionary_from_urls(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
-    fe_map = get_motor_dictionary_from_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
-    indy_map = get_motor_dictionary_from_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Indycar")
+    # 1. CONSTRUIR DICCIONARIOS DE MOTOR EXCLUSIVOS DE HOY DESDE LAS URLS OFICIALES
+    f1_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula 1")
+    motogp_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_MOTOCICLISMO_URL, "MotoGP")
+    fe_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Fórmula E")
+    indy_map = get_motor_dictionary_from_today_urls(FUTBOLENLATV_AUTOMOVILISMO_URL, "Indycar")
 
     # 2. EXPLORAR EL WIDGET GENERAL PARA CAPTURAR HORAS Y CANALES REALES DE HOY
     try:
@@ -495,15 +509,15 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
                 # ==========================================
-                # CRUCE INTELIGENTE DE MOTOR (WIDGET + URLS)
+                # CRUCE ESTRICTO DE MOTOR (WIDGET HORA + MAPA DE HOY)
                 # ==========================================
                 is_motor_widget = any(m in blob for m in ["formula 1", "motogp", "f1", "indycar", "formula e"])
                 if is_motor_widget or time_clean in f1_map or time_clean in motogp_map or time_clean in fe_map or time_clean in indy_map:
-                    # Comprobar a qué categoría pertenece esta hora exacta según las URLs oficiales
                     matched_title = None
                     comp_name = ""
                     default_channels = ["DAZN"]
 
+                    # Comprobar exclusivamente si coincide con el mapa del día de hoy
                     if time_clean in f1_map:
                         matched_title = f1_map[time_clean]
                         comp_name = "Fórmula 1"
@@ -521,13 +535,12 @@ def fetch_and_parse_agenda() -> list[dict]:
                         comp_name = "Indycar"
                         default_channels = ["M+ Deportes", "DAZN"]
                     else:
-                        # Si el widget dice motor pero no está en el mapa oficial de hoy, se descarta
+                        # Si el widget dice motor pero la hora no está en las carreras de hoy, se descarta por completo
                         continue
 
-                    # Fusionar canales del widget con los por defecto si faltan
                     final_channels = channels if channels else default_channels
-
                     clean_norm = normalize_search_text(matched_title)
+
                     # Reglas de Favoritos Motor:
                     # - F1: Carreras, Sprints y Clasificaciones
                     # - MotoGP, Fórmula E e Indycar: Solo Carreras y Sprints
