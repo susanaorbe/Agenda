@@ -403,8 +403,14 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
             continue
 
+        # "Primera Federación" puede aparecer como canal, pero también forma
+        # parte del nombre de una competición. Solo tratar como canal la línea
+        # exacta; no convertir "España - Primera Federación - Grupo 2" en canal.
+        is_primera_federacion_channel = part_lower == "primera federacion"
+
         looks_like_channel = (
-            TV_IDENTIFIERS_RE.search(part)
+            is_primera_federacion_channel
+            or TV_IDENTIFIERS_RE.search(part)
             or CHANNEL_LINE_RE.search(part_lower)
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
@@ -447,7 +453,14 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
             or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
         )
-        if is_competition_line and not has_match_separator:
+        # El widget expresa esta competición como "España - Primera Federación - Grupo N".
+        # Aunque contiene guiones, es la competición y no el enfrentamiento.
+        is_primera_federacion_group = bool(
+            re.search(r"primera\s+federaci[oó]n", part_lower)
+            and re.search(r"\bgrupo\s*\d+\b", part_lower)
+            and not re.search(r"\bvs\.?\b|\bv\.\b", part_lower)
+        )
+        if is_primera_federacion_group or (is_competition_line and not has_match_separator):
             tournament_candidates.append(part)
         else:
             matchup_candidates.append(part)
