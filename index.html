@@ -119,23 +119,23 @@
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
-        <div class="last-update">Última actualización: <strong>26/10/2026 - 20:54 (España)</strong></div>
+        <div class="last-update">Última actualización: <strong>27/10/2026 - 00:32 (España)</strong></div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">17</div></div><div style="font-size:1.1rem">📺</div>
+            <div><div class="lbl">Todos</div><div class="val">33</div></div><div style="font-size:1.1rem">📺</div>
         </div>
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
-            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">3</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">2</div></div><div style="font-size:1.1rem">⚽</div>
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">0</div></div><div style="font-size:1.1rem">⚽</div>
         </div>
         <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">1</div></div><div style="font-size:1.1rem">🏀</div>
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">12</div></div><div style="font-size:1.1rem">🏀</div>
         </div>
         <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">13</div></div><div style="font-size:1.1rem">🎾</div>
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">17</div></div><div style="font-size:1.1rem">🎾</div>
         </div>
         <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
             <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">0</div></div><div style="font-size:1.1rem">🏆</div>
@@ -158,157 +158,301 @@
             </thead>
             <tbody id="agendaTable">
                 
-                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="00 30 baloncesto nba det pistons - phi 76ers - nba league pass dazn dazn baloncesto 2">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="02 30 tenis wta tokyo maya joint - sorana cirstea tennis channel - orange tv">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">00:30</span></td>
+                    <td class="time-col"><span class="time-badge">02:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">WTA Tokyo</div></td>
+                    <td class="event-col"><div class="event-title">Maya Joint - Sorana Cirstea</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="03 00 baloncesto nba gs warriors - den nuggets - nba league pass dazn dazn baloncesto">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">03:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
                     <td class="comp-col"><div class="comp-title">NBA</div></td>
-                    <td class="event-col"><div class="event-title">DET Pistons - PHI 76ers - NBA League Pass</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN Baloncesto 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN Baloncesto 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN Baloncesto 2 - Opción 2</a></div></div></div></td>
+                    <td class="event-col"><div class="event-title">GS Warriors - DEN Nuggets - NBA League Pass</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN Baloncesto ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN Baloncesto - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN Baloncesto - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="02 35 tenis wta tokyo xinyu wang - alycia parks tennis channel - orange tv">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="04 00 tenis wta tokyo yulia putintseva - maria sakkari tennis channel - orange tv">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">02:35</span></td>
+                    <td class="time-col"><span class="time-badge">04:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Tokyo</div></td>
-                    <td class="event-col"><div class="event-title">Xinyu Wang - Alycia Parks</div></td>
+                    <td class="event-col"><div class="event-title">Yulia Putintseva - Maria Sakkari</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="04 20 tenis wta tokyo daria kasatkina - talia gibson tennis channel - orange tv">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="07 00 tenis wta tokyo leylah annie fernandez - himeno sakatsume tennis channel - orange tv">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">04:20</span></td>
+                    <td class="time-col"><span class="time-badge">07:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Tokyo</div></td>
-                    <td class="event-col"><div class="event-title">Daria Kasatkina - Talia Gibson</div></td>
+                    <td class="event-col"><div class="event-title">Leylah Annie Fernandez - Himeno Sakatsume</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="06 10 tenis wta tokyo moyuka uchijima - elise mertens tennis channel - orange tv">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">06:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">WTA Tokyo</div></td>
-                    <td class="event-col"><div class="event-title">Moyuka Uchijima - Elise Mertens</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="09 00 tenis wta tokyo alexandra eala - mika stojsavljevic tennis channel - orange tv">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="09 00 tenis wta tokyo naomi osaka - jasmine paolini tennis channel - orange tv">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">09:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">WTA Tokyo</div></td>
-                    <td class="event-col"><div class="event-title">Alexandra Eala - Mika Stojsavljevic</div></td>
+                    <td class="event-col"><div class="event-title">Naomi Osaka - Jasmine Paolini</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Tennis Channel - Orange TV ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Tennis Channel - Orange TV - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="13 30 tenis atp viena matteo berrettini - tomas martin etcheverry m+ deportes 2 m+ vamos">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="12 00 tenis atp basilea hubert hurkacz - zizou bergs m+ deportes 4">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">12:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
+                    <td class="event-col"><div class="event-title">Hubert Hurkacz - Zizou Bergs</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 1</a><a href="https://dlive.sx/stream/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 2</a><a href="https://dlive.sx/hub/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 3</a><a href="https://dlive.sx/watch/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 4</a><a href="https://dlive.sx/cast/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="13 30 tenis atp basilea jerome kym - arthur rinderknech m+ deportes 4">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">13:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
+                    <td class="event-col"><div class="event-title">Jerome Kym - Arthur Rinderknech</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 1</a><a href="https://dlive.sx/stream/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 2</a><a href="https://dlive.sx/hub/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 3</a><a href="https://dlive.sx/watch/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 4</a><a href="https://dlive.sx/cast/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="13 30 tenis atp viena tommy paul - andrey rublev m+ deportes 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">13:30</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
-                    <td class="event-col"><div class="event-title">Matteo Berrettini - Tomas Martin Etcheverry</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Vamos ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 1</a><a href="https://dlive.sx/stream/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 2</a><a href="https://dlive.sx/hub/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 3</a><a href="https://dlive.sx/watch/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 4</a><a href="https://dlive.sx/cast/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 6</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="13 40 tenis atp basilea valentin vacherot - mariano navone m+ deportes">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">13:40</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
-                    <td class="event-col"><div class="event-title">Valentin Vacherot - Mariano Navone</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="15 15 tenis atp viena tomas machac - alex de minaur m+ deportes 2">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">15:15</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
-                    <td class="event-col"><div class="event-title">Tomas Machac - Alex De Minaur</div></td>
+                    <td class="event-col"><div class="event-title">Tommy Paul - Andrey Rublev</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="16 00 tenis atp basilea holger rune - quentin halys m+ deportes">
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-configured="true" data-search="14 00 tenis atp basilea alejandro tabilo - rafael jodar m+ deportes">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">16:00</span></td>
+                    <td class="time-col"><span class="time-badge">14:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
-                    <td class="event-col"><div class="event-title">Holger Rune - Quentin Halys</div></td>
+                    <td class="event-col"><div class="event-title">Alejandro Tabilo - Rafael Jodar</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="17 30 tenis atp viena arthur fery - jacob fearnley m+ deportes 3">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="15 00 tenis atp basilea alex michelsen - botic van de zandschulp m+ deportes 4">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
+                    <td class="event-col"><div class="event-title">Alex Michelsen - Botic Van De Zandschulp</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 1</a><a href="https://dlive.sx/stream/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 2</a><a href="https://dlive.sx/hub/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 3</a><a href="https://dlive.sx/watch/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 4</a><a href="https://dlive.sx/cast/stream-527.php" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 4 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="true" data-configured="true" data-search="15 00 tenis atp viena karen khachanov - carlos alcaraz garfia m+ deportes 2 movistar plus+">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
+                    <td class="event-col"><div class="event-title">Karen Khachanov - Carlos Alcaraz Garfia</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Movistar Plus+ ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 1</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 2</a><a href="https://dlive.sx/hub/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 3</a><a href="https://dlive.sx/watch/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 4</a><a href="https://dlive.sx/cast/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="15 00 tenis atp viena adrian mannarino - ignacio buse m+ deportes 3">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
+                    <td class="event-col"><div class="event-title">Adrian Mannarino - Ignacio Buse</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 1</a><a href="https://dlive.sx/stream/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 2</a><a href="https://dlive.sx/hub/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 3</a><a href="https://dlive.sx/watch/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 4</a><a href="https://dlive.sx/cast/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="15 30 tenis atp basilea giovanni mpetshi perricard - arthur fils m+ deportes">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">15:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
+                    <td class="event-col"><div class="event-title">Giovanni Mpetshi Perricard - Arthur Fils</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="16 30 tenis atp viena cameron norrie - francisco cerundolo m+ deportes 3">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">16:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
+                    <td class="event-col"><div class="event-title">Cameron Norrie - Francisco Cerundolo</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 1</a><a href="https://dlive.sx/stream/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 2</a><a href="https://dlive.sx/hub/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 3</a><a href="https://dlive.sx/watch/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 4</a><a href="https://dlive.sx/cast/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="17 00 baloncesto euroliga bc dubai - paris basketball m+ baloncesto">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">17:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">BC Dubai - Paris Basketball</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Baloncesto ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Baloncesto - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Baloncesto - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="17 30 tenis atp viena alexander zverev - martin landaluce m+ deportes 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">17:30</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
-                    <td class="event-col"><div class="event-title">Arthur Fery - Jacob Fearnley</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 1</a><a href="https://dlive.sx/stream/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 2</a><a href="https://dlive.sx/hub/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 3</a><a href="https://dlive.sx/watch/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 4</a><a href="https://dlive.sx/cast/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 6</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="17 35 tenis atp viena jakub mensik - lukas neumayer m+ deportes 2">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">17:35</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
-                    <td class="event-col"><div class="event-title">Jakub Mensik - Lukas Neumayer</div></td>
+                    <td class="event-col"><div class="event-title">Alexander Zverev - Martin Landaluce</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="18 10 tenis atp viena luciano darderi - matteo arnaldi m+ deportes 3">
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="18 00 tenis atp basilea ben shelton - aleksandar kovacevic m+ deportes">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">18:10</span></td>
-                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
-                    <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
-                    <td class="event-col"><div class="event-title">Luciano Darderi - Matteo Arnaldi</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 1</a><a href="https://dlive.sx/stream/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 2</a><a href="https://dlive.sx/hub/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 3</a><a href="https://dlive.sx/watch/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 4</a><a href="https://dlive.sx/cast/stream-526.php" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 3 - Opción 6</a></div></div></div></td>
-                </tr>
-                
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="20 00 tenis atp basilea dominic stephan stricker - casper ruud m+ deportes">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:00</span></td>
+                    <td class="time-col"><span class="time-badge">18:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
-                    <td class="event-col"><div class="event-title">Dominic Stephan Stricker - Casper Ruud</div></td>
+                    <td class="event-col"><div class="event-title">Ben Shelton - Aleksandar Kovacevic</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="20 00 tenis atp viena luca van assche - learner tien m+ deportes 2">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="18 30 futbol italia - serie a sassuolo - lazio dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">18:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Sassuolo - Lazio</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="19 00 baloncesto copa del rey atletico pinatarense - elche m+ laliga 2">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">19:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Copa del Rey</div></td>
+                    <td class="event-col"><div class="event-title">Atlético Pinatarense - Elche</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA 2 - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="19 00 baloncesto copa del rey sestao river - espanyol m+ laliga">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">19:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Copa del Rey</div></td>
+                    <td class="event-col"><div class="event-title">Sestao River - Espanyol</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 1</a><a href="https://dlive.sx/stream/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 2</a><a href="https://dlive.sx/hub/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 3</a><a href="https://dlive.sx/watch/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 4</a><a href="https://dlive.sx/cast/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="19 30 tenis atp basilea stan wawrinka - jiri lehecka m+ deportes">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">19:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
+                    <td class="comp-col"><div class="comp-title">ATP Basilea</div></td>
+                    <td class="event-col"><div class="event-title">Stan Wawrinka - Jiri Lehecka</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 1</a><a href="https://dlive.sx/stream/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 2</a><a href="https://dlive.sx/hub/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 3</a><a href="https://dlive.sx/watch/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 4</a><a href="https://dlive.sx/cast/stream-436.php" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="tenis" data-filtered="false" data-configured="true" data-search="20 00 tenis atp viena flavio cobolli - grigor dimitrov m+ deportes 2">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">20:00</span></td>
                     <td class="sport-col"><span class="sport-tag">🎾 Tenis</span></td>
                     <td class="comp-col"><div class="comp-title">ATP Viena</div></td>
-                    <td class="event-col"><div class="event-title">Luca Van Assche - Learner Tien</div></td>
+                    <td class="event-col"><div class="event-title">Flavio Cobolli - Grigor Dimitrov</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Deportes 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 1</a><a href="https://dlive.sx/stream/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 2</a><a href="https://dlive.sx/hub/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 3</a><a href="https://dlive.sx/watch/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 4</a><a href="https://dlive.sx/cast/stream-438.php" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Deportes 2 - Opción 6</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 30 futbol españa - segunda division fc andorra - burgos dazn laliga tv hypermotion">
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="20 00 baloncesto euroliga crvena zvezda mts belgrade - maccabi tel aviv m+ baloncesto 4">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
-                    <td class="time-col"><span class="time-badge">20:30</span></td>
-                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">España - Segunda División</div></td>
-                    <td class="event-col"><div class="event-title">FC Andorra - Burgos</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">LALIGA TV Hypermotion ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 1</a><a href="https://dlive.sx/stream/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 2</a><a href="https://dlive.sx/hub/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 3</a><a href="https://dlive.sx/watch/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 4</a><a href="https://dlive.sx/cast/stream-539.php" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">LALIGA TV Hypermotion - Opción 6</a></div></div></div></td>
+                    <td class="time-col"><span class="time-badge">20:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Crvena Zvezda MTS Belgrade - Maccabi Tel Aviv</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Baloncesto 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Baloncesto 4 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Baloncesto 4 - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="true" data-search="20 30 futbol francia - ligue 1 psg - lyon dazn">
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="20 00 baloncesto euroliga bayern de munich - barcelona m+ baloncesto">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Bayern de Múnich - Barcelona</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Baloncesto ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Baloncesto - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Baloncesto - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="20 15 baloncesto euroliga panathinaikos - milano m+ baloncesto 3">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:15</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Panathinaikos - Milano</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Baloncesto 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Baloncesto 3 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Baloncesto 3 - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 30 futbol basketball champions league ucam murcia - peristeri popular tv murcia teledeporte">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">20:30</span></td>
                     <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">Francia - Ligue 1</div></td>
-                    <td class="event-col"><div class="event-title">PSG - Lyon</div></td>
+                    <td class="comp-col"><div class="comp-title">Basketball Champions League</div></td>
+                    <td class="event-col"><div class="event-title">UCAM Murcia - Peristeri</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Popular TV Murcia ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Popular TV Murcia - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Popular TV Murcia - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Teledeporte ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Teledeporte - Opción 1</a><a href="https://dlive.sx/stream/stream-529.php" target="_blank" rel="noopener noreferrer">Teledeporte - Opción 2</a><a href="https://dlive.sx/hub/stream-529.php" target="_blank" rel="noopener noreferrer">Teledeporte - Opción 3</a><a href="https://dlive.sx/watch/stream-529.php" target="_blank" rel="noopener noreferrer">Teledeporte - Opción 4</a><a href="https://dlive.sx/cast/stream-529.php" target="_blank" rel="noopener noreferrer">Teledeporte - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Teledeporte - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="20 30 baloncesto euroliga valencia basket - fenerbahce m+ vamos">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:30</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Valencia Basket - Fenerbahce</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Vamos ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 1</a><a href="https://dlive.sx/stream/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 2</a><a href="https://dlive.sx/hub/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 3</a><a href="https://dlive.sx/watch/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 4</a><a href="https://dlive.sx/cast/stream-521.php" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Vamos - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 45 futbol italia - serie a torino - como dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Torino - Como</div></td>
                     <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
                 </tr>
                 
-                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="true" data-search="21 00 futbol españa - la liga sevilla - osasuna m+ laliga">
+                <tr class="event-row" data-sport="futbol" data-filtered="false" data-configured="false" data-search="20 45 futbol italia - serie a roma - cagliari dazn">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">20:45</span></td>
+                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
+                    <td class="comp-col"><div class="comp-title">Italia - Serie A</div></td>
+                    <td class="event-col"><div class="event-title">Roma - Cagliari</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">DAZN ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">DAZN - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">DAZN - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="21 00 baloncesto copa del rey manacor - villarreal m+ laliga 2 m+ laliga 4">
                     <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">21:00</span></td>
-                    <td class="sport-col"><span class="sport-tag">⚽ Fútbol</span></td>
-                    <td class="comp-col"><div class="comp-title">España - La Liga</div></td>
-                    <td class="event-col"><div class="event-title">Sevilla - Osasuna</div></td>
-                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 1</a><a href="https://dlive.sx/stream/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 2</a><a href="https://dlive.sx/hub/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 3</a><a href="https://dlive.sx/watch/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 4</a><a href="https://dlive.sx/cast/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 6</a></div></div></div></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Copa del Rey</div></td>
+                    <td class="event-col"><div class="event-title">Manacor - Villarreal</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA 2 - Opción 2</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA 4 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA 4 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA 4 - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="21 00 baloncesto copa del rey sporting alcazar - malaga c.f. m+ laliga 3">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Copa del Rey</div></td>
+                    <td class="event-col"><div class="event-title">Sporting Alcazar - Málaga C.F.</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA 3 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA 3 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA 3 - Opción 2</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="false" data-configured="true" data-search="21 00 baloncesto copa del rey recreativo de huelva - rayo vallecano m+ liga de campeones m+ laliga">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Copa del Rey</div></td>
+                    <td class="event-col"><div class="event-title">Recreativo de Huelva - Rayo Vallecano</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Liga de Campeones ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 1</a><a href="https://dlive.sx/stream/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 2</a><a href="https://dlive.sx/hub/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 3</a><a href="https://dlive.sx/watch/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 4</a><a href="https://dlive.sx/cast/stream-435.php" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Liga de Campeones - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ LALIGA ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 1</a><a href="https://dlive.sx/stream/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 2</a><a href="https://dlive.sx/hub/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 3</a><a href="https://dlive.sx/watch/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 4</a><a href="https://dlive.sx/cast/stream-84.php" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ LALIGA - Opción 6</a></div></div></div></td>
+                </tr>
+                
+                <tr class="event-row" data-sport="baloncesto" data-filtered="true" data-configured="true" data-search="21 00 baloncesto euroliga baskonia - real madrid movistar plus+ m+ baloncesto 2">
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="time-col"><span class="time-badge">21:00</span></td>
+                    <td class="sport-col"><span class="sport-tag">🏀 Baloncesto</span></td>
+                    <td class="comp-col"><div class="comp-title">Euroliga</div></td>
+                    <td class="event-col"><div class="event-title">Baskonia - Real Madrid</div></td>
+                    <td class="tv-col"><div class="tv-container"><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">Movistar Plus+ ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 1</a><a href="https://dlive.sx/stream/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 2</a><a href="https://dlive.sx/hub/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 3</a><a href="https://dlive.sx/watch/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 4</a><a href="https://dlive.sx/cast/stream-437.php" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 5</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">Movistar Plus+ - Opción 6</a></div></div><div class="dropdown-tv"><button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">M+ Baloncesto 2 ▾</button><div class="dropdown-content"><a href="https://hubu.ru/fctvlink" target="_blank" rel="noopener noreferrer">M+ Baloncesto 2 - Opción 1</a><a href="https://daddylive.pk/" target="_blank" rel="noopener noreferrer">M+ Baloncesto 2 - Opción 2</a></div></div></div></td>
                 </tr>
                 
             </tbody>
