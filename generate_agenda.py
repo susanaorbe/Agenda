@@ -133,7 +133,8 @@ EXCLUDED_CHANNELS = {
     "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tv footballclub ▾",
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
-    "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube"
+    "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
+    "the afc hub youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -230,7 +231,6 @@ JUNK_RESIDUES_RE = rx(
     r"\(\s*\d+\s*\)"
 )
 
-# Limpiador estricto para eliminar colas de canales o números sueltos al final de los nombres de eventos
 EVENT_CLEANUP_TRAIL_RE = re.compile(
     r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
     re.IGNORECASE
@@ -348,8 +348,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
 
-    # Champions League
-    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bbcl\b"), blob):
+    # Champions League (Excluyendo AFC Champions League asiática)
+    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
@@ -403,9 +403,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
             continue
 
-        # "Primera Federación" puede aparecer como canal, pero también forma
-        # parte del nombre de una competición. Solo tratar como canal la línea
-        # exacta; no convertir "España - Primera Federación - Grupo 2" en canal.
         is_primera_federacion_channel = part_lower == "primera federacion"
 
         looks_like_channel = (
@@ -453,8 +450,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
             or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
         )
-        # El widget expresa esta competición como "España - Primera Federación - Grupo N".
-        # Aunque contiene guiones, es la competición y no el enfrentamiento.
         is_primera_federacion_group = bool(
             re.search(r"primera\s+federaci[oó]n", part_lower)
             and re.search(r"\bgrupo\s*\d+\b", part_lower)
@@ -469,7 +464,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     remaining_lines = [p for p in text_lines if p != tournament]
     matchup = " - ".join(remaining_lines) if remaining_lines else tournament
 
-    # Aplicar limpieza de sufijos de canales o números sueltos en el nombre del evento
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
     return time_clean, matchup, channels, tournament, text_lines
