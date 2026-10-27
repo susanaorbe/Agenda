@@ -126,7 +126,7 @@ EXCLUDED_CHANNELS = {
     "m+ #vamos bar 2(308)", "m+ #vamos bar(307)", "m+ laliga hdr", "m+ laliga hdr(m440 o111)",
     "mediaset infinity", "motogp videopass", "movistar+ lite",
     "nwsl+", "onefootball", "onefootball ppv", "orange fútbol 1(107)",
-    "orange fútbol 2(108)", "orange fútbol 3(109)", "prosieben maxx(m+ astra)", "rcd deportivo tv youtube",
+    "orange fútbol 2(108)", "orange fútbol 3(109)", "popular tv murcia", "prosieben maxx(m+ astra)", "rcd deportivo tv youtube",
     "rcdeportivo tv youtube", "rcn nuestra tele", "red bull tv", "rfef tv youtube",
     "rfef.es", "rtve play", "sefutbol youtube", "sevilla fc +",
     "siroko tv", "tv 3", "tv footballclub(acceder)", "tv footballclub", "tv canaria",
@@ -200,7 +200,8 @@ LALIGA_RE = rx(
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bcopa del rey\b", r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
+    r"\bbasketball champions league\b",
+    r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
     r"\bnba\b"
 )
 
@@ -305,6 +306,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         comp_name = "Liga Endesa"
         if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
             comp_name = "Euroliga"
+        elif contains(rx(r"\bbasketball champions league\b"), blob):
+            comp_name = "Basketball Champions League"
         elif contains(rx(r"\bcopa del rey\b", r"\bcopa acb\b"), blob):
             comp_name = "Copa del Rey"
         elif contains(rx(r"\bsupercopa\b"), blob):
@@ -348,13 +351,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
 
-    # Champions League (Excluyendo AFC Champions League asiática)
+    # Champions League (Excluyendo AFC Champions League asiática y Basketball Champions League)
     if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
-    # Copa del Rey
-    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob):
+    # Copa del Rey (Excluyendo baloncesto explícitamente si se colase)
+    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
