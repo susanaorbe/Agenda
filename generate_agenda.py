@@ -175,7 +175,8 @@ EXCLUDED_SPORTS_RE = rx(
 
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
-    r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b"
+    r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
+    r"\bbasketball champions league\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -200,7 +201,6 @@ LALIGA_RE = rx(
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bbasketball champions league\b",
     r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
     r"\bnba\b"
 )
@@ -306,9 +306,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         comp_name = "Liga Endesa"
         if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
             comp_name = "Euroliga"
-        elif contains(rx(r"\bbasketball champions league\b"), blob):
-            comp_name = "Basketball Champions League"
-        elif contains(rx(r"\bcopa del rey\b", r"\bcopa acb\b"), blob):
+        elif contains(rx(r"\bcopa acb\b"), blob) or (contains(rx(r"\bcopa del rey\b"), blob) and contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob)):
             comp_name = "Copa del Rey"
         elif contains(rx(r"\bsupercopa\b"), blob):
             comp_name = "Supercopa de España"
@@ -328,6 +326,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if comp_match and contains(REAL_MADRID_RE, blob):
             return ("Fútbol", "⚽", comp_match, True, True, "")
         return ("", "", "", False, False, "")
+
+    # Copa del Rey de Fútbol (evaluado antes de La Liga para evitar falsos positivos por M+ LaLiga)
+    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob):
+        is_fav = contains(REAL_MADRID_RE, blob)
+        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
     # Primera RFEF
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
@@ -355,11 +358,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
-
-    # Copa del Rey (Excluyendo baloncesto explícitamente si se colase)
-    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob):
-        is_fav = contains(REAL_MADRID_RE, blob)
-        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
     # Fútbol general (Segunda División, etc.)
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b"), blob) and not contains(WOMEN_RE, blob):
