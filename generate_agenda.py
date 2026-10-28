@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 import functools
 from html import escape
 import zoneinfo
@@ -13,15 +13,18 @@ from bs4 import BeautifulSoup
 # CONFIGURACIÓN Y DICCIONARIO DE CANALES
 # ============================================================================
 
+spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+today_str = datetime.now(spain_tz).strftime("%Y-%m-%d")
+tomorrow_str = (datetime.now(spain_tz) + timedelta(days=1)).strftime("%Y-%m-%d")
+
 WIDGET_URL_TODAY = (
-    "https://widgets.futbolenlatv.com/partidos/agenda"
-    "?color=005df8&culture=es-ES"
+    f"https://widgets.futbolenlatv.com/partidos/agenda"
+    f"?color=005df8&culture=es-ES&date={today_str}"
 )
 
-# Endpoint detectado para el día de mañana[cite: 7]
 WIDGET_URL_TOMORROW = (
-    "https://widgets.futbolenlatv.com/partidos/matches"
-    "?sport=all&date=tomorrow&culture=es-ES"
+    f"https://widgets.futbolenlatv.com/partidos/agenda"
+    f"?color=005df8&culture=es-ES&date={tomorrow_str}"
 )
 
 REQUEST_HEADERS = {
@@ -562,12 +565,10 @@ def fetch_url_agenda(url: str, day_label: str) -> list[dict]:
 
 
 def fetch_and_parse_agenda() -> list[dict]:
-    # Descargar eventos de Hoy y Mañana por separado y combinarlos
     events_today = fetch_url_agenda(WIDGET_URL_TODAY, "Hoy")
     events_tomorrow = fetch_url_agenda(WIDGET_URL_TOMORROW, "Mañana")
     
     results = events_today + events_tomorrow
-    # Ordenar primero por día (Hoy primero que Mañana) y luego por hora
     results.sort(key=lambda x: (0 if x["dia"] == "Hoy" else 1, x["hora"]))
     return results
 
