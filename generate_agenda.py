@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 import functools
 from html import escape
 import zoneinfo
@@ -13,19 +13,9 @@ from bs4 import BeautifulSoup
 # CONFIGURACIÓN Y DICCIONARIO DE CANALES
 # ============================================================================
 
-spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
-today_str = datetime.now(spain_tz).strftime("%Y-%m-%d")
-tomorrow_str = (datetime.now(spain_tz) + timedelta(days=1)).strftime("%Y-%m-%d")
-
-WIDGET_URL_TODAY = (
-    f"https://widgets.futbolenlatv.com/partidos/agenda"
-    f"?color=005df8&culture=es-ES"
-)
-
-# Endpoint oficial de partidos JSON para mañana (garantiza datos distintos a hoy)
-WIDGET_URL_TOMORROW = (
-    f"https://widgets.futbolenlatv.com/partidos/matches"
-    f"?sport=all&date=tomorrow&culture=es-ES"
+WIDGET_URL = (
+    "https://widgets.futbolenlatv.com/partidos/agenda"
+    "?color=005df8&culture=es-ES"
 )
 
 REQUEST_HEADERS = {
@@ -483,96 +473,15 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     return time_clean, matchup, channels, tournament, text_lines
 
 
-def fetch_url_agenda(url: str, day_label: str) -> list[dict]:
+def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    headers = REQUEST_HEADERS.copy()
-    headers["Referer"] = "https://widgets.futbolenlatv.com/"
-
     try:
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-        
-        # Si es el endpoint JSON de mañana, parseamos los datos mediante JSON en lugar de HTML
-        if "matches?sport=all" in url:
-            data = response.json()
-            matches_list = data if isinstance(data, list) else data.get("matches", data.get("data", []))
-            
-            for item in matches_list:
-                try:
-                    # Extraer campos de la estructura JSON del widget
-                    time_raw = item.get("time", item.get("hour", ""))
-                    time_clean = clean_time(time_raw)
-                    if not time_clean:
-                        continue
-                        
-                    home = item.get("home_team", item.get("team1", ""))
-                    away = item.get("away_team", item.get("team2", ""))
-                    title = item.get("title", item.get("name", ""))
-                    
-                    if home and away:
-                        event_str = f"{home} - {away}"
-                    elif title:
-                        event_str = title
-                    else:
-                        continue
-                        
-                    tournament = item.get("competition", item.get("tournament", "General"))
-                    
-                    channels_raw = item.get("channels", item.get("tv", []))
-                    if isinstance(channels_raw, str):
-                        channels = [c.strip() for c in channels_raw.split(",") if c.strip()]
-                    elif isinstance(channels_raw, list):
-                        channels = [str(c.get("name", c)) for c in channels_raw if c]
-                    else:
-                        channels = []
-                        
-                    channels = [c for c in channels if not is_excluded_channel(c)]
-                    if not time_clean or not channels:
-                        continue
-                        
-                    tv_blob = " ".join(channels).lower()
-                    blob = normalize_search_text(f"{event_str} {tournament} {tv_blob}")
-                    
-                    # 1. Motor
-                    comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, [event_str])
-                    if comp_name:
-                        event_key = (day_label, time_clean, comp_name, normalize_search_text(motor_event_title))
-                        if event_key in seen_events:
-                            continue
-                        seen_events.add(event_key)
-                        results.append({
-                            "dia": day_label, "hora": time_clean, "deporte": "Motor", "icono": "🏆",
-                            "competicion": comp_name, "evento": motor_event_title, "tv_list": channels,
-                            "is_filtered": is_fav, "is_configured": True,
-                        })
-                        continue
-                        
-                    # 2. Resto de deportes
-                    sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
-                        blob, tournament, tv_blob, [event_str]
-                    )
-                    if not sport:
-                        continue
-                        
-                    final_event = custom_event if custom_event else event_str
-                    event_key = (day_label, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
-                    if event_key in seen_events:
-                        continue
-                    seen_events.add(event_key)
-                    
-                    results.append({
-                        "dia": day_label, "hora": time_clean, "deporte": sport, "icono": icon,
-                        "competicion": competition, "evento": final_event, "tv_list": channels,
-                        "is_filtered": is_favorite, "is_configured": is_configured,
-                    })
-                except Exception:
-                    continue
-            return results
-
-        # Parseo habitual por HTML para hoy
         soup = BeautifulSoup(response.text, "html.parser")
+
         for item in soup.find_all(("div", "tr", "li")):
             try:
                 time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
@@ -582,20 +491,31 @@ def fetch_url_agenda(url: str, day_label: str) -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
+                # ==========================================
+                # 1. PROCESAR MOTOR DIRECTAMENTE DEL WIDGET
+                # ==========================================
                 comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
                 if comp_name:
-                    event_key = (day_label, time_clean, comp_name, normalize_search_text(motor_event_title))
+                    event_key = (time_clean, comp_name, normalize_search_text(motor_event_title))
                     if event_key in seen_events:
                         continue
                     seen_events.add(event_key)
 
                     results.append({
-                        "dia": day_label, "hora": time_clean, "deporte": "Motor", "icono": "🏆",
-                        "competicion": comp_name, "evento": motor_event_title, "tv_list": channels,
-                        "is_filtered": is_fav, "is_configured": True,
+                        "hora": time_clean,
+                        "deporte": "Motor",
+                        "icono": "🏆",
+                        "competicion": comp_name,
+                        "evento": motor_event_title,
+                        "tv_list": channels,
+                        "is_filtered": is_fav,
+                        "is_configured": True,
                     })
                     continue
 
+                # ==========================================
+                # 2. RESTO DE DEPORTES (FÚTBOL, BALONCESTO, TENIS)
+                # ==========================================
                 sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
                 )
@@ -609,31 +529,28 @@ def fetch_url_agenda(url: str, day_label: str) -> list[dict]:
                 if not EVENT_TEXT_RE.search(final_event):
                     continue
 
-                event_key = (day_label, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(final_event))
                 if event_key in seen_events: 
                     continue
                 seen_events.add(event_key)
 
                 results.append({
-                    "dia": day_label, "hora": time_clean, "deporte": sport, "icono": icon,
-                    "competicion": competition, "evento": final_event, "tv_list": channels,
-                    "is_filtered": is_favorite, "is_configured": is_configured,
+                    "hora": time_clean,
+                    "deporte": sport,
+                    "icono": icon,
+                    "competicion": competition,
+                    "evento": final_event,
+                    "tv_list": channels,
+                    "is_filtered": is_favorite,
+                    "is_configured": is_configured,
                 })
             except Exception:
                 continue
 
     except Exception as e:
-        print(f"Error cargando la agenda de {day_label}: {e}")
+        print(f"Error cargando la agenda del widget: {e}")
 
-    return results
-
-
-def fetch_and_parse_agenda() -> list[dict]:
-    events_today = fetch_url_agenda(WIDGET_URL_TODAY, "Hoy")
-    events_tomorrow = fetch_url_agenda(WIDGET_URL_TOMORROW, "Mañana")
-    
-    results = events_today + events_tomorrow
-    results.sort(key=lambda x: (0 if x["dia"] == "Hoy" else 1, x["hora"]))
+    results.sort(key=lambda x: x["hora"])
     return results
 
 
@@ -693,24 +610,20 @@ def generate_html(events):
 
             tv_badges = "".join(tv_badges_list)
             search_text = normalize_search_text(" ".join(
-                [ev["dia"], ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+                [ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
             ))
             safe_search = escape(search_text, quote=True)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
-            safe_day = escape(str(ev["dia"]))
             safe_time = escape(str(ev["hora"]))
             safe_icon = escape(str(ev["icono"]))
             safe_sport = escape(str(ev["deporte"]))
             safe_competition = escape(str(ev["competicion"]))
             safe_event = escape(str(ev["evento"]))
 
-            is_today = (safe_day == "Hoy")
-            badge_class = "date-badge today" if is_today else "date-badge"
-
             rows_list.append(
                 f"""
                 <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
-                    <td class="date-col"><span class="{badge_class}">{safe_day}</span></td>
+                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
                     <td class="comp-col"><div class="comp-title">{safe_competition}</div></td>
@@ -727,7 +640,7 @@ def generate_html(events):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Deportiva - Hoy y Mañana</title>
+    <title>Agenda Deportiva - Hoy</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
@@ -822,7 +735,7 @@ def generate_html(events):
             }}
             
             td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
-            .date-col {{ display: inline-block; margin-bottom: 2px; }}
+            .date-col {{ display: none; }}
             .time-col {{ order: 1; display: inline-block; }}
             .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
             .comp-col {{ order: 3; margin-top: 4px; }}
@@ -837,7 +750,7 @@ def generate_html(events):
 <body>
 <div class="container">
     <header>
-        <div><h1>⚡ Agenda Deportiva - Hoy y Mañana</h1></div>
+        <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
@@ -988,4 +901,4 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos totales (Hoy y Mañana): {len(events)}")
+    print(f"Archivo index.html generado con éxito. Eventos totales (Fútbol, Baloncesto, Tenis y Motor): {len(events)}")
