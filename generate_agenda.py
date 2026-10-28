@@ -17,16 +17,14 @@ spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
 today_str = datetime.now(spain_tz).strftime("%Y-%m-%d")
 tomorrow_str = (datetime.now(spain_tz) + timedelta(days=1)).strftime("%Y-%m-%d")
 
-# URLs base para Hoy y Mañana
 WIDGET_URL_TODAY = (
     "https://widgets.futbolenlatv.com/partidos/agenda"
-    "?color=005df8&culture=es-ES"
+    f"?color=005df8&culture=es-ES&date={today_str}"
 )
 
-# Endpoint específico de partidos para el día de mañana
 WIDGET_URL_TOMORROW = (
-    "https://widgets.futbolenlatv.com/partidos/matches"
-    "?sport=all&date=tomorrow&culture=es-ES"
+    "https://widgets.futbolenlatv.com/partidos/agenda"
+    f"?color=005df8&culture=es-ES&date={tomorrow_str}"
 )
 
 REQUEST_HEADERS = {
