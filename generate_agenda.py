@@ -18,12 +18,12 @@ today_str = datetime.now(spain_tz).strftime("%Y-%m-%d")
 tomorrow_str = (datetime.now(spain_tz) + timedelta(days=1)).strftime("%Y-%m-%d")
 
 WIDGET_URL_TODAY = (
-    "https://widgets.futbolenlatv.com/partidos/agenda"
+    f"https://widgets.futbolenlatv.com/partidos/agenda"
     f"?color=005df8&culture=es-ES&date={today_str}"
 )
 
 WIDGET_URL_TOMORROW = (
-    "https://widgets.futbolenlatv.com/partidos/agenda"
+    f"https://widgets.futbolenlatv.com/partidos/agenda"
     f"?color=005df8&culture=es-ES&date={tomorrow_str}"
 )
 
@@ -486,8 +486,11 @@ def fetch_url_agenda(url: str, day_label: str) -> list[dict]:
     results = []
     seen_events = set()
 
+    headers = REQUEST_HEADERS.copy()
+    headers["Referer"] = "https://widgets.futbolenlatv.com/"
+
     try:
-        response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
