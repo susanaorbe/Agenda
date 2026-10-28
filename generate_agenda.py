@@ -134,7 +134,7 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -170,13 +170,13 @@ BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
 EXCLUDED_SPORTS_RE = rx(
     r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
     r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
-    r"\behf\b", r"\bihf\b"
+    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b"
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
-    r"\bbasketball champions league\b"
+    r"\bbasketball champions league\b", r"\bfutsal champions\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -205,6 +205,10 @@ BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bnba\b"
 )
 
+WOMEN_BASKETBALL_COMPETITIONS = (
+    (rx(r"\beuroliga femenina\b", r"\beuroleague women\b"), "Euroliga Femenina"),
+)
+
 WOMEN_FOOTBALL_COMPETITIONS = (
     (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"), (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
     (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
@@ -219,11 +223,11 @@ CLEAN_TV_RE = re.compile(
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
 
 TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon)"
+    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt)"
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprime video\b"
+    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprime video\b", r"\bà punt mèdia\b", r"\bà punt\b"
 )
 
 JUNK_RESIDUES_RE = rx(
@@ -301,10 +305,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
         return ("Tenis", "🎾", comp, is_fav, True, "")
 
-    # Baloncesto
-    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
+    # Baloncesto (incluyendo Euroliga Femenina)
+    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_BASKETBALL_COMPETITIONS):
         comp_name = "Liga Endesa"
-        if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
+        if contains(rx(r"\beuroliga femenina\b", r"\beuroleague women\b"), blob):
+            comp_name = "Euroliga Femenina"
+        elif contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
             comp_name = "Euroliga"
         elif contains(rx(r"\bcopa acb\b"), blob) or (contains(rx(r"\bcopa del rey\b"), blob) and contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob)):
             comp_name = "Copa del Rey"
@@ -313,7 +319,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif contains(rx(r"\bnba\b"), blob):
             comp_name = "NBA"
         
-        is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
+        is_fav = (contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)) or (comp_name == "Euroliga Femenina" and contains(rx(r"\bvalencia basket\b", r"\bvalencia\b"), blob))
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
 
     # Fútbol Femenino
@@ -413,7 +419,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon"
+                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt"
             ))
         )
         if looks_like_channel:
