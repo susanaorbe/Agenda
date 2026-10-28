@@ -200,7 +200,8 @@ LALIGA_RE = rx(
 )
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
-    r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
+    r"\bliga endesa\b", r"\bacb\b", r"\beuroliga femenina\b", r"\beuroleague women\b",
+    r"\beuroliga(?!.*(?:femenina|women|\(f\)))", r"\beuroleague(?!.*(?:femenina|women|\(f\)))", r"\beuro league\b",
     r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
     r"\bnba\b"
 )
@@ -305,12 +306,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
         return ("Tenis", "🎾", comp, is_fav, True, "")
 
-    # Baloncesto (incluyendo Euroliga Femenina)
+    # Baloncesto (Evaluando Euroliga Femenina de forma estricta primero)
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_BASKETBALL_COMPETITIONS):
         comp_name = "Liga Endesa"
         if contains(rx(r"\beuroliga femenina\b", r"\beuroleague women\b"), blob):
             comp_name = "Euroliga Femenina"
-        elif contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
+        elif contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob) and not contains(WOMEN_RE, blob):
             comp_name = "Euroliga"
         elif contains(rx(r"\bcopa acb\b"), blob) or (contains(rx(r"\bcopa del rey\b"), blob) and contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob)):
             comp_name = "Copa del Rey"
@@ -319,8 +320,16 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         elif contains(rx(r"\bnba\b"), blob):
             comp_name = "NBA"
         
-        is_fav = (contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)) or (comp_name == "Euroliga Femenina" and contains(rx(r"\bvalencia basket\b", r"\bvalencia\b"), blob))
-        return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
+        # Evitar clasificar partidos masculinos como femeninos y viceversa
+        if comp_name == "Euroliga Femenina" and contains(WOMEN_RE, blob):
+            is_fav = (contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)) or contains(rx(r"\bvalencia basket\b", r"\bvalencia\b"), blob)
+            return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
+        elif comp_name == "Euroliga" and not contains(WOMEN_RE, blob):
+            is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
+            return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
+        elif comp_name not in {"Euroliga", "Euroliga Femenina"}:
+            is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
+            return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
 
     # Fútbol Femenino
     if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
