@@ -131,9 +131,7 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
-    # Bloqueo estricto para evitar que nombres de competiciones entren como canales
-    "laliga hypermotion", "laliga tv hypermotion"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -172,11 +170,13 @@ EXCLUDED_SPORTS_RE = rx(
     r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b"
 )
 
+# EXCLUSIÓN COMPLETA DE LALIGA HYPERMOTION / SEGUNDA DIVISIÓN
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
     r"\bbasketball champions league\b", r"\bfutsal champions\b",
-    r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b"
+    r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b",
+    r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -198,8 +198,6 @@ LALIGA_RE = rx(
     r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
     r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
 )
-
-LALIGA_HYPERMOTION_RE = rx(r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b")
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
@@ -352,10 +350,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
-    # La Liga Hypermotion (Segunda División)
-    if LALIGA_HYPERMOTION_RE.search(blob) or "hypermotion" in blob:
-        return ("Fútbol", "⚽", "LaLiga Hypermotion", False, True, "")
-
     # Ligas Europeas
     if not contains(WOMEN_RE, blob):
         if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
@@ -373,7 +367,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     # Fútbol general
-    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b", r"\bhypermotion\b"), blob) and not contains(WOMEN_RE, blob):
+    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
 
@@ -401,7 +395,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "hypermotion"
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba"
     )
 
     for part in raw_parts:
@@ -478,22 +472,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             matchup_candidates.append(part)
 
     tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
-    
-    # SOLUCIÓN QUIRÚRGICA: Evitar que se pierda el primer equipo si la estructura agrupa mal el torneo
     remaining_lines = [p for p in text_lines if p != tournament]
-    if len(text_lines) >= 3 and tournament in text_lines[:2]:
-        # Si el torneo está en las primeras posiciones pero hay elementos antes/después de los equipos
-        potential_teams = [p for p in text_lines if p != tournament and not any(term in normalize_search_text(p) for term in competition_terms)]
-        if len(potential_teams) >= 2:
-            remaining_lines = potential_teams
-        elif len(text_lines) > 2 and len(remaining_lines) == 1:
-            remaining_lines = text_lines[1:]
-
     matchup = " - ".join(remaining_lines) if remaining_lines else tournament
-    matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
-    if tournament and matchup.lower().startswith(tournament.lower()):
-        matchup = matchup[len(tournament):].strip(" -")
+    matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
     return time_clean, matchup, channels, tournament, text_lines
 
