@@ -454,6 +454,9 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
+            
+            # Limpieza del sufijo '- Orange TV' para mostrar únicamente 'Tennis Channel'
+            clean_part = re.sub(r"\s*[-–—]\s*orange\s*tv\b", "", clean_part, flags=re.IGNORECASE).strip()
 
             sub_parts = re.split(r"[,|\n]+", clean_part)
             for channel in sub_parts:
@@ -762,7 +765,7 @@ def generate_html(events):
     <header>
         <div><h1>⚡ Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <a href="https://app96.ycutt15mm.cfd/apk-download-fctv-app" target="_blank" class="btn-alt">FCTV33</a>
+            <a href="intent://#Intent;package=es.fctv33;end" class="btn-alt">FCTV33</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
