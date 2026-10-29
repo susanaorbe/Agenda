@@ -32,7 +32,7 @@ FIRE_TV_PACKAGES = {
     "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
 }
 
-# MAPEO EXACTO DE CANALES A APLICACIONES SEGÚN TUS INSTRUCCIONES
+# MAPEO EXACTO DE CANALES A APLICACIONES
 CHANNEL_APP_MAP = {
     # MOVISTAR PLUS+
     'la 1': 'movistar',
@@ -249,8 +249,8 @@ CHANNEL_LINE_RE = rx(
 )
 
 JUNK_RESIDUES_RE = rx(
-    r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)",
-    r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)",
+    r"\(\s*(?:cataluña\vert{}catalunya\vert{}país vasco\vert{}pais vasco\vert{}galicia\vert{}andalucía\vert{}andalucia)\s*\)",
+    r"\(\s*(?:ver gratis\vert{}ver en directo\vert{}acceder\vert{}ver)\s*\)",
     r"\(\s*\d+\s*\)"
 )
 
@@ -318,7 +318,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Forzar inclusión si el evento se emite en canales específicos de DAZN que quieres capturar
     has_target_dazn = any(ch in tv_blob for ch in ["dazn 3", "dazn 4", "dazn f1", "dazn motogp", "dazn baloncesto"])
 
     # Tenis
@@ -330,7 +329,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
         return ("Tenis", "🎾", comp, is_fav, True, "")
 
-    # Baloncesto (incluyendo DAZN Baloncesto)
+    # Baloncesto
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) or "baloncesto" in tv_blob:
         if contains(WOMEN_RE, blob) and not "baloncesto" in tv_blob:
             return ("", "", "", False, False, "")
@@ -393,7 +392,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
-    # Si es un canal objetivo de DAZN (como DAZN 3, 4, etc.) pero no cayó en los filtros anteriores, lo rescatamos como evento general
     if has_target_dazn:
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Deportes"
         return ("Fútbol", "⚽", comp, False, True, "")
@@ -464,4 +462,427 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1",
+                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
+            ))
+        )
+        if looks_like_channel:
+            clean_part = CLEAN_TV_RE.sub("", part).strip()
+            clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
+            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
+            clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
+            
+            clean_part = re.sub(r"\s*[-–—]\s*orange\s*tv\b", "", clean_part, flags=re.IGNORECASE).strip()
+
+            sub_parts = re.split(r"[,|\n]+", clean_part)
+            for channel in sub_parts:
+                channel = channel.strip().rstrip(":").strip()
+                channel_lower = normalize_search_text(channel)
+
+                if (
+                    channel
+                    and not is_excluded_channel(channel)
+                    and channel not in channels
+                    and not re.fullmatch(r"\(?[mo]\+?\d+.*\)?", channel_lower)
+                    and channel_lower not in {"acceder", "(acceder)", "ver en directo"}
+                ):
+                    channels.append(channel)
+            continue
+
+        text_lines.append(part)
+
+    if not text_lines or not channels:
+        return "", "", [], "", []
+
+    tournament_candidates = []
+    matchup_candidates = []
+    for part in text_lines:
+        part_lower = normalize_search_text(part)
+        is_competition_line = any(term in part_lower for term in competition_terms)
+        has_match_separator = bool(
+            re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
+            or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
+        )
+        is_primera_federacion_group = bool(
+            re.search(r"primera\s+federaci[oó]n", part_lower)
+            and re.search(r"\bgrupo\s*\d+\b", part_lower)
+            and not re.search(r"\bvs\.?\b|\bv\.\b", part_lower)
+        )
+        if is_primera_federacion_group or (is_competition_line and not has_match_separator):
+            tournament_candidates.append(part)
+        else:
+            matchup_candidates.append(part)
+
+    tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
+    remaining_lines = [p for p in text_lines if p != tournament]
+    matchup = " - ".join(remaining_lines) if remaining_lines else tournament
+
+    matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
+
+    return time_clean, matchup, channels, tournament, text_lines
+
+
+def fetch_and_parse_agenda() -> list[dict]:
+    results = []
+    seen_events = set()
+
+    spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    today_date = datetime.now(spain_tz).date()
+    current_date_obj = today_date
+
+    try:
+        response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        elements = soup.find_all(['tr', 'div'])
+        for element in elements:
+            if len(element.find_all(text=TIME_RE)) > 1:
+                continue
+
+            el_text = element.get_text(" ", strip=True)
+            
+            date_match = DATE_RE.search(el_text)
+            if date_match:
+                try:
+                    d, m, y = map(int, date_match.groups())
+                    current_date_obj = date(y, m, d)
+                except ValueError:
+                    pass
+
+            time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
+            if not time_clean or not channels:
+                continue
+
+            tv_blob = " ".join(channels).lower()
+            blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
+
+            # 1. PROCESAR MOTOR
+            comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
+            if comp_name:
+                event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
+                if event_key in seen_events:
+                    continue
+                seen_events.add(event_key)
+
+                results.append({
+                    "date_obj": current_date_obj,
+                    "hora": time_clean,
+                    "deporte": "Motor",
+                    "icono": "🏆",
+                    "competicion": comp_name,
+                    "evento": motor_event_title,
+                    "tv_list": channels,
+                    "is_filtered": is_fav,
+                    "is_configured": True,
+                })
+                continue
+
+            # 2. RESTO DE DEPORTES
+            sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
+                blob, tournament, tv_blob, text_lines
+            )
+            
+            if not sport:
+                continue
+
+            final_event = custom_event if custom_event else event_str
+            final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
+
+            if not EVENT_TEXT_RE.search(final_event):
+                continue
+
+            event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+            if event_key in seen_events: 
+                continue
+            seen_events.add(event_key)
+
+            results.append({
+                "date_obj": current_date_obj,
+                "hora": time_clean,
+                "deporte": sport,
+                "icono": icon,
+                "competicion": competition,
+                "evento": final_event,
+                "tv_list": channels,
+                "is_filtered": is_favorite,
+                "is_configured": is_configured,
+            })
+
+    except Exception as e:
+        print(f"Error cargando la agenda general: {e}")
+
+    results.sort(key=lambda x: (x["date_obj"], x["hora"]))
+    return results
+
+
+# ============================================================================
+# GENERACIÓN DE HTML COMPLETO
+# ============================================================================
+
+def generate_html(events):
+    spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    today_date = datetime.now(spain_tz).date()
+    fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
+    
+    total_cnt = len(events)
+    filtered_cnt = sum(1 for event in events if event["is_filtered"])
+    sport_counts = Counter(event["deporte"] for event in events)
+
+    def clean_key(s):
+        return normalize_search_text(s)
+
+    rows_list = []
+    if not events:
+        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
+    else:
+        for ev in events:
+            tv_badges_list = []
+            for channel in ev["tv_list"]:
+                urls = get_channel_urls(channel)
+                safe_channel = escape(str(channel), quote=True)
+                
+                if urls:
+                    safe_url = escape(urls[0], quote=True)
+                    is_intent = "intent://" in urls[0]
+                    css_cls = "tv-badge alt-link" if is_intent else "tv-badge"
+                    icon_str = "🎛️" if is_intent else ""
+                    tv_badges_list.append(
+                        f'<a href="{safe_url}" '
+                        f'class="{css_cls}" title="Abrir app para {safe_channel}">'
+                        f'{safe_channel} {icon_str}</a>'
+                    )
+                else:
+                    tv_badges_list.append(
+                        f'<span class="tv-badge alt-link" style="cursor:default;" title="Canal sin enlace">'
+                        f'{safe_channel}</span>'
+                    )
+
+            tv_badges = "".join(tv_badges_list)
+            
+            ev_date = ev["date_obj"]
+            if ev_date == today_date:
+                date_badge_html = '<span class="date-badge today">Hoy</span>'
+            else:
+                date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
+
+            search_text = normalize_search_text(" ".join(
+                [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+            ))
+            safe_search = escape(search_text, quote=True)
+            safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
+            safe_time = escape(str(ev["hora"]))
+            safe_icon = escape(str(ev["icono"]))
+            safe_sport = escape(str(ev["deporte"]))
+            safe_competition = escape(str(ev["competicion"]))
+            safe_event = escape(str(ev["evento"]))
+
+            rows_list.append(
+                f"""
+                <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                    <td class="date-col">{date_badge_html}</td>
+                    <td class="time-col"><span class="time-badge">{safe_time}</span></td>
+                    <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
+                    <td class="comp-col"><div class="comp-title">{safe_competition}</div></td>
+                    <td class="event-col"><div class="event-title">{safe_event}</div></td>
+                    <td class="tv-col"><div class="tv-container">{tv_badges}</div></td>
+                </tr>
+                """
+            )
+
+    rows_html = "".join(rows_list)
+
+    return f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Deportiva</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }}
+        .container {{ width: 100%; max-width: 1150px; }}
+        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
+        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+        .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
+        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
+        .btn-alt {{ background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }}
+        .btn-alt:hover {{ background: #2563eb; }}
+        .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
+        
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
+        .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
+        .stat-card.active-card {{ border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
+        .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
+        .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
+        
+        .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
+        .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
+        .search-input:focus {{ border-color: var(--accent-blue); }}
+        
+        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
+        table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
+        th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
+        td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
+        tr.event-row:hover {{ background-color: #243146; }}
+        
+        .sport-col {{ width: 155px !important; min-width: 155px !important; white-space: nowrap; }}
+        .time-col, .date-col {{ white-space: nowrap; }}
+        .sport-tag {{ font-weight: 600; white-space: nowrap; }}
+        .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
+        .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
+        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
+        .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
+        .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
+        .tv-container {{ display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 100%; }}
+        
+        .tv-badge {{ display: flex; justify-content: space-between; align-items: center; background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; width: 100%; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
+        .tv-badge:hover {{ background: rgba(59, 130, 246, 0.3); color: #bfdbfe; border-color: #3b82f6; }}
+
+        .alt-link {{ background: rgba(59, 130, 246, 0.18); color: #93c5fd; border-color: rgba(59, 130, 246, 0.35); }}
+        .alt-link:hover {{ background: rgba(59, 130, 246, 0.35); color: #bfdbfe; border-color: #3b82f6; }}
+
+        .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
+
+        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
+            body {{ padding: 8px 6px; }}
+            h1 {{ font-size: 1.25rem; }}
+            .stats-grid {{ grid-template-columns: repeat(3, 1fr); gap: 6px; }}
+            .stat-card {{ padding: 6px 8px; }}
+            
+            thead {{ display: none; }}
+            table, tbody {{ display: block; width: 100%; }}
+            .table-card {{ background: transparent; border: none; box-shadow: none; }}
+            
+            tr.event-row {{
+                display: flex;
+                flex-direction: column;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 10px;
+                gap: 6px;
+            }}
+            
+            td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
+            .date-col {{ display: inline-block; order: 0; }}
+            .time-col {{ order: 1; display: inline-block; }}
+            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
+            .comp-col {{ order: 3; margin-top: 4px; }}
+            .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
+            .event-col {{ order: 4; margin: 2px 0 4px 0; }}
+            .event-title {{ font-size: 1.0rem; line-height: 1.35; }}
+            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; width: 100% !important; }}
+            .tv-badge {{ font-size: 0.78rem; padding: 6px 10px; width: 100%; }}
+        }}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div><h1>⚡ Agenda Deportiva</h1></div>
+        <div class="header-controls">
+            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
+            <a href="https://daddylive.pk" target="_blank" class="btn-alt">DLHD</a>
+            <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
+        </div>
+        <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
+    </header>
+    <div class="stats-grid">
+        <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
+            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📺</div>
+        </div>
+        <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
+            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
+        </div>
+        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
+        </div>
+        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
+        </div>
+        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
+        </div>
+        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏆</div>
+        </div>
+    </div>
+    <div class="filter-container">
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
+    </div>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th class="date-col" style="width: 70px;">Fecha</th>
+                    <th class="time-col" style="width: 70px;">Hora</th>
+                    <th class="sport-col" style="width: 155px;">Deporte</th>
+                    <th class="comp-col" style="width: 170px;">Competición</th>
+                    <th>Evento</th>
+                    <th style="width: 215px;">Canal TV</th>
+                </tr>
+            </thead>
+            <tbody id="agendaTable">
+                {rows_html}
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+function cleanStr(str) {{
+    return (str || '').toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c').trim();
+}}
+
+let currentFilter = 'todos';
+
+function setFilter(filterType) {{
+    currentFilter = cleanStr(filterType);
+    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
+    const activeCard = document.getElementById('card-' + currentFilter);
+    if (activeCard) activeCard.classList.add('active-card');
+    applyFilters();
+}}
+
+function filterTable() {{ applyFilters(); }}
+
+function applyFilters() {{
+    const searchFilter = cleanStr(document.getElementById('searchInput').value);
+    const table = document.getElementById('agendaTable');
+    const trs = table.getElementsByClassName('event-row');
+    let visibleCount = 0;
+
+    for (let i = 0; i < trs.length; i++) {{
+        const tr = trs[i];
+        if (tr.id === 'dynamicEmptyState') continue;
+
+        const rowSport = cleanStr(tr.getAttribute('data-sport'));
+        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isConfigured = tr.getAttribute('data-configured') === 'true';
+        const text = cleanStr(tr.getAttribute('data-search'));
+
+        let matchesFilter = false;
+        if (currentFilter === 'todos') {{
+            matchesFilter = true;
+        }} else if (currentFilter === 'favoritos') {{
+            matchesFilter = isFiltered;
+        }} else {{
+            matchesFilter = (rowSport === currentFilter);
+        }}
+
+        const matchesSearch = text.includes(searchFilter);
+
+        if (matchesFilter && matchesSearch) {{
+            tr.style.display = '';
+            visibleCount++;
+        }} else {{
+            tr.style.display = 'none';
+        }}
+    }}
+
+    let emptyRow = document.getElementById('dynamicEmptyState');
+    if (visibleCount === 0) {{
+        if (!emptyRow) {{
+            emptyRow = document.createElement('tr');
