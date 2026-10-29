@@ -634,10 +634,12 @@ def generate_html(events):
                     safe_url = escape(urls[0], quote=True)
                     is_intent = "intent://" in urls[0]
                     css_cls = "tv-badge alt-link" if is_intent else "tv-badge"
+                    # Icono de reproducción (▶️) para apps de Fire TV
+                    icon_str = "▶️" if is_intent else ""
                     tv_badges_list.append(
                         f'<a href="{safe_url}" '
                         f'class="{css_cls}" title="Abrir app para {safe_channel}">'
-                        f'{safe_channel} 📱</a>'
+                        f'{safe_channel} {icon_str}</a>'
                     )
                 else:
                     tv_badges_list.append(
@@ -761,7 +763,7 @@ def generate_html(events):
             .comp-col {{ order: 3; margin-top: 4px; }}
             .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
             .event-col {{ order: 4; margin: 2px 0 4px 0; }}
-            .event-title {{ font-size: 1rem; line-height: 1.35; }}
+            .event-title {{ font-size: 1.0rem; line-height: 1.35; }}
             .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }}
             .tv-badge {{ font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }}
         }}
@@ -772,7 +774,8 @@ def generate_html(events):
     <header>
         <div><h1>⚡ Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <a href="intent://#Intent;package=es.fctv33;end" class="btn-alt">FCTV33</a>
+            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
+            <a href="https://daddylive.pk" target="_blank" class="btn-alt" style="background:#0ea5e9;">DLHD</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
@@ -809,7 +812,7 @@ def generate_html(events):
                     <th class="sport-col" style="width: 155px;">Deporte</th>
                     <th class="comp-col" style="width: 170px;">Competición</th>
                     <th>Evento</th>
-                    <th style="width: 170px;">Canal TV</th>
+                    <th style="width: 215px;">Canal TV</th>
                 </tr>
             </thead>
             <tbody id="agendaTable">
