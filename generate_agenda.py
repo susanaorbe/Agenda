@@ -52,23 +52,25 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN (Todos explícitamente definidos)
+    # DAZN
     'dazn': 'dazn',
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
     'dazn 2': 'dazn',
-    'dazn 3': 'dazn',
-    'dazn 4': 'dazn',
-    'dazn f1': 'dazn',
-    'dazn motogp': 'dazn',
-    'dazn baloncesto': 'dazn',
-    'dazn baloncesto 2': 'dazn',
-    'dazn baloncesto 3': 'dazn',
 
     # PRIME VIDEO
     'tennis channel': 'prime',
     'tennis channel - orange tv': 'prime',
-    'amazon prime video': 'prime'
+    'amazon prime video': 'prime',
+
+    # FVTV33
+    'dazn 3': 'fctv33',
+    'dazn 4': 'fctv33',
+    'dazn f1': 'fctv33',
+    'dazn motogp': 'fctv33',
+    'dazn baloncesto': 'fctv33',
+    'dazn baloncesto 2': 'fctv33',
+    'dazn baloncesto 3': 'fctv33'
 }
 
 
