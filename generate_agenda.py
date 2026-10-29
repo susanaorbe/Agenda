@@ -24,7 +24,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Paquetes oficiales para Fire TV / Android TV
+# Intents oficiales de Android TV / Fire TV
 FIRE_TV_PACKAGES = {
     "movistar": "intent://#Intent;package=es.movistarplus.androidtv;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
     "dazn": "intent://#Intent;package=com.dazn;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
@@ -32,7 +32,7 @@ FIRE_TV_PACKAGES = {
     "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
 }
 
-# MAPEO EXACTO DE CANALES A APLICACIONES
+# MAPEO EXACTO DE CANALES A APLICACIONES SEGÚN TUS INSTRUCCIONES
 CHANNEL_APP_MAP = {
     # MOVISTAR PLUS+
     'la 1': 'movistar',
