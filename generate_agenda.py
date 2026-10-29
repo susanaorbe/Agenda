@@ -30,7 +30,7 @@ FIRETV_APP_PACKAGES = {
     "movistar": "com.movistarplus.androidtv",
     "dazn": "com.dazn",
     "prime": "com.amazon.firebat",
-    "fctv33": "com.fctv77.tv",
+    "kodi": "org.xbmc.kodi",
 }
 
 CHANNEL_APP_MAP = {
@@ -63,14 +63,14 @@ CHANNEL_APP_MAP = {
     "tennis channel - orange tv": "prime",
     "amazon prime video": "prime",
 
-    # FCTV33
-    "dazn 3": "fctv33",
-    "dazn 4": "fctv33",
-    "dazn f1": "fctv33",
-    "dazn motogp": "fctv33",
-    "dazn baloncesto": "fctv33",
-    "dazn baloncesto 2": "fctv33",
-    "dazn baloncesto 3": "fctv33",
+    # KODI
+    "dazn 3": "kodi",
+    "dazn 4": "kodi",
+    "dazn f1": "kodi",
+    "dazn motogp": "kodi",
+    "dazn baloncesto": "kodi",
+    "dazn baloncesto 2": "kodi",
+    "dazn baloncesto 3": "kodi",
 }
 
 CHANNEL_DICT = {
