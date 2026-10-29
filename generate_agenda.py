@@ -24,6 +24,55 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
+# Aplicaciones instaladas en Fire TV. Los enlaces de los canales usarán
+# un intent de Android para abrir la aplicación directamente.
+FIRETV_APP_PACKAGES = {
+    "movistar": "es.movistarplus.androidtv",
+    "dazn": "com.dazn",
+    "prime": "com.amazon.firebat",
+    "fctv33": "com.fctv77.com",
+}
+
+CHANNEL_APP_MAP = {
+    # MOVISTAR PLUS+
+    "la 1": "movistar",
+    "la 2": "movistar",
+    "antena 3": "movistar",
+    "cuatro": "movistar",
+    "telecinco": "movistar",
+    "la sexta": "movistar",
+    "movistar plus+": "movistar",
+    "m+ vamos": "movistar",
+    "m+ vamos 2": "movistar",
+    "m+ vamos 3": "movistar",
+    "primera federacion": "movistar",
+    "eurosport 1": "movistar",
+    "eurosport 2": "movistar",
+    "real madrid tv": "movistar",
+    "teledeporte": "movistar",
+    "replay": "movistar",
+
+    # DAZN
+    "dazn": "dazn",
+    "dazn laliga": "dazn",
+    "dazn 1": "dazn",
+    "dazn 2": "dazn",
+
+    # PRIME VIDEO
+    "tennis channel": "prime",
+    "tennis channel - orange tv": "prime",
+    "amazon prime video": "prime",
+
+    # FCTV33
+    "dazn 3": "fctv33",
+    "dazn 4": "fctv33",
+    "dazn f1": "fctv33",
+    "dazn motogp": "fctv33",
+    "dazn baloncesto": "fctv33",
+    "dazn baloncesto 2": "fctv33",
+    "dazn baloncesto 3": "fctv33",
+}
+
 CHANNEL_DICT = {
     'la 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://daddylive.pk/'],
     'la 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php', 'https://daddylive.pk/'],
@@ -77,6 +126,46 @@ def clean_time(time_str: str) -> str:
         minutes = parts[1]
         return f"{hours}:{minutes}"
     return time_str
+
+
+def normalize_channel_name(channel_name: str) -> str:
+    """Normaliza el nombre para aplicar el mapeo de aplicaciones sin alterar su etiqueta visible."""
+    normalized = normalize_search_text(channel_name)
+    # Los diales entre paréntesis no forman parte del nombre de la aplicación/canal.
+    normalized = re.sub(r"\([^)]*\)", "", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
+
+
+def get_channel_app(channel_name: str) -> str:
+    """Devuelve la app asignada al canal; los canales no listados usan FCTV33."""
+    normalized = normalize_channel_name(channel_name)
+
+    # Alias de nombres habituales que pueden aparecer en la guía.
+    aliases = {
+        "movistar plus": "movistar plus+",
+        "movistar+": "movistar plus+",
+        "tdp": "teledeporte",
+        "tennis channel orange tv": "tennis channel - orange tv",
+        "m+ #vamos": "m+ vamos",
+        "#vamos": "m+ vamos",
+        "#vamos spain": "m+ vamos",
+        "m+ vamos 8 y 50": "m+ vamos",
+    }
+    normalized = aliases.get(normalized, normalized)
+    return CHANNEL_APP_MAP.get(normalized, "fctv33")
+
+
+def get_firetv_intent(channel_name: str) -> str:
+    """Construye el intent Android para abrir la app como desde el launcher de Fire TV."""
+    app_key = get_channel_app(channel_name)
+    package_name = FIRETV_APP_PACKAGES[app_key]
+    return (
+        "intent:#Intent;"
+        "action=android.intent.action.MAIN;"
+        "category=android.intent.category.LEANBACK_LAUNCHER;"
+        f"package={package_name};end"
+    )
 
 
 def get_channel_urls(channel_name: str) -> list[str]:
@@ -611,37 +700,20 @@ def generate_html(events):
         for ev in events:
             tv_badges_list = []
             for channel in ev["tv_list"]:
-                urls = get_channel_urls(channel)
                 safe_channel = escape(str(channel), quote=True)
-                
-                if urls:
-                    if len(urls) > 1:
-                        options_html = ""
-                        for idx, u in enumerate(urls):
-                            lbl = f"Opción {idx + 1}"
-                            safe_u = escape(u, quote=True)
-                            options_html += f'<a href="{safe_u}" target="_blank" rel="noopener noreferrer">{safe_channel} - {lbl}</a>'
-                        
-                        tv_badges_list.append(
-                            f'<div class="dropdown-tv">'
-                            f'<button class="tv-badge tv-dropdown-btn" onclick="toggleDropdown(event)">{safe_channel} ▾</button>'
-                            f'<div class="dropdown-content">{options_html}</div>'
-                            f'</div>'
-                        )
-                    else:
-                        safe_url = escape(urls[0], quote=True)
-                        is_dlive = "dlive.sx" in urls[0]
-                        css_cls = "tv-badge alt-link" if is_dlive else "tv-badge"
-                        tv_badges_list.append(
-                            f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
-                            f'class="{css_cls}" title="Abrir canal {safe_channel}">'
-                            f'{safe_channel} 🔗</a>'
-                        )
-                else:
-                    tv_badges_list.append(
-                        f'<span class="tv-badge alt-link" style="cursor:default;" title="Canal sin enlace">'
-                        f'{safe_channel}</span>'
-                    )
+                app_intent = escape(get_firetv_intent(channel), quote=True)
+                app_key = get_channel_app(channel)
+                app_label = {
+                    "movistar": "Movistar Plus+",
+                    "dazn": "DAZN",
+                    "prime": "Prime Video",
+                    "fctv33": "FCTV33",
+                }[app_key]
+                tv_badges_list.append(
+                    f'<a href="{app_intent}" class="tv-badge" '
+                    f'title="Abrir {app_label} en Fire TV para el canal {safe_channel}">'
+                    f'{safe_channel} 🔗</a>'
+                )
 
             tv_badges = "".join(tv_badges_list)
             
