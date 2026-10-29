@@ -235,7 +235,7 @@ JUNK_RESIDUES_RE = rx(
 )
 
 EVENT_CLEANUP_TRAIL_RE = re.compile(
-    r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
+    r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
     re.IGNORECASE
 )
 
@@ -368,7 +368,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 
     # Fútbol general
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
+        # Normalizar los nombres de las ligas europeas para que no dependan
+        # de si la web incluye guion o país en el texto original.
+        if contains(rx(r"\bligue\s*1\b"), blob):
+            comp = "Francia - Ligue 1"
+        elif contains(rx(r"\bbundesliga\b"), blob):
+            comp = "Alemania - Bundesliga"
+        elif contains(rx(r"\bpremier league\b"), blob):
+            comp = "Inglaterra - Premier League"
+        elif contains(rx(r"\bserie a\b"), blob):
+            comp = "Italia - Serie A"
+        else:
+            comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
 
     return ("", "", "", False, False, "")
