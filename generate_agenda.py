@@ -13,10 +13,7 @@ from bs4 import BeautifulSoup
 # CONFIGURACIÓN Y DICCIONARIO DE CANALES
 # ============================================================================
 
-WIDGET_URL = (
-    "https://widgets.futbolenlatv.com/partidos/agenda"
-    "?color=005df8&culture=es-ES"
-)
+WIDGET_URL = "https://www.futbolenlatv.es/deporte"
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -170,7 +167,7 @@ BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
 EXCLUDED_SPORTS_RE = rx(
     r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
     r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
-    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b"
+    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b"
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
@@ -294,7 +291,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Tenis (Evitando falsos positivos con torneos de Golf tipo "Open" comprobando que no esté en canales de golf o tenga restricciones)
+    # Tenis
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
@@ -332,7 +329,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             return ("Fútbol", "⚽", comp_match, True, True, "")
         return ("", "", "", False, False, "")
 
-    # Copa del Rey de Fútbol (evaluado antes de La Liga para evitar falsos positivos por M+ LaLiga)
+    # Copa del Rey de Fútbol
     if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
@@ -359,12 +356,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
 
-    # Champions League (Excluyendo AFC Champions League asiática y Basketball Champions League)
+    # Champions League
     if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
-    # Fútbol general (Segunda División, etc.)
+    # Fútbol general
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
@@ -373,16 +370,19 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
-    text_full = item.get_text(" | ", strip=True)
-    time_match = TIME_RE.search(text_full)
-    time_clean = clean_time(time_match.group(0)) if time_match else ""
-
     raw_parts = [
         part.strip()
         for part in item.get_text("\n", strip=True).split("\n")
         if part.strip()
     ]
-    if not 2 <= len(raw_parts) <= 25:
+    if not 3 <= len(raw_parts) <= 25:
+        return "", "", [], "", []
+
+    text_full = " | ".join(raw_parts)
+    time_match = TIME_RE.search(text_full)
+    time_clean = clean_time(time_match.group(0)) if time_match else ""
+
+    if not time_clean:
         return "", "", [], "", []
 
     channels: list[str] = []
@@ -418,13 +418,13 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt"
+                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
             ))
         )
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
-            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
+            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=core_flags := re.IGNORECASE).strip() if 'core_flags' else re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
 
             sub_parts = re.split(r"[,|\n]+", clean_part)
@@ -444,7 +444,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
         text_lines.append(part)
 
-    if not text_lines:
+    if not text_lines or not channels:
         return "", "", [], "", []
 
     tournament_candidates = []
@@ -484,7 +484,7 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        for item in soup.find_all(("div", "tr", "li")):
+        for item in soup.find_all(("tr", "div")):
             try:
                 time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
                 if not time_clean or not channels: 
@@ -494,7 +494,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
                 # ==========================================
-                # 1. PROCESAR MOTOR DIRECTAMENTE DEL WIDGET
+                # 1. PROCESAR MOTOR
                 # ==========================================
                 comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
                 if comp_name:
@@ -516,7 +516,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     continue
 
                 # ==========================================
-                # 2. RESTO DE DEPORTES (FÚTBOL, BALONCESTO, TENIS)
+                # 2. RESTO DE DEPORTES
                 # ==========================================
                 sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
@@ -550,14 +550,14 @@ def fetch_and_parse_agenda() -> list[dict]:
                 continue
 
     except Exception as e:
-        print(f"Error cargando la agenda del widget: {e}")
+        print(f"Error cargando la agenda general: {e}")
 
     results.sort(key=lambda x: x["hora"])
     return results
 
 
 # ============================================================================
-# GENERACIÓN DE HTML COMPLETO
+# GENERACIÓN DE HTML COMPLETO (EXACTAMENTE IDÉNTICO AL ORIGINAL)
 # ============================================================================
 
 def generate_html(events):
