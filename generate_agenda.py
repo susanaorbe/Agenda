@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, date
 import functools
 from html import escape
 import zoneinfo
@@ -149,7 +149,7 @@ def contains(pattern: re.Pattern, text: str) -> bool:
 
 
 # ============================================================================
-# REGEX DE PATRONES
+# REGEX DE PATRONES Y FECHAS
 # ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
@@ -209,6 +209,8 @@ WOMEN_FOOTBALL_COMPETITIONS = (
 )
 
 TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
+DATE_RE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
+
 CLEAN_TV_RE = re.compile(
     r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
     re.IGNORECASE
@@ -281,7 +283,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
 
 
 # ============================================================================
-# NÚCLEO DE CLASIFICACIÓN (FÚTBOL, BALONCESTO, TENIS)
+# NÚCLEO DE CLASIFICACIÓN
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
@@ -300,7 +302,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
         return ("Tenis", "🎾", comp, is_fav, True, "")
 
-    # Baloncesto (Excluyendo totalmente cualquier evento de baloncesto femenino)
+    # Baloncesto
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
         if contains(WOMEN_RE, blob) or contains(rx(r"\(f\)\b", r"\(w\)\b"), blob):
             return ("", "", "", False, False, "")
@@ -479,12 +481,28 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
+    spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    today_date = datetime.now(spain_tz).date()
+    
+    current_date_obj = today_date
+
     try:
         response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        for item in soup.find_all(("tr", "div")):
+        for item in soup.find_all(("tr", "div", "h2", "h3", "section")):
+            item_text = item.get_text(" ", strip=True)
+            
+            # Detectar fecha si aparece en el bloque (ej: 29/10/2026)
+            date_match = DATE_RE.search(item_text)
+            if date_match:
+                try:
+                    d, m, y = map(int, date_match.groups())
+                    current_date_obj = date(y, m, d)
+                except ValueError:
+                    pass
+
             try:
                 time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
                 if not time_clean or not channels: 
@@ -498,12 +516,13 @@ def fetch_and_parse_agenda() -> list[dict]:
                 # ==========================================
                 comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
                 if comp_name:
-                    event_key = (time_clean, comp_name, normalize_search_text(motor_event_title))
+                    event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
                     if event_key in seen_events:
                         continue
                     seen_events.add(event_key)
 
                     results.append({
+                        "date_obj": current_date_obj,
                         "hora": time_clean,
                         "deporte": "Motor",
                         "icono": "🏆",
@@ -531,12 +550,13 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if not EVENT_TEXT_RE.search(final_event):
                     continue
 
-                event_key = (time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+                event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
                 if event_key in seen_events: 
                     continue
                 seen_events.add(event_key)
 
                 results.append({
+                    "date_obj": current_date_obj,
                     "hora": time_clean,
                     "deporte": sport,
                     "icono": icon,
@@ -552,16 +572,18 @@ def fetch_and_parse_agenda() -> list[dict]:
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
 
-    results.sort(key=lambda x: x["hora"])
+    # Ordenar estrictamente por fecha y hora cronológicamente
+    results.sort(key=lambda x: (x["date_obj"], x["hora"]))
     return results
 
 
 # ============================================================================
-# GENERACIÓN DE HTML COMPLETO (EXACTAMENTE IDÉNTICO AL ORIGINAL)
+# GENERACIÓN DE HTML COMPLETO
 # ============================================================================
 
 def generate_html(events):
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
     total_cnt = len(events)
@@ -611,8 +633,16 @@ def generate_html(events):
                     )
 
             tv_badges = "".join(tv_badges_list)
+            
+            # Formatear la etiqueta de fecha
+            ev_date = ev["date_obj"]
+            if ev_date == today_date:
+                date_badge_html = '<span class="date-badge today">Hoy</span>'
+            else:
+                date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
+
             search_text = normalize_search_text(" ".join(
-                [ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+                [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
             ))
             safe_search = escape(search_text, quote=True)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
@@ -625,7 +655,7 @@ def generate_html(events):
             rows_list.append(
                 f"""
                 <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
-                    <td class="date-col"><span class="date-badge today">Hoy</span></td>
+                    <td class="date-col">{date_badge_html}</td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
                     <td class="comp-col"><div class="comp-title">{safe_competition}</div></td>
@@ -642,7 +672,7 @@ def generate_html(events):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Deportiva - Hoy</title>
+    <title>Agenda Deportiva</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
@@ -737,7 +767,7 @@ def generate_html(events):
             }}
             
             td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
-            .date-col {{ display: none; }}
+            .date-col {{ display: inline-block; order: 0; }}
             .time-col {{ order: 1; display: inline-block; }}
             .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
             .comp-col {{ order: 3; margin-top: 4px; }}
@@ -752,7 +782,7 @@ def generate_html(events):
 <body>
 <div class="container">
     <header>
-        <div><h1>⚡ Agenda Deportiva - Hoy</h1></div>
+        <div><h1>⚡ Agenda Deportiva</h1></div>
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
@@ -903,4 +933,4 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos totales (Fútbol, Baloncesto, Tenis y Motor): {len(events)}")
+    print(f"Archivo index.html generado con éxito. Eventos totales ordenados cronológicamente: {len(events)}")
