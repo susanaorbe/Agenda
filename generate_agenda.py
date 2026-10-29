@@ -491,10 +491,11 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        for item in soup.find_all(("tr", "div", "h2", "h3", "section")):
+        # Recorremos de forma secuencial los elementos principales de la página (filas de tabla, secciones o divs de día)
+        for item in soup.find_all(["tr", "div", "section", "h2", "h3", "th"]):
             item_text = item.get_text(" ", strip=True)
             
-            # Detectar fecha si aparece en el bloque (ej: 29/10/2026)
+            # Si el elemento contiene una fecha tipo DD/MM/YYYY, actualizamos el puntero de fecha actual
             date_match = DATE_RE.search(item_text)
             if date_match:
                 try:
@@ -503,71 +504,68 @@ def fetch_and_parse_agenda() -> list[dict]:
                 except ValueError:
                     pass
 
-            try:
-                time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
-                if not time_clean or not channels: 
-                    continue
+            time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
+            if not time_clean or not channels: 
+                continue
 
-                tv_blob = " ".join(channels).lower()
-                blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
+            tv_blob = " ".join(channels).lower()
+            blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                # ==========================================
-                # 1. PROCESAR MOTOR
-                # ==========================================
-                comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
-                if comp_name:
-                    event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
-                    if event_key in seen_events:
-                        continue
-                    seen_events.add(event_key)
-
-                    results.append({
-                        "date_obj": current_date_obj,
-                        "hora": time_clean,
-                        "deporte": "Motor",
-                        "icono": "🏆",
-                        "competicion": comp_name,
-                        "evento": motor_event_title,
-                        "tv_list": channels,
-                        "is_filtered": is_fav,
-                        "is_configured": True,
-                    })
-                    continue
-
-                # ==========================================
-                # 2. RESTO DE DEPORTES
-                # ==========================================
-                sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
-                    blob, tournament, tv_blob, text_lines
-                )
-                
-                if not sport:
-                    continue
-
-                final_event = custom_event if custom_event else event_str
-                final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
-
-                if not EVENT_TEXT_RE.search(final_event):
-                    continue
-
-                event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
-                if event_key in seen_events: 
+            # ==========================================
+            # 1. PROCESAR MOTOR
+            # ==========================================
+            comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
+            if comp_name:
+                event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
+                if event_key in seen_events:
                     continue
                 seen_events.add(event_key)
 
                 results.append({
                     "date_obj": current_date_obj,
                     "hora": time_clean,
-                    "deporte": sport,
-                    "icono": icon,
-                    "competicion": competition,
-                    "evento": final_event,
+                    "deporte": "Motor",
+                    "icono": "🏆",
+                    "competicion": comp_name,
+                    "evento": motor_event_title,
                     "tv_list": channels,
-                    "is_filtered": is_favorite,
-                    "is_configured": is_configured,
+                    "is_filtered": is_fav,
+                    "is_configured": True,
                 })
-            except Exception:
                 continue
+
+            # ==========================================
+            # 2. RESTO DE DEPORTES
+            # ==========================================
+            sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
+                blob, tournament, tv_blob, text_lines
+            )
+            
+            if not sport:
+                continue
+
+            final_event = custom_event if custom_event else event_str
+            final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
+
+            if not EVENT_TEXT_RE.search(final_event):
+                continue
+
+            event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+            if event_key in seen_events: 
+                continue
+            seen_events.add(event_key)
+
+            results.append({
+                "date_obj": current_date_obj,
+                "hora": time_clean,
+                "deporte": sport,
+                "icono": icon,
+                "competicion": competition,
+                "evento": final_event,
+                "tv_list": channels,
+                "is_filtered": is_favorite,
+                "is_configured": is_configured,
+            })
 
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
