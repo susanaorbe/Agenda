@@ -24,12 +24,12 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Intents corregidos para abrir directamente la app en Fire TV / Android TV
+# URIs nativos de Amazon para Fire TV (abren la app directamente sin pasar por la tienda)
 FIRE_TV_PACKAGES = {
-    "movistar": "intent://#Intent;package=es.movistarplus.androidtv;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
-    "dazn": "intent://#Intent;package=com.dazn;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
-    "prime": "intent://#Intent;package=com.amazon.firebat;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
-    "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
+    "movistar": "amzn://apps/android?p=es.movistarplus.androidtv",
+    "dazn": "amzn://apps/android?p=com.dazn",
+    "prime": "amzn://apps/android?p=com.amazon.firebat",
+    "fctv33": "amzn://apps/android?p=com.fctv77.com"
 }
 
 # MAPEO EXACTO DE CANALES A APLICACIONES
@@ -52,7 +52,7 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN (Todos explícitamente definidos)
+    # DAZN (DAZN 1 y 2 con su app; 3, 4, F1, MotoGP y Baloncesto a FCTV33)
     'dazn': 'dazn',
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
@@ -149,7 +149,8 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
+    "primera federacion", "primera rfef", "liga ea sports", "champions league"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -632,9 +633,9 @@ def generate_html(events):
                 
                 if urls:
                     safe_url = escape(urls[0], quote=True)
-                    is_intent = "intent://" in urls[0]
-                    css_cls = "tv-badge alt-link" if is_intent else "tv-badge"
-                    icon_str = "🎛️" if is_intent else ""
+                    is_amzn = "amzn://" in urls[0]
+                    css_cls = "tv-badge alt-link" if is_amzn else "tv-badge"
+                    icon_str = "🎛️" if is_amzn else ""
                     tv_badges_list.append(
                         f'<a href="{safe_url}" '
                         f'class="{css_cls}" title="Abrir app para {safe_channel}">'
