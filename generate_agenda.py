@@ -586,7 +586,9 @@ def generate_html(events):
     
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    sport_counts = Counter(event["deporte"] for event in events if event["is_configured"])
+    # Las pestañas deportivas deben repartir todos los eventos que aparecen en 'Todos'.
+    # is_configured se conserva para no alterar otros metadatos ni los criterios de Favoritos.
+    sport_counts = Counter(event["deporte"] for event in events)
 
     def clean_key(s):
         return normalize_search_text(s)
@@ -897,7 +899,9 @@ function applyFilters() {{
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
         }} else {{
-            matchesFilter = (rowSport === currentFilter && isConfigured);
+            // Las pestañas deportivas incluyen todos los eventos de ese deporte,
+            // estén o no marcados como configurados. Favoritos sigue usando isFiltered.
+            matchesFilter = (rowSport === currentFilter);
         }}
 
         const matchesSearch = text.includes(searchFilter);
