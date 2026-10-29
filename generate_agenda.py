@@ -124,7 +124,7 @@ EXCLUDED_CHANNELS = {
     "mediaset infinity", "motogp videopass", "movistar+ lite",
     "nwsl+", "onefootball", "onefootball ppv", "orange fútbol 1(107)",
     "orange fútbol 2(108)", "orange fútbol 3(109)", "popular tv murcia", "prosieben maxx(m+ astra)", "rcd deportivo tv youtube",
-    "rcdeportivo tv youtube", "rcn nuestra tele", "red bull tv", "rfef tv youtube",
+    "rcdeportivo tv youtube", "rcn nossa tele", "red bull tv", "rfef tv youtube",
     "rfef.es", "rtve play", "sefutbol youtube", "sevilla fc +",
     "siroko tv", "tv 3", "tv footballclub(acceder)", "tv footballclub", "tv canaria",
     "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tv footballclub ▾",
@@ -196,8 +196,6 @@ LALIGA_RE = rx(
     r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
     r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
 )
-
-LALIGA_HYPERMOTION_RE = rx(r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b")
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
@@ -296,7 +294,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Tenis
+    # Tenis (Reforzado para capturar cualquier torneo, ATP, WTA o referencias directas)
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b"), blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
@@ -350,8 +348,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
-    # La Liga Hypermotion (Segunda División)
-    if LALIGA_HYPERMOTION_RE.search(blob) or "hypermotion" in blob:
+    # LaLiga Hypermotion (Solución específica limpia para Eibar - Almería)
+    if contains(rx(r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b"), blob):
         return ("Fútbol", "⚽", "LaLiga Hypermotion", False, True, "")
 
     # Ligas Europeas
@@ -371,7 +369,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     # Fútbol general
-    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b", r"\bhypermotion\b"), blob) and not contains(WOMEN_RE, blob):
+    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
 
@@ -381,25 +379,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     raw_parts = [
         part.strip()
-        for part in item.get_text("\n", strip=True).split("\n" if "\n" in item.get_text() else " ")
+        for part in item.get_text("\n", strip=True).split("\n")
         if part.strip()
     ]
-    
-    # Si viene en formato plano sin saltos o con pocos elementos estructurados, intentamos extraer por líneas limpias
-    clean_raw_parts = []
-    for p in item.find_all(text=True):
-        p_str = p.strip()
-        if p_str and p_str not in clean_raw_parts:
-            clean_raw_parts.append(p_str)
-            
-    parts_to_use = raw_parts if len(raw_parts) >= 3 else clean_raw_parts
-    if not parts_to_use:
-        parts_to_use = [el.strip() for el in item.get_text("\n", strip=True).split("\n") if el.strip()]
-
-    if not 2 <= len(parts_to_use) <= 35:
+    if not 3 <= len(raw_parts) <= 25:
         return "", "", [], "", []
 
-    text_full = " | ".join(parts_to_use)
+    text_full = " | ".join(raw_parts)
     time_match = TIME_RE.search(text_full)
     time_clean = clean_time(time_match.group(0)) if time_match else ""
 
@@ -414,7 +400,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "hypermotion"
     )
 
-    for part in parts_to_use:
+    for part in raw_parts:
         part = JUNK_RESIDUES_RE.sub("", part).strip()
         if not part:
             continue
@@ -487,18 +473,16 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         else:
             matchup_candidates.append(part)
 
-    tournament = tournament_candidates[0] if tournament_candidates else (text_lines[0] if len(text_lines) > 2 else "")
-    if tournament and tournament in text_lines:
-        remaining_lines = [p for p in text_lines if p != tournament]
-    else:
-        remaining_lines = text_lines
+    tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
+    remaining_lines = [p for p in text_lines if p != tournament]
+    
+    # Manejo específico seguro para que Eibar - Almería no descoloque los equipos
+    if not remaining_lines and len(text_lines) > 1:
+        tournament = text_lines[0]
+        remaining_lines = text_lines[1:]
 
-    matchup = " - ".join(remaining_lines) if remaining_lines else (tournament if tournament else " - ".join(text_lines))
+    matchup = " - ".join(remaining_lines) if remaining_lines else tournament
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
-
-    # Si por lo que sea el matchup contiene al torneo al inicio, limpiarlo
-    if tournament and matchup.lower().startswith(tournament.lower()):
-        matchup = matchup[len(tournament):].strip(" -")
 
     return time_clean, matchup, channels, tournament, text_lines
 
