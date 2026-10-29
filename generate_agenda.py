@@ -24,12 +24,12 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# URIs nativos de Amazon para Fire TV (abren la app directamente sin pasar por la tienda)
+# Paquetes oficiales para Fire TV / Android TV
 FIRE_TV_PACKAGES = {
-    "movistar": "amzn://apps/android?p=es.movistarplus.androidtv",
-    "dazn": "amzn://apps/android?p=com.dazn",
-    "prime": "amzn://apps/android?p=com.amazon.firebat",
-    "fctv33": "amzn://apps/android?p=com.fctv77.com"
+    "movistar": "intent://#Intent;package=es.movistarplus.androidtv;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
+    "dazn": "intent://#Intent;package=com.dazn;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
+    "prime": "intent://#Intent;package=com.amazon.firebat;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
+    "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
 }
 
 # MAPEO EXACTO DE CANALES A APLICACIONES
@@ -52,7 +52,7 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN (DAZN 1 y 2 con su app; 3, 4, F1, MotoGP y Baloncesto a FCTV33)
+    # DAZN (DAZN 1, 2 y general con app DAZN; 3, 4, F1, MotoGP y Baloncesto a FCTV33)
     'dazn': 'dazn',
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
@@ -633,9 +633,9 @@ def generate_html(events):
                 
                 if urls:
                     safe_url = escape(urls[0], quote=True)
-                    is_amzn = "amzn://" in urls[0]
-                    css_cls = "tv-badge alt-link" if is_amzn else "tv-badge"
-                    icon_str = "🎛️" if is_amzn else ""
+                    is_intent = "intent://" in urls[0]
+                    css_cls = "tv-badge alt-link" if is_intent else "tv-badge"
+                    icon_str = "🎛️" if is_intent else ""
                     tv_badges_list.append(
                         f'<a href="{safe_url}" '
                         f'class="{css_cls}" title="Abrir app para {safe_channel}">'
