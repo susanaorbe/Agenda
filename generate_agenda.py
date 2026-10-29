@@ -24,12 +24,12 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Intents oficiales de Android TV / Fire TV
+# Intents blindados para Fire TV (evitan que Silk redirija a la Appstore)
 FIRE_TV_PACKAGES = {
-    "movistar": "intent://#Intent;package=es.movistarplus.androidtv;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
-    "dazn": "intent://#Intent;package=com.dazn;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
-    "prime": "intent://#Intent;package=com.amazon.firebat;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
-    "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
+    "movistar": "intent://#Intent;package=es.movistarplus.androidtv;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10000000;S.browser_fallback_url=javascript%3Avoid%280%29;end",
+    "dazn": "intent://#Intent;package=com.dazn;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10000000;S.browser_fallback_url=javascript%3Avoid%280%29;end",
+    "prime": "intent://#Intent;package=com.amazon.firebat;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10000000;S.browser_fallback_url=javascript%3Avoid%280%29;end",
+    "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10000000;S.browser_fallback_url=javascript%3Avoid%280%29;end"
 }
 
 # MAPEO EXACTO DE CANALES A APLICACIONES SEGÚN TUS INSTRUCCIONES
@@ -52,7 +52,7 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN (DAZN 1, 2 y general con app DAZN; 3, 4, F1, MotoGP y Baloncesto a FCTV33)
+    # DAZN (DAZN principal, LaLiga, 1 y 2 con su app; el resto a FCTV33)
     'dazn': 'dazn',
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
@@ -115,7 +115,10 @@ def get_channel_urls(channel_name: str) -> list[str]:
         elif clean_name in {"movistar plus", "movistar+"}:
             app_key = "movistar"
         elif "dazn" in clean_name:
-            app_key = "dazn"
+            if any(x in clean_name for x in ["3", "4", "f1", "motogp", "baloncesto"]):
+                app_key = "fctv33"
+            else:
+                app_key = "dazn"
         elif "prime" in clean_name or "amazon" in clean_name:
             app_key = "prime"
         else:
@@ -149,8 +152,7 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
-    "primera federacion", "primera rfef", "liga ea sports", "champions league"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
