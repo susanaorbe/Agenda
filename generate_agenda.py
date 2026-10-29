@@ -24,12 +24,12 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Nombres de paquete oficiales de Android TV / Fire TV
+# Intents corregidos para abrir directamente la app en Fire TV / Android TV
 FIRE_TV_PACKAGES = {
-    "movistar": "intent://#Intent;package=es.plus.yomvi;end",
-    "dazn": "intent://#Intent;package=com.dazn;end",
-    "prime": "intent://#Intent;package=com.amazon.firebat;end",
-    "fctv33": "intent://#Intent;package=es.fctv33;end"
+    "movistar": "intent://#Intent;package=es.movistarplus.androidtv;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
+    "dazn": "intent://#Intent;package=com.dazn;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
+    "prime": "intent://#Intent;package=com.amazon.firebat;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end",
+    "fctv33": "intent://#Intent;package=com.fctv77.com;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end"
 }
 
 # MAPEO EXACTO DE CANALES A APLICACIONES
@@ -57,13 +57,13 @@ CHANNEL_APP_MAP = {
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
     'dazn 2': 'dazn',
-    'dazn 3': 'dazn',
-    'dazn 4': 'dazn',
-    'dazn f1': 'dazn',
-    'dazn motogp': 'dazn',
-    'dazn baloncesto': 'dazn',
-    'dazn baloncesto 2': 'dazn',
-    'dazn baloncesto 3': 'dazn',
+    'dazn 3': 'fctv33',
+    'dazn 4': 'fctv33',
+    'dazn f1': 'fctv33',
+    'dazn motogp': 'fctv33',
+    'dazn baloncesto': 'fctv33',
+    'dazn baloncesto 2': 'fctv33',
+    'dazn baloncesto 3': 'fctv33',
 
     # PRIME VIDEO
     'tennis channel': 'prime',
@@ -251,6 +251,8 @@ JUNK_RESIDUES_RE = rx(
     r"\(\s*\d+\s*\)"
 )
 
+TECHNICAL_CODE_RE = re.compile(r"\([A-Z0-9\s]{3,}\)", re.IGNORECASE)
+
 EVENT_CLEANUP_TRAIL_RE = re.compile(
     r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
     re.IGNORECASE
@@ -429,6 +431,9 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if not part:
             continue
 
+        if TECHNICAL_CODE_RE.search(part):
+            continue
+
         part_lower = normalize_search_text(part)
         if TIME_RE.fullmatch(part) or part_lower in {
             "ver partido", "directo", "(ver en directo)", "ver gratis",
@@ -440,11 +445,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
             continue
 
-        is_primera_federacion_channel = part_lower == "primera federacion"
-
         looks_like_channel = (
-            is_primera_federacion_channel
-            or TV_IDENTIFIERS_RE.search(part)
+            TV_IDENTIFIERS_RE.search(part)
             or CHANNEL_LINE_RE.search(part_lower)
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
@@ -521,10 +523,8 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Seleccionar filas de tabla o divs individuales evitando contenedores padres múltiples
         elements = soup.find_all(['tr', 'div'])
         for element in elements:
-            # Si el elemento contiene sub-elementos con múltiples horas, es un contenedor padre
             if len(element.find_all(text=TIME_RE)) > 1:
                 continue
 
