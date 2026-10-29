@@ -131,7 +131,9 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
+    # Canales mal detectados por nombres de competición
+    "laliga hypermotion", "laliga tv hypermotion"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -173,7 +175,8 @@ EXCLUDED_SPORTS_RE = rx(
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
-    r"\bbasketball champions league\b", r"\bfutsal champions\b"
+    r"\bbasketball champions league\b", r"\bfutsal champions\b",
+    r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -293,7 +296,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Tenis (Reforzado para capturar cualquier torneo, ATP, WTA o referencias directas)
+    # Tenis
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b"), blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
