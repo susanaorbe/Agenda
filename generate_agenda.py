@@ -1,9 +1,9 @@
 from collections import Counter
 from datetime import datetime, date, timedelta
-import functools
 from html import escape
 import zoneinfo
 import re
+from string import Template
 
 import requests
 from bs4 import BeautifulSoup
@@ -52,7 +52,7 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN (DAZN 1, 2 y general con app DAZN; 3, 4, F1, MotoGP y Baloncesto a FCTV33)
+    # DAZN
     'dazn': 'dazn',
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
@@ -169,10 +169,6 @@ def contains(pattern: re.Pattern, text: str) -> bool:
     return bool(pattern.search(text))
 
 
-# ============================================================================
-# REGEX DE PATRONES Y FECHAS
-# ============================================================================
-
 def rx(*patterns: str) -> re.Pattern:
     return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
 
@@ -226,7 +222,8 @@ BASKET_ALLOWED_COMPETITIONS_RE = rx(
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"), (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
+    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"),
+    (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
     (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
     (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
 )
@@ -249,8 +246,8 @@ CHANNEL_LINE_RE = rx(
 )
 
 JUNK_RESIDUES_RE = rx(
-    r"\(\s*(?:cataluña\vert{}catalunya\vert{}país vasco\vert{}pais vasco\vert{}galicia\vert{}andalucía\vert{}andalucia)\s*\)",
-    r"\(\s*(?:ver gratis\vert{}ver en directo\vert{}acceder\vert{}ver)\s*\)",
+    r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)",
+    r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)",
     r"\(\s*\d+\s*\)"
 )
 
@@ -261,10 +258,6 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
     re.IGNORECASE
 )
 
-
-# ============================================================================
-# PARSER ROBUSTO DE MOTOR
-# ============================================================================
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
@@ -307,10 +300,6 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     return (comp_name, event_title, is_fav)
 
 
-# ============================================================================
-# NÚCLEO DE CLASIFICACIÓN
-# ============================================================================
-
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
         return ("", "", "", False, False, "")
@@ -320,7 +309,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 
     has_target_dazn = any(ch in tv_blob for ch in ["dazn 3", "dazn 4", "dazn f1", "dazn motogp", "dazn baloncesto"])
 
-    # Tenis
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b"), blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
@@ -329,7 +317,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
         return ("Tenis", "🎾", comp, is_fav, True, "")
 
-    # Baloncesto
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob) or "baloncesto" in tv_blob:
         if contains(WOMEN_RE, blob) and not "baloncesto" in tv_blob:
             return ("", "", "", False, False, "")
@@ -349,7 +336,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
 
-    # Fútbol Femenino
     if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
@@ -360,23 +346,19 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             return ("Fútbol", "⚽", comp_match, True, True, "")
         return ("", "", "", False, False, "")
 
-    # Copa del Rey de Fútbol
     if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
-    # Primera RFEF
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if contains(CASTILLA_RE, blob):
             return ("Fútbol", "⚽", "España - Primera Federación", True, True, "")
         return ("", "", "", False, False, "")
 
-    # La Liga
     if LALIGA_RE.search(blob) or "dazn laliga" in tv_blob:
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
-    # Ligas Europeas
     if not contains(WOMEN_RE, blob):
         if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
             return ("Fútbol", "⚽", "Francia - Ligue 1", False, True, "")
@@ -387,7 +369,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
 
-    # Champions League
     if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b"), blob):
         is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
@@ -396,7 +377,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Deportes"
         return ("Fútbol", "⚽", comp, False, True, "")
 
-    # Fútbol general
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
         if contains(rx(r"\bligue\s*1\b"), blob):
             comp = "Francia - Ligue 1"
@@ -470,7 +450,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
-            
             clean_part = re.sub(r"\s*[-–—]\s*orange\s*tv\b", "", clean_part, flags=re.IGNORECASE).strip()
 
             sub_parts = re.split(r"[,|\n]+", clean_part)
@@ -556,7 +535,6 @@ def fetch_and_parse_agenda() -> list[dict]:
             tv_blob = " ".join(channels).lower()
             blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-            # 1. PROCESAR MOTOR
             comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
             if comp_name:
                 event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
@@ -577,7 +555,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 })
                 continue
 
-            # 2. RESTO DE DEPORTES
             sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
                 blob, tournament, tv_blob, text_lines
             )
@@ -616,8 +593,214 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 # ============================================================================
-# GENERACIÓN DE HTML COMPLETO
+# HTML TEMPLATE USANDO string.Template (CERO CONFLICTOS CON LLAVES)
 # ============================================================================
+
+HTML_TEMPLATE = Template("""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Deportiva</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1150px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }
+        h1 { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn-update { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .btn-alt { background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .btn-alt:hover { background: #2563eb; }
+        .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }
+        .stat-card { background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
+        .stat-card.active-card { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
+        .stat-card .val { font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }
+        .stat-card .lbl { font-size: 0.72rem; color: var(--text-muted); }
+        
+        .filter-container { display: flex; gap: 10px; margin-bottom: 14px; }
+        .search-input { padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }
+        .search-input:focus { border-color: var(--accent-blue); }
+        
+        .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
+        th { background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }
+        tr.event-row:hover { background-color: #243146; }
+        
+        .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
+        .time-col, .date-col { white-space: nowrap; }
+        .sport-tag { font-weight: 600; white-space: nowrap; }
+        .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
+        .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
+        .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
+        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
+        .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; }
+        .tv-container { display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 100%; }
+        
+        .tv-badge { display: flex; justify-content: space-between; align-items: center; background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; width: 100%; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
+        .tv-badge:hover { background: rgba(59, 130, 246, 0.3); color: #bfdbfe; border-color: #3b82f6; }
+
+        .alt-link { background: rgba(59, 130, 246, 0.18); color: #93c5fd; border-color: rgba(59, 130, 246, 0.35); }
+        .alt-link:hover { background: rgba(59, 130, 246, 0.35); color: #bfdbfe; border-color: #3b82f6; }
+
+        .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
+
+        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {
+            body { padding: 8px 6px; }
+            h1 { font-size: 1.25rem; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .stat-card { padding: 6px 8px; }
+            
+            thead { display: none; }
+            table, tbody { display: block; width: 100%; }
+            .table-card { background: transparent; border: none; box-shadow: none; }
+            
+            tr.event-row {
+                display: flex;
+                flex-direction: column;
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 10px;
+                gap: 6px;
+            }
+            
+            td { padding: 0; border: none; width: auto !important; white-space: normal; }
+            .date-col { display: inline-block; order: 0; }
+            .time-col { order: 1; display: inline-block; }
+            .sport-col { order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }
+            .comp-col { order: 3; margin-top: 4px; }
+            .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+            .event-col { order: 4; margin: 2px 0 4px 0; }
+            .event-title { font-size: 1.0rem; line-height: 1.35; }
+            .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; width: 100% !important; }
+            .tv-badge { font-size: 0.78rem; padding: 6px 10px; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div><h1>⚡ Agenda Deportiva</h1></div>
+        <div class="header-controls">
+            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
+            <a href="https://daddylive.pk" target="_blank" class="btn-alt">DLHD</a>
+            <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
+        </div>
+        <div class="last-update">Última actualización: <strong>$fecha_act (España)</strong></div>
+    </header>
+    <div class="stats-grid">
+        <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
+            <div><div class="lbl">Todos</div><div class="val">$total_cnt</div></div><div style="font-size:1.1rem">📺</div>
+        </div>
+        <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
+            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">$filtered_cnt</div></div><div style="font-size:1.1rem">📌</div>
+        </div>
+        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
+            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">$futbol_cnt</div></div><div style="font-size:1.1rem">⚽</div>
+        </div>
+        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
+            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">$baloncesto_cnt</div></div><div style="font-size:1.1rem">🏀</div>
+        </div>
+        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
+            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">$tenis_cnt</div></div><div style="font-size:1.1rem">🎾</div>
+        </div>
+        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
+            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">$motor_cnt</div></div><div style="font-size:1.1rem">🏆</div>
+        </div>
+    </div>
+    <div class="filter-container">
+        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
+    </div>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th class="date-col" style="width: 70px;">Fecha</th>
+                    <th class="time-col" style="width: 70px;">Hora</th>
+                    <th class="sport-col" style="width: 155px;">Deporte</th>
+                    <th class="comp-col" style="width: 170px;">Competición</th>
+                    <th>Evento</th>
+                    <th style="width: 215px;">Canal TV</th>
+                </tr>
+            </thead>
+            <tbody id="agendaTable">
+                $rows_html
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+function cleanStr(str) {
+    return (str || '').toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c').trim();
+}
+
+let currentFilter = 'todos';
+
+function setFilter(filterType) {
+    currentFilter = cleanStr(filterType);
+    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
+    const activeCard = document.getElementById('card-' + currentFilter);
+    if (activeCard) activeCard.classList.add('active-card');
+    applyFilters();
+}
+
+function filterTable() { applyFilters(); }
+
+function applyFilters() {
+    const searchFilter = cleanStr(document.getElementById('searchInput').value);
+    const table = document.getElementById('agendaTable');
+    const trs = table.getElementsByClassName('event-row');
+    let visibleCount = 0;
+
+    for (let i = 0; i < trs.length; i++) {
+        const tr = trs[i];
+        if (tr.id === 'dynamicEmptyState') continue;
+
+        const rowSport = cleanStr(tr.getAttribute('data-sport'));
+        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isConfigured = tr.getAttribute('data-configured') === 'true';
+        const text = cleanStr(tr.getAttribute('data-search'));
+
+        let matchesFilter = false;
+        if (currentFilter === 'todos') {
+            matchesFilter = true;
+        } else if (currentFilter === 'favoritos') {
+            matchesFilter = isFiltered;
+        } else {
+            matchesFilter = (rowSport === currentFilter);
+        }
+
+        const matchesSearch = text.includes(searchFilter);
+
+        if (matchesFilter && matchesSearch) {
+            tr.style.display = '';
+            visibleCount++;
+        } else {
+            tr.style.display = 'none';
+        }
+    }
+
+    let emptyRow = document.getElementById('dynamicEmptyState');
+    if (visibleCount === 0) {
+        if (!emptyRow) {
+            emptyRow = document.createElement('tr');
+            emptyRow.id = 'dynamicEmptyState';
+            emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección y búsqueda.</td>';
+            table.appendChild(emptyRow);
+        } else { emptyRow.style.display = ''; }
+    } else { if (emptyRow) emptyRow.style.display = 'none'; }
+}
+</script>
+</body>
+</html>""")
+
 
 def generate_html(events):
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
@@ -691,198 +874,21 @@ def generate_html(events):
 
     rows_html = "".join(rows_list)
 
-    return f"""<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Deportiva</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }}
-        .container {{ width: 100%; max-width: 1150px; }}
-        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
-        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
-        .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
-        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
-        .btn-alt {{ background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }}
-        .btn-alt:hover {{ background: #2563eb; }}
-        .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
-        
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
-        .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
-        .stat-card.active-card {{ border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
-        .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
-        .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
-        
-        .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
-        .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
-        .search-input:focus {{ border-color: var(--accent-blue); }}
-        
-        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
-        table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
-        th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
-        td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
-        tr.event-row:hover {{ background-color: #243146; }}
-        
-        .sport-col {{ width: 155px !important; min-width: 155px !important; white-space: nowrap; }}
-        .time-col, .date-col {{ white-space: nowrap; }}
-        .sport-tag {{ font-weight: 600; white-space: nowrap; }}
-        .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
-        .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
-        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
-        .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
-        .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
-        .tv-container {{ display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 100%; }}
-        
-        .tv-badge {{ display: flex; justify-content: space-between; align-items: center; background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; width: 100%; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
-        .tv-badge:hover {{ background: rgba(59, 130, 246, 0.3); color: #bfdbfe; border-color: #3b82f6; }}
+    return HTML_TEMPLATE.safe_substitute(
+        fecha_act=fecha_act,
+        total_cnt=total_cnt,
+        filtered_cnt=filtered_cnt,
+        futbol_cnt=sport_counts['Fútbol'],
+        baloncesto_cnt=sport_counts['Baloncesto'],
+        tenis_cnt=sport_counts['Tenis'],
+        motor_cnt=sport_counts['Motor'],
+        rows_html=rows_html
+    )
 
-        .alt-link {{ background: rgba(59, 130, 246, 0.18); color: #93c5fd; border-color: rgba(59, 130, 246, 0.35); }}
-        .alt-link:hover {{ background: rgba(59, 130, 246, 0.35); color: #bfdbfe; border-color: #3b82f6; }}
 
-        .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
-
-        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
-            body {{ padding: 8px 6px; }}
-            h1 {{ font-size: 1.25rem; }}
-            .stats-grid {{ grid-template-columns: repeat(3, 1fr); gap: 6px; }}
-            .stat-card {{ padding: 6px 8px; }}
-            
-            thead {{ display: none; }}
-            table, tbody {{ display: block; width: 100%; }}
-            .table-card {{ background: transparent; border: none; box-shadow: none; }}
-            
-            tr.event-row {{
-                display: flex;
-                flex-direction: column;
-                background: var(--card-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 12px;
-                padding: 12px;
-                margin-bottom: 10px;
-                gap: 6px;
-            }}
-            
-            td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
-            .date-col {{ display: inline-block; order: 0; }}
-            .time-col {{ order: 1; display: inline-block; }}
-            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
-            .comp-col {{ order: 3; margin-top: 4px; }}
-            .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
-            .event-col {{ order: 4; margin: 2px 0 4px 0; }}
-            .event-title {{ font-size: 1.0rem; line-height: 1.35; }}
-            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; width: 100% !important; }}
-            .tv-badge {{ font-size: 0.78rem; padding: 6px 10px; width: 100%; }}
-        }}
-    </style>
-</head>
-<body>
-<div class="container">
-    <header>
-        <div><h1>⚡ Agenda Deportiva</h1></div>
-        <div class="header-controls">
-            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
-            <a href="https://daddylive.pk" target="_blank" class="btn-alt">DLHD</a>
-            <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
-        </div>
-        <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
-    </header>
-    <div class="stats-grid">
-        <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📺</div>
-        </div>
-        <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
-            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
-        </div>
-        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
-        </div>
-        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
-        </div>
-        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
-        </div>
-        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏆</div>
-        </div>
-    </div>
-    <div class="filter-container">
-        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
-    </div>
-    <div class="table-card">
-        <table>
-            <thead>
-                <tr>
-                    <th class="date-col" style="width: 70px;">Fecha</th>
-                    <th class="time-col" style="width: 70px;">Hora</th>
-                    <th class="sport-col" style="width: 155px;">Deporte</th>
-                    <th class="comp-col" style="width: 170px;">Competición</th>
-                    <th>Evento</th>
-                    <th style="width: 215px;">Canal TV</th>
-                </tr>
-            </thead>
-            <tbody id="agendaTable">
-                {rows_html}
-            </tbody>
-        </table>
-    </div>
-</div>
-<script>
-function cleanStr(str) {{
-    return (str || '').toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c').trim();
-}}
-
-let currentFilter = 'todos';
-
-function setFilter(filterType) {{
-    currentFilter = cleanStr(filterType);
-    document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
-    const activeCard = document.getElementById('card-' + currentFilter);
-    if (activeCard) activeCard.classList.add('active-card');
-    applyFilters();
-}}
-
-function filterTable() {{ applyFilters(); }}
-
-function applyFilters() {{
-    const searchFilter = cleanStr(document.getElementById('searchInput').value);
-    const table = document.getElementById('agendaTable');
-    const trs = table.getElementsByClassName('event-row');
-    let visibleCount = 0;
-
-    for (let i = 0; i < trs.length; i++) {{
-        const tr = trs[i];
-        if (tr.id === 'dynamicEmptyState') continue;
-
-        const rowSport = cleanStr(tr.getAttribute('data-sport'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true';
-        const isConfigured = tr.getAttribute('data-configured') === 'true';
-        const text = cleanStr(tr.getAttribute('data-search'));
-
-        let matchesFilter = false;
-        if (currentFilter === 'todos') {{
-            matchesFilter = true;
-        }} else if (currentFilter === 'favoritos') {{
-            matchesFilter = isFiltered;
-        }} else {{
-            matchesFilter = (rowSport === currentFilter);
-        }}
-
-        const matchesSearch = text.includes(searchFilter);
-
-        if (matchesFilter && matchesSearch) {{
-            tr.style.display = '';
-            visibleCount++;
-        }} else {{
-            tr.style.display = 'none';
-        }}
-    }}
-
-    let emptyRow = document.getElementById('dynamicEmptyState');
-    if (visibleCount === 0) {{
-        if (!emptyRow) {{
-            emptyRow = document.createElement('tr');
+if __name__ == "__main__":
+    events = fetch_and_parse_agenda()
+    html_content = generate_html(events)
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html_content)
+    print(f"Archivo index.html generado con éxito. Eventos totales ordenados cronológicamente: {len(events)}")
