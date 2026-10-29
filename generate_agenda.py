@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 
 
 # ============================================================================
-# CONFIGURACIÓN Y DICCIONARIO DE CANALES
+# CONFIGURACIÓN Y DICCIONARIO DE CANALES Y APLICACIONES
 # ============================================================================
 
 WIDGET_URL = "https://www.futbolenlatv.es/deporte"
@@ -73,38 +73,6 @@ CHANNEL_APP_MAP = {
     "dazn baloncesto 3": "kodi",
 }
 
-CHANNEL_DICT = {
-    'la 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-533.php', 'https://dlive.sx/hub/stream-533.php', 'https://dlive.sx/watch/stream-533.php', 'https://dlive.sx/cast/stream-533.php', 'https://daddylive.pk/'],
-    'la 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-536.php', 'https://dlive.sx/hub/stream-536.php', 'https://dlive.sx/watch/stream-536.php', 'https://dlive.sx/cast/stream-536.php', 'https://daddylive.pk/'],
-    'antena 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-531.php', 'https://dlive.sx/hub/stream-531.php', 'https://dlive.sx/watch/stream-531.php', 'https://dlive.sx/cast/stream-531.php', 'https://daddylive.pk/'],
-    'cuatro': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-535.php', 'https://dlive.sx/hub/stream-535.php', 'https://dlive.sx/watch/stream-535.php', 'https://dlive.sx/cast/stream-535.php', 'https://daddylive.pk/'],
-    'telecinco': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-532.php', 'https://dlive.sx/hub/stream-532.php', 'https://dlive.sx/watch/stream-532.php', 'https://dlive.sx/cast/stream-532.php', 'https://daddylive.pk/'],
-    'la sexta': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-534.php', 'https://dlive.sx/hub/stream-534.php', 'https://dlive.sx/watch/stream-534.php', 'https://dlive.sx/cast/stream-534.php', 'https://daddylive.pk/'],
-    'movistar plus+': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-437.php', 'https://dlive.sx/hub/stream-437.php', 'https://dlive.sx/watch/stream-437.php', 'https://dlive.sx/cast/stream-437.php', 'https://daddylive.pk/'],
-    'm+ vamos': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-521.php', 'https://dlive.sx/hub/stream-521.php', 'https://dlive.sx/watch/stream-521.php', 'https://dlive.sx/cast/stream-521.php', 'https://daddylive.pk/'],
-    'dazn laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-538.php', 'https://dlive.sx/hub/stream-538.php', 'https://dlive.sx/watch/stream-538.php', 'https://dlive.sx/cast/stream-538.php', 'https://daddylive.pk/'],
-    'm+ laliga': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-84.php', 'https://dlive.sx/hub/stream-84.php', 'https://dlive.sx/watch/stream-84.php', 'https://dlive.sx/cast/stream-84.php', 'https://daddylive.pk/'],
-    'm+ liga de campeones': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-435.php', 'https://dlive.sx/hub/stream-435.php', 'https://dlive.sx/watch/stream-435.php', 'https://dlive.sx/cast/stream-435.php', 'https://daddylive.pk/'],
-    'dazn': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'dazn 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-445.php', 'https://dlive.sx/hub/stream-445.php', 'https://dlive.sx/watch/stream-445.php', 'https://dlive.sx/cast/stream-445.php', 'https://daddylive.pk/'],
-    'dazn 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-446.php', 'https://dlive.sx/hub/stream-446.php', 'https://dlive.sx/watch/stream-446.php', 'https://dlive.sx/cast/stream-446.php', 'https://daddylive.pk/'],
-    'dazn 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-447.php', 'https://dlive.sx/hub/stream-447.php', 'https://dlive.sx/watch/stream-447.php', 'https://dlive.sx/cast/stream-447.php', 'https://daddylive.pk/'],
-    'dazn 4': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-448.php', 'https://dlive.sx/hub/stream-448.php', 'https://dlive.sx/watch/stream-448.php', 'https://dlive.sx/cast/stream-448.php', 'https://daddylive.pk/'],
-    'dazn f1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-537.php', 'https://dlive.sx/hub/stream-537.php', 'https://dlive.sx/watch/stream-537.php', 'https://dlive.sx/cast/stream-537.php', 'https://daddylive.pk/'],
-    'dazn motogp': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'eurosport 1': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-524.php', 'https://dlive.sx/hub/stream-524.php', 'https://dlive.sx/watch/stream-524.php', 'https://dlive.sx/cast/stream-524.php', 'https://daddylive.pk/'],
-    'eurosport 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-525.php', 'https://dlive.sx/hub/stream-525.php', 'https://dlive.sx/watch/stream-525.php', 'https://dlive.sx/cast/stream-525.php', 'https://daddylive.pk/'],
-    'm+ deportes': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-436.php', 'https://dlive.sx/hub/stream-436.php', 'https://dlive.sx/watch/stream-436.php', 'https://dlive.sx/cast/stream-436.php', 'https://daddylive.pk/'],
-    'm+ deportes 2': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-438.php', 'https://dlive.sx/hub/stream-438.php', 'https://dlive.sx/watch/stream-438.php', 'https://dlive.sx/cast/stream-438.php', 'https://daddylive.pk/'],
-    'm+ deportes 3': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-526.php', 'https://dlive.sx/hub/stream-526.php', 'https://dlive.sx/watch/stream-526.php', 'https://dlive.sx/cast/stream-526.php', 'https://daddylive.pk/'],
-    'm+ deportes 4': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-527.php', 'https://dlive.sx/hub/stream-527.php', 'https://dlive.sx/watch/stream-527.php', 'https://dlive.sx/cast/stream-527.php', 'https://daddylive.pk/'],
-    'tennis channel - orange tv': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-    'real madrid tv': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-523.php', 'https://dlive.sx/hub/stream-523.php', 'https://dlive.sx/watch/stream-523.php', 'https://dlive.sx/cast/stream-523.php', 'https://daddylive.pk/'],
-    'teledeporte': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-529.php', 'https://dlive.sx/hub/stream-529.php', 'https://dlive.sx/watch/stream-529.php', 'https://dlive.sx/cast/stream-529.php', 'https://daddylive.pk/'],
-    'laliga tv hypermotion': ['https://hubu.ru/fctvlink', 'https://dlive.sx/stream/stream-539.php', 'https://dlive.sx/hub/stream-539.php', 'https://dlive.sx/watch/stream-539.php', 'https://dlive.sx/cast/stream-539.php', 'https://daddylive.pk/'],
-    'amazon prime video': ['https://hubu.ru/fctvlink', 'https://daddylive.pk/'],
-}
-
 
 def normalize_search_text(text: str) -> str:
     value = (text or "").lower()
@@ -131,17 +99,15 @@ def clean_time(time_str: str) -> str:
 def normalize_channel_name(channel_name: str) -> str:
     """Normaliza el nombre para aplicar el mapeo de aplicaciones sin alterar su etiqueta visible."""
     normalized = normalize_search_text(channel_name)
-    # Los diales entre paréntesis no forman parte del nombre de la aplicación/canal.
     normalized = re.sub(r"\([^)]*\)", "", normalized)
     normalized = re.sub(r"\s+", " ", normalized).strip()
     return normalized
 
 
 def get_channel_app(channel_name: str) -> str:
-    """Devuelve la app asignada al canal; los canales no listados usan FCTV33."""
+    """Devuelve la app asignada al canal; los canales no listados usan Kodi."""
     normalized = normalize_channel_name(channel_name)
 
-    # Alias de nombres habituales que pueden aparecer en la guía.
     aliases = {
         "movistar plus": "movistar plus+",
         "movistar+": "movistar plus+",
@@ -153,7 +119,7 @@ def get_channel_app(channel_name: str) -> str:
         "m+ vamos 8 y 50": "m+ vamos",
     }
     normalized = aliases.get(normalized, normalized)
-    return CHANNEL_APP_MAP.get(normalized, "fctv33")
+    return CHANNEL_APP_MAP.get(normalized, "kodi")
 
 
 def get_firetv_intent(channel_name: str) -> str:
@@ -166,34 +132,6 @@ def get_firetv_intent(channel_name: str) -> str:
         "category=android.intent.category.LEANBACK_LAUNCHER;"
         f"package={package_name};end"
     )
-
-
-def get_channel_urls(channel_name: str) -> list[str]:
-    norm = normalize_search_text(channel_name)
-    clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
-    clean_name = normalize_search_text(clean_name)
-
-    if clean_name in CHANNEL_DICT:
-        return CHANNEL_DICT[clean_name]
-
-    for k, v in CHANNEL_DICT.items():
-        if normalize_search_text(k) == clean_name or clean_name in normalize_search_text(k):
-            return v
-
-    if clean_name in {"#vamos", "m+ #vamos", "#vamos spain", "m+ vamos 8 y 50"}:
-        if "m+ vamos" in CHANNEL_DICT:
-            return CHANNEL_DICT["m+ vamos"]
-    elif clean_name in {"movistar plus", "movistar+"}:
-        if "movistar plus+" in CHANNEL_DICT:
-            return CHANNEL_DICT["movistar plus+"]
-    elif clean_name in {"tennis channel", "tennis channel orange tv"}:
-        if "tennis channel - orange tv" in CHANNEL_DICT:
-            return CHANNEL_DICT["tennis channel - orange tv"]
-    elif clean_name in {"tdp", "teledeporte spain (tdp)"}:
-        if "teledeporte" in CHANNEL_DICT:
-            return CHANNEL_DICT["teledeporte"]
-
-    return ['https://hubu.ru/fctvlink', 'https://daddylive.pk/']
 
 
 EXCLUDED_CHANNELS = {
@@ -259,7 +197,6 @@ EXCLUDED_SPORTS_RE = rx(
     r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b"
 )
 
-# EXCLUSIÓN COMPLETA DE LALIGA HYPERMOTION / SEGUNDA DIVISIÓN
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
@@ -457,9 +394,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 
     # Fútbol general
     if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
-        # Normalizar los nombres de las ligas europeas para que no dependan
-        # de si la web incluye guion o país en el texto original.
-        if contains(rx(r"\bligue\s*1\b"), blob):
+        if "brasil" in blob or "serie a brasil" in blob:
+            comp = "Brasil - Serie A"
+        elif contains(rx(r"\bligue\s*1\b"), blob):
             comp = "Francia - Ligue 1"
         elif contains(rx(r"\bbundesliga\b"), blob):
             comp = "Alemania - Bundesliga"
@@ -686,8 +623,7 @@ def generate_html(events):
     
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    # Las pestañas deportivas deben repartir todos los eventos que aparecen en 'Todos'.
-    # is_configured se conserva para no alterar otros metadatos ni los criterios de Favoritos.
+
     sport_counts = Counter(event["deporte"] for event in events)
 
     def clean_key(s):
@@ -707,7 +643,7 @@ def generate_html(events):
                     "movistar": "Movistar Plus+",
                     "dazn": "DAZN",
                     "prime": "Prime Video",
-                    "fctv33": "FCTV33",
+                    "kodi": "Kodi",
                 }[app_key]
                 tv_badges_list.append(
                     f'<a href="{app_intent}" class="tv-badge" '
@@ -800,30 +736,6 @@ def generate_html(events):
 
         .alt-link {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }}
         .alt-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }}
-
-        .dropdown-tv {{ position: relative; display: inline-block; }}
-        .tv-dropdown-btn {{ background: rgba(99, 102, 241, 0.2); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); text-align: left; width: 100%; white-space: nowrap; }}
-        .dropdown-content {{ 
-            display: none; 
-            position: absolute; 
-            background-color: #111827; 
-            min-width: 220px; 
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); 
-            z-index: 1000; 
-            border: 1px solid var(--border-color); 
-            border-radius: 8px; 
-            padding: 4px 0; 
-            left: 0; 
-            top: 100%; 
-        }}
-        .dropdown-tv.dropup .dropdown-content {{
-            top: auto;
-            bottom: 100%;
-            margin-bottom: 4px;
-        }}
-        .dropdown-content a {{ color: #f8fafc; padding: 8px 12px; text-decoration: none; display: block; font-size: 0.78rem; transition: background 0.2s; white-space: nowrap; }}
-        .dropdown-content a:hover {{ background-color: #1e293b; color: #60a5fa; }}
-        .dropdown-tv.show .dropdown-content {{ display: block; }}
 
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
@@ -918,37 +830,6 @@ function cleanStr(str) {{
     return (str || '').toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c').trim();
 }}
 
-function toggleDropdown(event) {{
-    event.stopPropagation();
-    const btn = event.currentTarget;
-    const dropdown = btn.parentElement;
-    
-    document.querySelectorAll('.dropdown-tv').forEach(item => {{
-        if (item !== dropdown) {{
-            item.classList.remove('show', 'dropup');
-        }}
-    }});
-
-    const rect = btn.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    
-    if (spaceBelow < 160) {{
-        dropdown.classList.add('dropup');
-    }} else {{
-        dropdown.classList.remove('dropup');
-    }}
-
-    dropdown.classList.toggle('show');
-}}
-
-window.onclick = function(event) {{
-    if (!event.target.matches('.tv-dropdown-btn')) {{
-        document.querySelectorAll('.dropdown-tv').forEach(item => {{
-            item.classList.remove('show', 'dropup');
-        }});
-    }}
-}}
-
 let currentFilter = 'todos';
 
 function setFilter(filterType) {{
@@ -982,8 +863,6 @@ function applyFilters() {{
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
         }} else {{
-            // Las pestañas deportivas incluyen todos los eventos de ese deporte,
-            // estén o no marcados como configurados. Favoritos sigue usando isFiltered.
             matchesFilter = (rowSport === currentFilter);
         }}
 
