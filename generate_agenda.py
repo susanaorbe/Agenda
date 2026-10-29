@@ -52,25 +52,23 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN
+    # DAZN (Todos explícitamente definidos)
     'dazn': 'dazn',
     'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
     'dazn 2': 'dazn',
+    'dazn 3': 'dazn',
+    'dazn 4': 'dazn',
+    'dazn f1': 'dazn',
+    'dazn motogp': 'dazn',
+    'dazn baloncesto': 'dazn',
+    'dazn baloncesto 2': 'dazn',
+    'dazn baloncesto 3': 'dazn',
 
     # PRIME VIDEO
     'tennis channel': 'prime',
     'tennis channel - orange tv': 'prime',
-    'amazon prime video': 'prime',
-    
-    # FCTV33
-    'dazn 3': 'fctv33',
-    'dazn 4': 'fctv33',
-    'dazn f1': 'fctv33',
-    'dazn motogp': 'fctv33',
-    'dazn baloncesto': 'fctv33',
-    'dazn baloncesto 2': 'fctv33',
-    'dazn baloncesto 3': 'fctv33'
+    'amazon prime video': 'prime'
 }
 
 
@@ -97,10 +95,6 @@ def clean_time(time_str: str) -> str:
 
 
 def get_channel_urls(channel_name: str) -> list[str]:
-    """
-    Devuelve el Intent para abrir la app correspondiente en Fire TV.
-    Cualquier canal no especificado usará FCTV33 por defecto.
-    """
     norm = normalize_search_text(channel_name)
     clean_name = re.sub(r"\([^)]*\)", "", norm).strip()
     clean_name = normalize_search_text(clean_name)
@@ -464,7 +458,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
             
-            # Limpieza del sufijo '- Orange TV' para mostrar únicamente 'Tennis Channel'
             clean_part = re.sub(r"\s*[-–—]\s*orange\s*tv\b", "", clean_part, flags=re.IGNORECASE).strip()
 
             sub_parts = re.split(r"[,|\n]+", clean_part)
@@ -636,8 +629,8 @@ def generate_html(events):
                     safe_url = escape(urls[0], quote=True)
                     is_intent = "intent://" in urls[0]
                     css_cls = "tv-badge alt-link" if is_intent else "tv-badge"
-                    # Icono de reproducción (▶️) para apps de Fire TV
-                    icon_str = "▶️" if is_intent else ""
+                    # Icono exacto de desplegable/app (🎛️)
+                    icon_str = "🎛️" if is_intent else ""
                     tv_badges_list.append(
                         f'<a href="{safe_url}" '
                         f'class="{css_cls}" title="Abrir app para {safe_channel}">'
@@ -699,8 +692,8 @@ def generate_html(events):
         h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
         .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
         .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
-        .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }}
-        .btn-alt:hover {{ background: #4f46e5; }}
+        .btn-alt {{ background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }}
+        .btn-alt:hover {{ background: #2563eb; }}
         .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
         
         .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
@@ -727,13 +720,13 @@ def generate_html(events):
         .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
-        .tv-container {{ display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }}
+        .tv-container {{ display: flex; flex-direction: column; gap: 6px; align-items: stretch; width: 100%; }}
         
-        .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
-        .tv-badge:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
+        .tv-badge {{ display: flex; justify-content: space-between; align-items: center; background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); padding: 6px 10px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; width: 100%; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
+        .tv-badge:hover {{ background: rgba(59, 130, 246, 0.3); color: #bfdbfe; border-color: #3b82f6; }}
 
-        .alt-link {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }}
-        .alt-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }}
+        .alt-link {{ background: rgba(59, 130, 246, 0.18); color: #93c5fd; border-color: rgba(59, 130, 246, 0.35); }}
+        .alt-link:hover {{ background: rgba(59, 130, 246, 0.35); color: #bfdbfe; border-color: #3b82f6; }}
 
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
@@ -766,8 +759,8 @@ def generate_html(events):
             .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
             .event-col {{ order: 4; margin: 2px 0 4px 0; }}
             .event-title {{ font-size: 1.0rem; line-height: 1.35; }}
-            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }}
-            .tv-badge {{ font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }}
+            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; width: 100% !important; }}
+            .tv-badge {{ font-size: 0.78rem; padding: 6px 10px; width: 100%; }}
         }}
     </style>
 </head>
@@ -777,7 +770,7 @@ def generate_html(events):
         <div><h1>⚡ Agenda Deportiva</h1></div>
         <div class="header-controls">
             <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
-            <a href="https://daddylive.pk" target="_blank" class="btn-alt" style="background:#0ea5e9;">DLHD</a>
+            <a href="https://daddylive.pk" target="_blank" class="btn-alt">DLHD</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
