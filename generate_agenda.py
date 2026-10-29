@@ -251,9 +251,6 @@ JUNK_RESIDUES_RE = rx(
     r"\(\s*\d+\s*\)"
 )
 
-# Patrón para detectar códigos técnicos internos de emisión entre paréntesis (ej: M53 O125)
-TECHNICAL_CODE_RE = re.compile(r"\([A-Z0-9\s]{3,}\)", re.IGNORECASE)
-
 EVENT_CLEANUP_TRAIL_RE = re.compile(
     r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
     re.IGNORECASE
@@ -432,10 +429,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if not part:
             continue
 
-        # Descartar líneas que sean códigos técnicos internos (ej. M53 O125)
-        if TECHNICAL_CODE_RE.search(part):
-            continue
-
         part_lower = normalize_search_text(part)
         if TIME_RE.fullmatch(part) or part_lower in {
             "ver partido", "directo", "(ver en directo)", "ver gratis",
@@ -447,8 +440,11 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
             continue
 
+        is_primera_federacion_channel = part_lower == "primera federacion"
+
         looks_like_channel = (
-            TV_IDENTIFIERS_RE.search(part)
+            is_primera_federacion_channel
+            or TV_IDENTIFIERS_RE.search(part)
             or CHANNEL_LINE_RE.search(part_lower)
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
@@ -525,8 +521,10 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
+        # Seleccionar filas de tabla o divs individuales evitando contenedores padres múltiples
         elements = soup.find_all(['tr', 'div'])
         for element in elements:
+            # Si el elemento contiene sub-elementos con múltiples horas, es un contenedor padre
             if len(element.find_all(text=TIME_RE)) > 1:
                 continue
 
