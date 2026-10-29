@@ -424,7 +424,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
             clean_part = JUNK_RESIDUES_RE.sub("", clean_part).strip()
-            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=core_flags := re.IGNORECASE).strip() if 'core_flags' else re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
+            clean_part = re.sub(r"\(m\d+[^)]*\)", "", clean_part, flags=re.IGNORECASE).strip()
             clean_part = re.sub(r"\s*\([^)]*\)", "", clean_part).strip()
 
             sub_parts = re.split(r"[,|\n]+", clean_part)
