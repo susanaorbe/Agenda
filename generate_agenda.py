@@ -170,7 +170,7 @@ BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
 EXCLUDED_SPORTS_RE = rx(
     r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
     r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
-    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b"
+    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b"
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
@@ -288,14 +288,16 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
 # ============================================================================
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
-    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob:
+    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
         return ("", "", "", False, False, "")
 
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Tenis
+    # Tenis (Evitando falsos positivos con torneos de Golf tipo "Open" comprobando que no esté en canales de golf o tenga restricciones)
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
+        if "golf" in tv_blob or "movistar golf" in blob:
+            return ("", "", "", False, False, "")
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
         is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
