@@ -52,11 +52,18 @@ CHANNEL_APP_MAP = {
     'teledeporte': 'movistar',
     'replay': 'movistar',
 
-    # DAZN
-    'dazn laliga': 'dazn',
+    # DAZN (Todos explícitamente definidos)
     'dazn': 'dazn',
+    'dazn laliga': 'dazn',
     'dazn 1': 'dazn',
     'dazn 2': 'dazn',
+    'dazn 3': 'dazn',
+    'dazn 4': 'dazn',
+    'dazn f1': 'dazn',
+    'dazn motogp': 'dazn',
+    'dazn baloncesto': 'dazn',
+    'dazn baloncesto 2': 'dazn',
+    'dazn baloncesto 3': 'dazn',
 
     # PRIME VIDEO
     'tennis channel': 'prime',
@@ -716,7 +723,7 @@ def generate_html(events):
         .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
         .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
         .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
-        .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
+        .tv-container {{ display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }}
         
         .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
@@ -800,9 +807,9 @@ def generate_html(events):
                     <th class="date-col" style="width: 70px;">Fecha</th>
                     <th class="time-col" style="width: 70px;">Hora</th>
                     <th class="sport-col" style="width: 155px;">Deporte</th>
-                    <th class="comp-col" style="width: 140px;">Competición</th>
+                    <th class="comp-col" style="width: 170px;">Competición</th>
                     <th>Evento</th>
-                    <th style="width: 250px;">Canal TV</th>
+                    <th style="width: 170px;">Canal TV</th>
                 </tr>
             </thead>
             <tbody id="agendaTable">
