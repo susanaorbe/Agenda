@@ -30,7 +30,7 @@ FIRETV_APP_PACKAGES = {
     "movistar": "com.movistarplus.androidtv",
     "dazn": "com.dazn",
     "prime": "com.amazon.firebat",
-    "fctv33": "com.fctv77.tv"
+    "fctv33": "com.fctv77.tv",
 }
 
 CHANNEL_APP_MAP = {
