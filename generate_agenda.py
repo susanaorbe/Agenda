@@ -27,10 +27,10 @@ REQUEST_TIMEOUT = 15
 # Aplicaciones instaladas en Fire TV. Los enlaces de los canales usarán
 # un intent de Android para abrir la aplicación directamente.
 FIRETV_APP_PACKAGES = {
-    "movistar": "es.movistarplus.androidtv",
+    "movistar": "com.movistarplus.androidtv",
     "dazn": "com.dazn",
     "prime": "com.amazon.firebat",
-    "fctv33": "com.fctv77.com",
+    "fctv33": "com.fctv77.tv",
 }
 
 CHANNEL_APP_MAP = {
