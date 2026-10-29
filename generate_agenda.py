@@ -131,7 +131,8 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
+    "laliga hypermotion", "laliga tv hypermotion"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -170,7 +171,6 @@ EXCLUDED_SPORTS_RE = rx(
     r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b"
 )
 
-# EXCLUSIÓN COMPLETA DE LALIGA HYPERMOTION / SEGUNDA DIVISIÓN
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
@@ -887,7 +887,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSport = cleanStr(tr.getAttribute('data-sport'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isFiltered = tr.getAttribute('data-filtered'] === 'true';
         const isConfigured = tr.getAttribute('data-configured') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
@@ -897,6 +897,7 @@ function applyFilters() {{
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
         }} else {{
+            // MODIFICACIÓN CLAVE: Ahora muestra los eventos del deporte exacto obtenidos de 'Todos' (respetando isConfigured)
             matchesFilter = (rowSport === currentFilter && isConfigured);
         }}
 
@@ -923,11 +924,3 @@ function applyFilters() {{
 </script>
 </body>
 </html>"""
-
-
-if __name__ == "__main__":
-    events = fetch_and_parse_agenda()
-    html_content = generate_html(events)
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos totales ordenados cronológicamente: {len(events)}")
