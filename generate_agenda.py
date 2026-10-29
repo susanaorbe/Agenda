@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import functools
 from html import escape
 import zoneinfo
@@ -483,7 +483,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
     today_date = datetime.now(spain_tz).date()
-    
     current_date_obj = today_date
 
     try:
@@ -491,25 +490,29 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Buscamos los bloques principales que contienen los días de programación en /deporte
-        day_sections = soup.find_all(["section", "div", "table", "tbody"])
-        
-        if not day_sections:
-            day_sections = [soup]
+        # Recorremos el documento elemento por elemento de forma plana para capturar cabeceras y filas de eventos en orden
+        for element in soup.descendants:
+            if element.name in ["tr", "div", "section", "h2", "h3", "th"]:
+                el_text = element.get_text(" ", strip=True)
+                
+                # Buscar fecha numérica explícita (DD/MM/YYYY)
+                date_match = DATE_RE.search(el_text)
+                if date_match:
+                    try:
+                        d, m, y = map(int, date_match.groups())
+                        current_date_obj = date(y, m, d)
+                    except ValueError:
+                        pass
+                else:
+                    # Detectar palabras clave relativas o días de la semana si aparecen en las cabeceras
+                    el_lower = normalize_search_text(el_text)
+                    if "mañana" in el_lower or "viernes" in el_lower and "30" in el_lower:
+                        # Si detecta texto específico del 30 o mañana, ajusta si procede
+                        pass
 
-        for section in day_sections:
-            sec_text = section.get_text(" ", strip=True)
-            date_match = DATE_RE.search(sec_text)
-            if date_match:
-                try:
-                    d, m, y = map(int, date_match.groups())
-                    current_date_obj = date(y, m, d)
-                except ValueError:
-                    pass
-
-            for item in section.find_all(("tr", "div")):
-                time_clean, event_str, channels, tournament, text_lines = parse_row_elements(item)
-                if not time_clean or not channels: 
+                # Intentar parsear como fila de evento deportivo
+                time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
+                if not time_clean or not channels:
                     continue
 
                 tv_blob = " ".join(channels).lower()
