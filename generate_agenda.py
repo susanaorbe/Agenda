@@ -293,8 +293,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Tenis
-    if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b"), blob):
+    # Tenis (Reforzado para capturar cualquier torneo, ATP, WTA o referencias directas)
+    if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b"), blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
@@ -490,12 +490,10 @@ def fetch_and_parse_agenda() -> list[dict]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # Recorremos el documento elemento por elemento de forma plana para capturar cabeceras y filas de eventos en orden
         for element in soup.descendants:
             if element.name in ["tr", "div", "section", "h2", "h3", "th"]:
                 el_text = element.get_text(" ", strip=True)
                 
-                # Buscar fecha numérica explícita (DD/MM/YYYY)
                 date_match = DATE_RE.search(el_text)
                 if date_match:
                     try:
@@ -503,14 +501,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                         current_date_obj = date(y, m, d)
                     except ValueError:
                         pass
-                else:
-                    # Detectar palabras clave relativas o días de la semana si aparecen en las cabeceras
-                    el_lower = normalize_search_text(el_text)
-                    if "mañana" in el_lower or "viernes" in el_lower and "30" in el_lower:
-                        # Si detecta texto específico del 30 o mañana, ajusta si procede
-                        pass
 
-                # Intentar parsear como fila de evento deportivo
                 time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
                 if not time_clean or not channels:
                     continue
@@ -577,7 +568,6 @@ def fetch_and_parse_agenda() -> list[dict]:
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
 
-    # Ordenar estrictamente por fecha y hora cronológicamente
     results.sort(key=lambda x: (x["date_obj"], x["hora"]))
     return results
 
@@ -639,7 +629,6 @@ def generate_html(events):
 
             tv_badges = "".join(tv_badges_list)
             
-            # Formatear la etiqueta de fecha
             ev_date = ev["date_obj"]
             if ev_date == today_date:
                 date_badge_html = '<span class="date-badge today">Hoy</span>'
