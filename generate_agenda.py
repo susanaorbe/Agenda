@@ -131,8 +131,7 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
-    "laliga hypermotion", "laliga tv hypermotion"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -171,6 +170,7 @@ EXCLUDED_SPORTS_RE = rx(
     r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b"
 )
 
+# EXCLUSIÓN COMPLETA DE LALIGA HYPERMOTION / SEGUNDA DIVISIÓN
 EXCLUDED_COMPETITIONS_RE = rx(
     r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
