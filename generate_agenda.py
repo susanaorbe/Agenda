@@ -1,6 +1,5 @@
 from collections import Counter
-from datetime import datetime, date, timedelta
-import functools
+from datetime import datetime, date
 from html import escape
 import zoneinfo
 import re
@@ -24,8 +23,7 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 
-# Aplicaciones instaladas en Fire TV. Los enlaces de los canales usarán
-# un intent de Android para abrir la aplicación directamente.
+# Aplicaciones instaladas en Fire TV
 FIRETV_APP_PACKAGES = {
     "movistar": "com.movistarplus.androidtv",
     "dazn": "com.dazn",
@@ -97,7 +95,6 @@ def clean_time(time_str: str) -> str:
 
 
 def normalize_channel_name(channel_name: str) -> str:
-    """Normaliza el nombre para aplicar el mapeo de aplicaciones sin alterar su etiqueta visible."""
     normalized = normalize_search_text(channel_name)
     normalized = re.sub(r"\([^)]*\)", "", normalized)
     normalized = re.sub(r"\s+", " ", normalized).strip()
@@ -105,9 +102,7 @@ def normalize_channel_name(channel_name: str) -> str:
 
 
 def get_channel_app(channel_name: str) -> str:
-    """Devuelve la app asignada al canal; los canales no listados usan Kodi."""
     normalized = normalize_channel_name(channel_name)
-
     aliases = {
         "movistar plus": "movistar plus+",
         "movistar+": "movistar plus+",
@@ -123,8 +118,9 @@ def get_channel_app(channel_name: str) -> str:
 
 
 def get_firetv_intent(channel_name: str) -> str:
-    """Construye el intent Android para abrir la app como desde el launcher de Fire TV."""
     app_key = get_channel_app(channel_name)
+    if app_key == "kodi":
+        return ""
     package_name = FIRETV_APP_PACKAGES[app_key]
     return (
         "intent:#Intent;"
@@ -170,14 +166,6 @@ def is_excluded_channel(channel: str) -> bool:
         return True
     return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
 
-
-def contains(pattern: re.Pattern, text: str) -> bool:
-    return bool(pattern.search(text))
-
-
-# ============================================================================
-# REGEX DE PATRONES Y FECHAS
-# ============================================================================
 
 def rx(*patterns: str) -> re.Pattern:
     return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
@@ -232,7 +220,8 @@ BASKET_ALLOWED_COMPETITIONS_RE = rx(
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"), (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
+    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"),
+    (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
     (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
     (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
 )
@@ -323,86 +312,86 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("", "", "", False, False, "")
 
     # Tenis
-    if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b"), blob):
+    if rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b").search(blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
-        is_fav = contains(SPANISH_TENNIS_PLAYERS_RE, blob)
+        is_fav = bool(SPANISH_TENNIS_PLAYERS_RE.search(blob))
         return ("Tenis", "🎾", comp, is_fav, True, "")
 
     # Baloncesto
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
-        if contains(WOMEN_RE, blob) or contains(rx(r"\(f\)\b", r"\(w\)\b"), blob):
+        if WOMEN_RE.search(blob) or rx(r"\(f\)\b", r"\(w\)\b").search(blob):
             return ("", "", "", False, False, "")
 
         comp_name = "Liga Endesa"
-        if contains(rx(r"\beuroliga\b", r"\beuroleague\b"), blob):
+        if rx(r"\beuroliga\b", r"\beuroleague\b").search(blob):
             comp_name = "Euroliga"
-        elif contains(rx(r"\bcopa acb\b"), blob) or (contains(rx(r"\bcopa del rey\b"), blob) and contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob)):
+        elif rx(r"\bcopa acb\b").search(blob) or (rx(r"\bcopa del rey\b").search(blob) and rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b").search(blob)):
             comp_name = "Copa del Rey"
-        elif contains(rx(r"\bsupercopa\b"), blob):
+        elif rx(r"\bsupercopa\b").search(blob):
             comp_name = "Supercopa de España"
-        elif contains(rx(r"\bnba\b"), blob):
+        elif rx(r"\bnba\b").search(blob):
             comp_name = "NBA"
         
-        is_fav = contains(REAL_MADRID_RE, blob) and not contains(YOUTH_BASKET_RE, blob)
+        is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
 
     # Fútbol Femenino
-    if contains(WOMEN_RE, blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
+    if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
             if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
                 comp_match = name
                 break
-        if comp_match and contains(REAL_MADRID_RE, blob):
+        if comp_match and REAL_MADRID_RE.search(blob):
             return ("Fútbol", "⚽", comp_match, True, True, "")
         return ("", "", "", False, False, "")
 
-    # Copa del Rey de Fútbol
-    if contains(rx(r"\bcopa del rey\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b"), blob):
-        is_fav = contains(REAL_MADRID_RE, blob)
+    # Copa del Rey
+    if rx(r"\bcopa del rey\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b").search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
 
     # Primera RFEF
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if contains(CASTILLA_RE, blob):
+        if CASTILLA_RE.search(blob):
             return ("Fútbol", "⚽", "España - Primera Federación", True, True, "")
         return ("", "", "", False, False, "")
 
     # La Liga
     if LALIGA_RE.search(blob):
-        is_fav = contains(REAL_MADRID_RE, blob)
+        is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
     # Ligas Europeas
-    if not contains(WOMEN_RE, blob):
-        if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
+    if not WOMEN_RE.search(blob):
+        if rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b").search(blob) and PSG_RE.search(blob):
             return ("Fútbol", "⚽", "Francia - Ligue 1", False, True, "")
         
-        if contains(rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b"), blob) and contains(ARSENAL_RE, blob):
+        if rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b").search(blob) and ARSENAL_RE.search(blob):
             return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True, "")
 
-        if contains(rx(r"\bbundesliga\b", r"\balemania - bundesliga\b"), blob) and contains(BAYERN_RE, blob):
+        if rx(r"\bbundesliga\b", r"\balemania - bundesliga\b").search(blob) and BAYERN_RE.search(blob):
             return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
 
     # Champions League
-    if contains(rx(r"\bchampions league\b", r"\bchampions\b"), blob) and not contains(WOMEN_RE, blob) and not contains(rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b"), blob):
-        is_fav = contains(REAL_MADRID_RE, blob) or contains(ARSENAL_RE, blob)
+    if rx(r"\bchampions league\b", r"\bchampions\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b").search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob) or ARSENAL_RE.search(blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     # Fútbol general
-    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b"), blob) and not contains(WOMEN_RE, blob):
+    if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b").search(blob) and not WOMEN_RE.search(blob):
         if "brasil" in blob or "serie a brasil" in blob:
             comp = "Brasil - Serie A"
-        elif contains(rx(r"\bligue\s*1\b"), blob):
+        elif rx(r"\bligue\s*1\b").search(blob):
             comp = "Francia - Ligue 1"
-        elif contains(rx(r"\bbundesliga\b"), blob):
+        elif rx(r"\bbundesliga\b").search(blob):
             comp = "Alemania - Bundesliga"
-        elif contains(rx(r"\bpremier league\b"), blob):
+        elif rx(r"\bpremier league\b").search(blob):
             comp = "Inglaterra - Premier League"
-        elif contains(rx(r"\bserie a\b"), blob):
+        elif rx(r"\bserie a\b").search(blob):
             comp = "Italia - Serie A"
         else:
             comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
@@ -549,9 +538,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                # ==========================================
-                # 1. PROCESAR MOTOR
-                # ==========================================
+                # Motor
                 comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
                 if comp_name:
                     event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
@@ -572,9 +559,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     })
                     continue
 
-                # ==========================================
-                # 2. RESTO DE DEPORTES
-                # ==========================================
+                # Resto de deportes
                 sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
                 )
@@ -612,10 +597,6 @@ def fetch_and_parse_agenda() -> list[dict]:
     return results
 
 
-# ============================================================================
-# GENERACIÓN DE HTML COMPLETO
-# ============================================================================
-
 def generate_html(events):
     spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
     today_date = datetime.now(spain_tz).date()
@@ -623,7 +604,6 @@ def generate_html(events):
     
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
-
     sport_counts = Counter(event["deporte"] for event in events)
 
     def clean_key(s):
@@ -637,19 +617,28 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 safe_channel = escape(str(channel), quote=True)
-                app_intent = escape(get_firetv_intent(channel), quote=True)
                 app_key = get_channel_app(channel)
+                app_intent = escape(get_firetv_intent(channel), quote=True)
                 app_label = {
                     "movistar": "Movistar Plus+",
                     "dazn": "DAZN",
                     "prime": "Prime Video",
                     "kodi": "Kodi",
                 }[app_key]
-                tv_badges_list.append(
-                    f'<a href="{app_intent}" class="tv-badge" '
-                    f'title="Abrir {app_label} en Fire TV para el canal {safe_channel}">'
-                    f'{safe_channel} 🔗</a>'
-                )
+
+                if app_key == "kodi":
+                    # Sin enlace para canales asignados a Kodi
+                    tv_badges_list.append(
+                        f'<span class="tv-badge tv-badge-no-link" '
+                        f'title="Canal {safe_channel}">'
+                        f'{safe_channel}</span>'
+                    )
+                else:
+                    tv_badges_list.append(
+                        f'<a href="{app_intent}" class="tv-badge" '
+                        f'title="Abrir {app_label} en Fire TV para el canal {safe_channel}">'
+                        f'{safe_channel} 🔗</a>'
+                    )
 
             tv_badges = "".join(tv_badges_list)
             
@@ -733,9 +722,8 @@ def generate_html(events):
         
         .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
         .tv-badge:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
-
-        .alt-link {{ background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }}
-        .alt-link:hover {{ background: rgba(16, 185, 129, 0.35); color: #6ee7b7; border-color: #34d399; }}
+        .tv-badge-no-link {{ cursor: default; }}
+        .tv-badge-no-link:hover {{ transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
 
         .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
 
@@ -854,7 +842,6 @@ function applyFilters() {{
 
         const rowSport = cleanStr(tr.getAttribute('data-sport'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
-        const isConfigured = tr.getAttribute('data-configured') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
         let matchesFilter = false;
