@@ -131,9 +131,7 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
-    # Canales mal detectados por nombres de competición
-    "laliga hypermotion", "laliga tv hypermotion"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -198,6 +196,8 @@ LALIGA_RE = rx(
     r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
     r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
 )
+
+LALIGA_HYPERMOTION_RE = rx(r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b")
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
@@ -350,6 +350,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
+    # La Liga Hypermotion (Segunda División)
+    if LALIGA_HYPERMOTION_RE.search(blob) or "hypermotion" in blob:
+        return ("Fútbol", "⚽", "LaLiga Hypermotion", False, True, "")
+
     # Ligas Europeas
     if not contains(WOMEN_RE, blob):
         if contains(rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b"), blob) and contains(PSG_RE, blob):
@@ -367,7 +371,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     # Fútbol general
-    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b"), blob) and not contains(WOMEN_RE, blob):
+    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b", r"\bhypermotion\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
 
@@ -377,13 +381,25 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     raw_parts = [
         part.strip()
-        for part in item.get_text("\n", strip=True).split("\n")
+        for part in item.get_text("\n", strip=True).split("\n" if "\n" in item.get_text() else " ")
         if part.strip()
     ]
-    if not 3 <= len(raw_parts) <= 25:
+    
+    # Si viene en formato plano sin saltos o con pocos elementos estructurados, intentamos extraer por líneas limpias
+    clean_raw_parts = []
+    for p in item.find_all(text=True):
+        p_str = p.strip()
+        if p_str and p_str not in clean_raw_parts:
+            clean_raw_parts.append(p_str)
+            
+    parts_to_use = raw_parts if len(raw_parts) >= 3 else clean_raw_parts
+    if not parts_to_use:
+        parts_to_use = [el.strip() for el in item.get_text("\n", strip=True).split("\n") if el.strip()]
+
+    if not 2 <= len(parts_to_use) <= 35:
         return "", "", [], "", []
 
-    text_full = " | ".join(raw_parts)
+    text_full = " | ".join(parts_to_use)
     time_match = TIME_RE.search(text_full)
     time_clean = clean_time(time_match.group(0)) if time_match else ""
 
@@ -395,10 +411,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba"
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "hypermotion"
     )
 
-    for part in raw_parts:
+    for part in parts_to_use:
         part = JUNK_RESIDUES_RE.sub("", part).strip()
         if not part:
             continue
@@ -471,11 +487,18 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         else:
             matchup_candidates.append(part)
 
-    tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
-    remaining_lines = [p for p in text_lines if p != tournament]
-    matchup = " - ".join(remaining_lines) if remaining_lines else tournament
+    tournament = tournament_candidates[0] if tournament_candidates else (text_lines[0] if len(text_lines) > 2 else "")
+    if tournament and tournament in text_lines:
+        remaining_lines = [p for p in text_lines if p != tournament]
+    else:
+        remaining_lines = text_lines
 
+    matchup = " - ".join(remaining_lines) if remaining_lines else (tournament if tournament else " - ".join(text_lines))
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
+
+    # Si por lo que sea el matchup contiene al torneo al inicio, limpiarlo
+    if tournament and matchup.lower().startswith(tournament.lower()):
+        matchup = matchup[len(tournament):].strip(" -")
 
     return time_clean, matchup, channels, tournament, text_lines
 
