@@ -124,14 +124,16 @@ EXCLUDED_CHANNELS = {
     "mediaset infinity", "motogp videopass", "movistar+ lite",
     "nwsl+", "onefootball", "onefootball ppv", "orange fútbol 1(107)",
     "orange fútbol 2(108)", "orange fútbol 3(109)", "popular tv murcia", "prosieben maxx(m+ astra)", "rcd deportivo tv youtube",
-    "rcdeportivo tv youtube", "rcn nossa tele", "red bull tv", "rfef tv youtube",
+    "rcdeportivo tv youtube", "rcn nuestra tele", "red bull tv", "rfef tv youtube",
     "rfef.es", "rtve play", "sefutbol youtube", "sevilla fc +",
     "siroko tv", "tv 3", "tv footballclub(acceder)", "tv footballclub", "tv canaria",
     "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tv footballclub ▾",
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
+    # Bloqueo estricto para evitar que nombres de competiciones entren como canales
+    "laliga hypermotion", "laliga tv hypermotion"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -196,6 +198,8 @@ LALIGA_RE = rx(
     r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
     r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
 )
+
+LALIGA_HYPERMOTION_RE = rx(r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b")
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
@@ -294,7 +298,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "")
 
-    # Tenis (Reforzado para capturar cualquier torneo, ATP, WTA o referencias directas)
+    # Tenis
     if contains(rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b"), blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "")
@@ -348,8 +352,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = contains(REAL_MADRID_RE, blob)
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
-    # LaLiga Hypermotion (Solución específica limpia para Eibar - Almería)
-    if contains(rx(r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b"), blob):
+    # La Liga Hypermotion (Segunda División)
+    if LALIGA_HYPERMOTION_RE.search(blob) or "hypermotion" in blob:
         return ("Fútbol", "⚽", "LaLiga Hypermotion", False, True, "")
 
     # Ligas Europeas
@@ -369,7 +373,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     # Fútbol general
-    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b"), blob) and not contains(WOMEN_RE, blob):
+    if contains(rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b", r"\bsegunda division\b", r"\bhypermotion\b"), blob) and not contains(WOMEN_RE, blob):
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
 
@@ -474,15 +478,22 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             matchup_candidates.append(part)
 
     tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
-    remaining_lines = [p for p in text_lines if p != tournament]
     
-    # Manejo específico seguro para que Eibar - Almería no descoloque los equipos
-    if not remaining_lines and len(text_lines) > 1:
-        tournament = text_lines[0]
-        remaining_lines = text_lines[1:]
+    # SOLUCIÓN QUIRÚRGICA: Evitar que se pierda el primer equipo si la estructura agrupa mal el torneo
+    remaining_lines = [p for p in text_lines if p != tournament]
+    if len(text_lines) >= 3 and tournament in text_lines[:2]:
+        # Si el torneo está en las primeras posiciones pero hay elementos antes/después de los equipos
+        potential_teams = [p for p in text_lines if p != tournament and not any(term in normalize_search_text(p) for term in competition_terms)]
+        if len(potential_teams) >= 2:
+            remaining_lines = potential_teams
+        elif len(text_lines) > 2 and len(remaining_lines) == 1:
+            remaining_lines = text_lines[1:]
 
     matchup = " - ".join(remaining_lines) if remaining_lines else tournament
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
+
+    if tournament and matchup.lower().startswith(tournament.lower()):
+        matchup = matchup[len(tournament):].strip(" -")
 
     return time_clean, matchup, channels, tournament, text_lines
 
