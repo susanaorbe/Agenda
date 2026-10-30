@@ -740,7 +740,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-ts="{safe_timestamp}" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-ts="{safe_timestamp}" data-time="{safe_time}" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
                     <td class="date-col">{date_badge_html}</td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
@@ -938,8 +938,14 @@ function scrollToCurrentEvent() {{
 
     updateStickyHeadingOffset();
     const panel = document.getElementById('stickyPanel');
-    const offset = panel ? panel.getBoundingClientRect().height : 0;
-    const top = target.getBoundingClientRect().top + window.scrollY - offset - 8;
+    const tableHead = document.querySelector('.table-card thead');
+    const panelHeight = panel ? panel.getBoundingClientRect().height : 0;
+    const headingHeight = tableHead ? tableHead.getBoundingClientRect().height : 0;
+
+    // La fila debe quedar debajo tanto del panel superior como de la
+    // cabecera fija de la tabla; de lo contrario queda parcialmente tapada.
+    const top = target.getBoundingClientRect().top + window.scrollY
+        - panelHeight - headingHeight - 8;
     window.scrollTo({{ top: Math.max(0, top), behavior: 'auto' }});
 }}
 
@@ -961,7 +967,10 @@ window.addEventListener('load', () => {{
 window.addEventListener('resize', updateStickyHeadingOffset);
 
 function applyFilters() {{
-    const searchFilter = cleanStr(document.getElementById('searchInput').value);
+    const rawSearch = (document.getElementById('searchInput').value || '').trim();
+    const timeSearch = rawSearch.replace(/\\s+/g, '');
+    const searchFilter = cleanStr(rawSearch);
+    const isTimeSearch = timeSearch.includes(':');
     const table = document.getElementById('agendaTable');
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
@@ -983,7 +992,13 @@ function applyFilters() {{
             matchesFilter = (rowSport === currentFilter);
         }}
 
-        const matchesSearch = text.includes(searchFilter);
+        // Si la consulta contiene ':', se interpreta como búsqueda de hora
+        // y se compara únicamente con HH:MM. Así, '15:' no coincide con
+        // '20:15' y ':15' no coincide con '15:30'.
+        const eventTime = tr.getAttribute('data-time') || '';
+        const matchesSearch = isTimeSearch
+            ? eventTime.includes(timeSearch)
+            : text.includes(searchFilter);
 
         if (matchesFilter && matchesSearch) {{
             tr.style.display = '';
