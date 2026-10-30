@@ -5,6 +5,9 @@ import zoneinfo
 import re
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+from zoneinfo import ZoneInfoNotFoundError
 from bs4 import BeautifulSoup
 
 
@@ -22,6 +25,36 @@ REQUEST_HEADERS = {
 }
 
 REQUEST_TIMEOUT = 15
+
+
+def get_spain_timezone():
+    """Devuelve Europe/Madrid; usa la zona local como último recurso."""
+    try:
+        return zoneinfo.ZoneInfo("Europe/Madrid")
+    except ZoneInfoNotFoundError:
+        return datetime.now().astimezone().tzinfo
+
+
+def create_http_session() -> requests.Session:
+    """Sesión HTTP con reintentos limitados ante errores transitorios."""
+    session = requests.Session()
+    retry_options = {
+        "total": 3,
+        "connect": 3,
+        "read": 2,
+        "status": 2,
+        "backoff_factor": 0.5,
+        "status_forcelist": (429, 500, 502, 503, 504),
+        "raise_on_status": False,
+    }
+    try:
+        retry = Retry(**retry_options, allowed_methods=frozenset({"GET"}))
+    except TypeError:  # Compatibilidad con versiones antiguas de urllib3.
+        retry = Retry(**retry_options, method_whitelist=frozenset({"GET"}))
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
 
 # Aplicaciones instaladas en Fire TV
 FIRETV_APP_PACKAGES = {
@@ -86,12 +119,13 @@ def normalize_search_text(text: str) -> str:
 def clean_time(time_str: str) -> str:
     if not time_str:
         return ""
-    parts = time_str.split(":")
-    if len(parts) == 2:
-        hours = parts[0].zfill(2)
-        minutes = parts[1]
-        return f"{hours}:{minutes}"
-    return time_str
+    match = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*", str(time_str))
+    if not match:
+        return ""
+    hours, minutes = map(int, match.groups())
+    if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+        return ""
+    return f"{hours:02d}:{minutes:02d}"
 
 
 def normalize_channel_name(channel_name: str) -> str:
@@ -121,7 +155,9 @@ def get_firetv_intent(channel_name: str) -> str:
     app_key = get_channel_app(channel_name)
     if app_key == "kodi":
         return ""
-    package_name = FIRETV_APP_PACKAGES[app_key]
+    package_name = FIRETV_APP_PACKAGES.get(app_key)
+    if not package_name:
+        return ""
     return (
         "intent:#Intent;"
         "action=android.intent.action.MAIN;"
@@ -190,7 +226,8 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
     r"\bbasketball champions league\b", r"\bfutsal champions\b",
     r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b",
-    r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b"
+    r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b",
+    r"\bbrasil\s*[-–—]?\s*serie\s+a\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -250,7 +287,7 @@ JUNK_RESIDUES_RE = rx(
 )
 
 EVENT_CLEANUP_TRAIL_RE = re.compile(
-    r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
+    r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
     re.IGNORECASE
 )
 
@@ -401,6 +438,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
+    if item is None or not hasattr(item, "get_text"):
+        return "", "", [], "", []
+
     raw_parts = [
         part.strip()
         for part in item.get_text("\n", strip=True).split("\n")
@@ -417,6 +457,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         return "", "", [], "", []
 
     channels: list[str] = []
+    channel_keys = set()
     text_lines = []
 
     competition_terms = (
@@ -466,11 +507,12 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
                 if (
                     channel
                     and not is_excluded_channel(channel)
-                    and channel not in channels
+                    and normalize_search_text(channel) not in channel_keys
                     and not re.fullmatch(r"\(?[mo]\+?\d+.*\)?", channel_lower)
                     and channel_lower not in {"acceder", "(acceder)", "ver en directo"}
                 ):
                     channels.append(channel)
+                    channel_keys.add(normalize_search_text(channel))
             continue
 
         text_lines.append(part)
@@ -510,14 +552,15 @@ def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
 
-    spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
     current_date_obj = today_date
 
     try:
-        response = requests.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "html.parser")
+        with create_http_session() as session:
+            response = session.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
 
         for element in soup.descendants:
             if element.name in ["tr", "div", "section", "h2", "h3", "th"]:
@@ -598,7 +641,7 @@ def fetch_and_parse_agenda() -> list[dict]:
 
 
 def generate_html(events):
-    spain_tz = zoneinfo.ZoneInfo("Europe/Madrid")
+    spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
