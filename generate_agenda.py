@@ -135,6 +135,26 @@ def normalize_channel_name(channel_name: str) -> str:
     return normalized
 
 
+def clean_channel_display_name(channel_name: str) -> str:
+    """Limpia etiquetas de distribución sin alterar el nombre del canal.
+
+    Futbolenlatv puede presentar Tennis Channel como
+    'Tennis Channel - Orange TV'. Orange TV es el operador/plataforma,
+    no parte del nombre del canal que debe mostrarse en la agenda.
+    La limpieza se limita expresamente a este caso.
+    """
+    cleaned = str(channel_name or "").strip()
+    cleaned = re.sub(
+        r"\s*[-–—]\s*orange\s+tv\s*$",
+        "",
+        cleaned,
+        flags=re.IGNORECASE,
+    ).strip()
+    if normalize_search_text(cleaned) == "tennis channel":
+        return "Tennis Channel"
+    return cleaned
+
+
 def get_channel_app(channel_name: str) -> str:
     normalized = normalize_channel_name(channel_name)
     aliases = {
@@ -421,7 +441,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     # Fútbol general
     if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b").search(blob) and not WOMEN_RE.search(blob):
         if "brasil" in blob or "serie a brasil" in blob:
-            comp = "Brasil - Serie A"
+            # La Serie A brasileña no debe mostrarse. Se comprueba también
+            # aquí, además del filtro general, para evitar que llegue al HTML
+            # si el texto de la competición viene fragmentado o reordenado.
+            return ("", "", "", False, False, "")
         elif rx(r"\bligue\s*1\b").search(blob):
             comp = "Francia - Ligue 1"
         elif rx(r"\bbundesliga\b").search(blob):
@@ -502,6 +525,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             sub_parts = re.split(r"[,|\n]+", clean_part)
             for channel in sub_parts:
                 channel = channel.strip().rstrip(":").strip()
+                channel = clean_channel_display_name(channel)
                 channel_lower = normalize_search_text(channel)
 
                 if (
@@ -608,6 +632,15 @@ def fetch_and_parse_agenda() -> list[dict]:
                 )
                 
                 if not sport:
+                    continue
+
+                # Última barrera: no permitir que la Serie A de Brasil llegue
+                # a results aunque cambie en el futuro la lógica de clasificación.
+                normalized_competition = normalize_search_text(competition)
+                if (
+                    normalized_competition == "brasil serie a"
+                    or ("brasil" in normalized_competition and "serie a" in normalized_competition)
+                ):
                     continue
 
                 final_event = custom_event if custom_event else event_str
