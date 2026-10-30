@@ -728,6 +728,9 @@ def generate_html(events):
                 [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
             ))
             safe_search = escape(search_text, quote=True)
+            event_datetime = datetime.combine(ev_date, datetime.strptime(ev["hora"], "%H:%M").time()).replace(tzinfo=spain_tz)
+            event_timestamp = int(event_datetime.timestamp() * 1000)
+            safe_timestamp = str(event_timestamp)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
             safe_time = escape(str(ev["hora"]))
             safe_icon = escape(str(ev["icono"]))
@@ -737,7 +740,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-ts="{safe_timestamp}" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
                     <td class="date-col">{date_badge_html}</td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
@@ -762,7 +765,8 @@ def generate_html(events):
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }}
         .container {{ width: 100%; max-width: 1150px; }}
-        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
+        .sticky-panel {{ position: sticky; top: 0; z-index: 1000; background: var(--bg-color); padding-top: 8px; margin-top: -8px; box-shadow: 0 8px 14px -12px rgba(0,0,0,.9); }}
+        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
         h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
         .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
         .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
@@ -782,7 +786,7 @@ def generate_html(events):
         
         .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
-        th {{ background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
+        th {{ position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
         td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
         tr.event-row:hover {{ background-color: #243146; }}
         
@@ -839,6 +843,7 @@ def generate_html(events):
 </head>
 <body>
 <div class="container">
+    <div class="sticky-panel" id="stickyPanel">
     <header>
         <div><h1>⚡ Agenda Deportiva</h1></div>
         <div class="header-controls">
@@ -871,6 +876,7 @@ def generate_html(events):
     <div class="filter-container">
         <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
     </div>
+    </div>
     <div class="table-card">
         <table>
             <thead>
@@ -891,10 +897,51 @@ def generate_html(events):
 </div>
 <script>
 function cleanStr(str) {{
-    return (str || '').toLowerCase().replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c').trim();
+    return (str || '')
+        .toLowerCase()
+        .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
+        .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c')
+        // Igual que normalize_search_text() de Python: los dos puntos y
+        // otros separadores se convierten en espacios también al buscar.
+        .replace(new RegExp('[|,;:/]+', 'g'), ' ')
+        .replace(/\\s+/g, ' ')
+        .trim();
 }}
 
 let currentFilter = 'todos';
+
+function updateStickyHeadingOffset() {{
+    const panel = document.getElementById('stickyPanel');
+    if (!panel) return;
+    document.documentElement.style.setProperty('--sticky-panel-height', panel.getBoundingClientRect().height + 'px');
+}}
+
+function scrollToCurrentEvent() {{
+    const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row'));
+    if (!rows.length) return;
+
+    const now = Date.now();
+    let target = null;
+    let firstFuture = null;
+
+    for (const row of rows) {{
+        const timestamp = Number(row.dataset.ts);
+        if (!Number.isFinite(timestamp)) continue;
+        if (timestamp <= now) target = row;
+        else if (!firstFuture) firstFuture = row;
+    }}
+
+    // Ancla la agenda en el evento más reciente que ya ha comenzado.
+    // Si todavía no hay ninguno, muestra el primer evento futuro.
+    target = target || firstFuture;
+    if (!target) return;
+
+    updateStickyHeadingOffset();
+    const panel = document.getElementById('stickyPanel');
+    const offset = panel ? panel.getBoundingClientRect().height : 0;
+    const top = target.getBoundingClientRect().top + window.scrollY - offset - 8;
+    window.scrollTo({{ top: Math.max(0, top), behavior: 'auto' }});
+}}
 
 function setFilter(filterType) {{
     currentFilter = cleanStr(filterType);
@@ -905,6 +952,13 @@ function setFilter(filterType) {{
 }}
 
 function filterTable() {{ applyFilters(); }}
+
+window.addEventListener('load', () => {{
+    updateStickyHeadingOffset();
+    // Espera al cálculo del layout antes de desplazar la página.
+    requestAnimationFrame(scrollToCurrentEvent);
+}});
+window.addEventListener('resize', updateStickyHeadingOffset);
 
 function applyFilters() {{
     const searchFilter = cleanStr(document.getElementById('searchInput').value);
