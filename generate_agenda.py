@@ -99,22 +99,22 @@ def get_dynamic_domain() -> str:
 
 
 def get_time_slot(time_str: str) -> str:
-    """Clasifica una hora en su franja horaria correspondiente."""
+    """Clasifica una hora en su franja horaria correspondiente (en minúsculas sin ñ)."""
     try:
         parts = time_str.split(":")
         h = int(parts[0])
         m = int(parts[1]) if len(parts) > 1 else 0
         total_mins = h * 60 + m
         if total_mins <= 419:  # 00:00 - 06:59
-            return "Madrugada"
+            return "madrugada"
         elif total_mins <= 839:  # 07:00 - 13:59
-            return "Mañana"
+            return "manana"
         elif total_mins <= 1229:  # 14:00 - 20:29
-            return "Tarde"
+            return "tarde"
         else:  # 20:30 - 23:59
-            return "Noche"
+            return "noche"
     except Exception:
-        return "Noche"
+        return "noche"
 
 # Aplicaciones instaladas en Fire TV
 FIRETV_APP_PACKAGES = {
@@ -170,7 +170,7 @@ def normalize_search_text(text: str) -> str:
     value = (
         value.replace("á", "a").replace("é", "e").replace("í", "i")
         .replace("ó", "o").replace("ú", "u").replace("ç", "c")
-        .replace("º", "ª")
+        .replace("ñ", "n").replace("º", "ª")
     )
     value = re.sub(r"[|,;:/]+", " ", value)
     return re.sub(r"\s+", " ", value).strip()
@@ -819,7 +819,9 @@ def generate_html(events):
         .container {{ width: 100%; max-width: 1150px; }}
         .sticky-panel {{ position: sticky; top: 0; z-index: 1000; background: var(--bg-color); padding-top: 8px; margin-top: -8px; box-shadow: 0 8px 14px -12px rgba(0,0,0,.9); }}
         header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
-        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 6px; }}
+        .icon-link {{ text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; transition: transform 0.2s; }}
+        .icon-link:hover {{ transform: scale(1.15); }}
         .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
         .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
         .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }}
@@ -897,10 +899,10 @@ def generate_html(events):
 <div class="container">
     <div class="sticky-panel" id="stickyPanel">
     <header>
-        <div><h1>⚡ Agenda Deportiva</h1></div>
+        <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
             <!-- <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a> -->
-            <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
+            <!-- <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a> -->
             <a href="https://{domain}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
             <a href="https://{domain}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
             <a href="https://{domain}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
@@ -917,16 +919,16 @@ def generate_html(events):
             <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
-            <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{slot_counts['Madrugada']}</div></div><div style="font-size:1.1rem">🌙</div>
+            <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{slot_counts['madrugada']}</div></div><div style="font-size:1.1rem">💤</div>
         </div>
         <div class="stat-card" id="card-manana" onclick="setFilter('manana')">
-            <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{slot_counts['Mañana']}</div></div><div style="font-size:1.1rem">☀️</div>
+            <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{slot_counts['manana']}</div></div><div style="font-size:1.1rem">☀️</div>
         </div>
         <div class="stat-card" id="card-tarde" onclick="setFilter('tarde')">
-            <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{slot_counts['Tarde']}</div></div><div style="font-size:1.1rem">🌇</div>
+            <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{slot_counts['tarde']}</div></div><div style="font-size:1.1rem">🌇</div>
         </div>
         <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
-            <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['Noche']}</div></div><div style="font-size:1.1rem">🌙</div>
+            <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['noche']}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
     </div>
     <div class="filter-container">
@@ -957,6 +959,7 @@ function cleanStr(str) {{
         .toLowerCase()
         .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
         .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c')
+        .replace(/ñ/g, 'n')
         .replace(new RegExp('[|,;:/]+', 'g'), ' ')
         .replace(/\\s+/g, ' ')
         .trim();
