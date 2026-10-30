@@ -9,6 +9,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from zoneinfo import ZoneInfoNotFoundError
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 
 
 # ============================================================================
@@ -55,6 +56,65 @@ def create_http_session() -> requests.Session:
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     return session
+
+
+def get_dynamic_domain() -> str:
+    """Obtiene dinámicamente el dominio actual siguiendo fctvlink y fclink."""
+    default_domain = "www.fctv33go.pics"
+    try:
+        with create_http_session() as session:
+            resp1 = session.get("https://hubu.ru/fctvlink", headers=REQUEST_HEADERS, timeout=10)
+            soup1 = BeautifulSoup(resp1.content, "html.parser")
+            
+            fclink_url = "https://hubu.ru/fclink"
+            for a in soup1.find_all("a", href=True):
+                if "fctv33" in a.get_text(strip=True).lower() or "page" in a.get_text(strip=True).lower():
+                    fclink_url = a["href"]
+                    break
+            
+            resp2 = session.get(fclink_url, headers=REQUEST_HEADERS, timeout=10)
+            soup2 = BeautifulSoup(resp2.content, "html.parser")
+            
+            target_url = None
+            for a in soup2.find_all("a", href=True):
+                txt = a.get_text(strip=True).lower()
+                if "link - fctv33" in txt or ("link" in txt and "fctv33" in txt):
+                    target_url = a["href"]
+                    break
+            
+            if not target_url:
+                for a in soup2.find_all("a", href=True):
+                    href = a["href"]
+                    if href.startswith("http") and "hubu.ru" not in href:
+                        target_url = href
+                        break
+                        
+            if target_url:
+                parsed = urlparse(target_url)
+                if parsed.netloc:
+                    return parsed.netloc
+    except Exception as e:
+        print(f"Error obteniendo dominio dinámico: {e}")
+    return default_domain
+
+
+def get_time_slot(time_str: str) -> str:
+    """Clasifica una hora en su franja horaria correspondiente."""
+    try:
+        parts = time_str.split(":")
+        h = int(parts[0])
+        m = int(parts[1]) if len(parts) > 1 else 0
+        total_mins = h * 60 + m
+        if total_mins <= 419:  # 00:00 - 06:59
+            return "Madrugada"
+        elif total_mins <= 839:  # 07:00 - 13:59
+            return "Mañana"
+        elif total_mins <= 1229:  # 14:00 - 20:29
+            return "Tarde"
+        else:  # 20:30 - 23:59
+            return "Noche"
+    except Exception:
+        return "Noche"
 
 # Aplicaciones instaladas en Fire TV
 FIRETV_APP_PACKAGES = {
@@ -136,13 +196,7 @@ def normalize_channel_name(channel_name: str) -> str:
 
 
 def clean_channel_display_name(channel_name: str) -> str:
-    """Limpia etiquetas de distribución sin alterar el nombre del canal.
-
-    Futbolenlatv puede presentar Tennis Channel como
-    'Tennis Channel - Orange TV'. Orange TV es el operador/plataforma,
-    no parte del nombre del canal que debe mostrarse en la agenda.
-    La limpieza se limita expresamente a este caso.
-    """
+    """Limpia etiquetas de distribución sin alterar el nombre del canal."""
     cleaned = str(channel_name or "").strip()
     cleaned = re.sub(
         r"\s*[-–—]\s*orange\s+tv\s*$",
@@ -441,9 +495,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     # Fútbol general
     if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b").search(blob) and not WOMEN_RE.search(blob):
         if "brasil" in blob or "serie a brasil" in blob:
-            # La Serie A brasileña no debe mostrarse. Se comprueba también
-            # aquí, además del filtro general, para evitar que llegue al HTML
-            # si el texto de la competición viene fragmentado o reordenado.
             return ("", "", "", False, False, "")
         elif rx(r"\bligue\s*1\b").search(blob):
             comp = "Francia - Ligue 1"
@@ -634,8 +685,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 if not sport:
                     continue
 
-                # Última barrera: no permitir que la Serie A de Brasil llegue
-                # a results aunque cambie en el futuro la lógica de clasificación.
                 normalized_competition = normalize_search_text(competition)
                 if (
                     normalized_competition == "brasil serie a"
@@ -680,7 +729,8 @@ def generate_html(events):
     
     total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    sport_counts = Counter(event["deporte"] for event in events)
+    slot_counts = Counter(get_time_slot(event["hora"]) for event in events)
+    domain = get_dynamic_domain()
 
     def clean_key(s):
         return normalize_search_text(s)
@@ -703,7 +753,6 @@ def generate_html(events):
                 }[app_key]
 
                 if app_key == "kodi":
-                    # Sin enlace para canales asignados a Kodi
                     tv_badges_list.append(
                         f'<span class="tv-badge tv-badge-no-link" '
                         f'title="Canal {safe_channel}">'
@@ -724,6 +773,9 @@ def generate_html(events):
             else:
                 date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
 
+            slot = get_time_slot(ev["hora"])
+            safe_slot = escape(clean_key(slot), quote=True)
+
             search_text = normalize_search_text(" ".join(
                 [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
             ))
@@ -740,7 +792,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-ts="{safe_timestamp}" data-time="{safe_time}" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
                     <td class="date-col">{date_badge_html}</td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
@@ -847,8 +899,12 @@ def generate_html(events):
     <header>
         <div><h1>⚡ Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a>
+            <!-- <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a> -->
             <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a>
+            <a href="https://{domain}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
+            <a href="https://{domain}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
+            <a href="https://{domain}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
+            <a href="https://{domain}/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
@@ -860,17 +916,17 @@ def generate_html(events):
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
             <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
-        <div class="stat-card" id="card-futbol" onclick="setFilter('futbol')">
-            <div><div class="lbl">Fútbol</div><div class="val" style="color:#10b981">{sport_counts['Fútbol']}</div></div><div style="font-size:1.1rem">⚽</div>
+        <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
+            <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{slot_counts['Madrugada']}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
-        <div class="stat-card" id="card-baloncesto" onclick="setFilter('baloncesto')">
-            <div><div class="lbl">Baloncesto</div><div class="val" style="color:#f97316">{sport_counts['Baloncesto']}</div></div><div style="font-size:1.1rem">🏀</div>
+        <div class="stat-card" id="card-manana" onclick="setFilter('manana')">
+            <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{slot_counts['Mañana']}</div></div><div style="font-size:1.1rem">☀️</div>
         </div>
-        <div class="stat-card" id="card-tenis" onclick="setFilter('tenis')">
-            <div><div class="lbl">Tenis</div><div class="val" style="color:#f59e0b">{sport_counts['Tenis']}</div></div><div style="font-size:1.1rem">🎾</div>
+        <div class="stat-card" id="card-tarde" onclick="setFilter('tarde')">
+            <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{slot_counts['Tarde']}</div></div><div style="font-size:1.1rem">🌇</div>
         </div>
-        <div class="stat-card" id="card-motor" onclick="setFilter('motor')">
-            <div><div class="lbl">Motor</div><div class="val" style="color:#ef4444">{sport_counts['Motor']}</div></div><div style="font-size:1.1rem">🏆</div>
+        <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
+            <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['Noche']}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
     </div>
     <div class="filter-container">
@@ -901,8 +957,6 @@ function cleanStr(str) {{
         .toLowerCase()
         .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
         .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c')
-        // Igual que normalize_search_text() de Python: los dos puntos y
-        // otros separadores se convierten en espacios también al buscar.
         .replace(new RegExp('[|,;:/]+', 'g'), ' ')
         .replace(/\\s+/g, ' ')
         .trim();
@@ -931,8 +985,6 @@ function scrollToCurrentEvent() {{
         else if (!firstFuture) firstFuture = row;
     }}
 
-    // Ancla la agenda en el evento más reciente que ya ha comenzado.
-    // Si todavía no hay ninguno, muestra el primer evento futuro.
     target = target || firstFuture;
     if (!target) return;
 
@@ -942,8 +994,6 @@ function scrollToCurrentEvent() {{
     const panelHeight = panel ? panel.getBoundingClientRect().height : 0;
     const headingHeight = tableHead ? tableHead.getBoundingClientRect().height : 0;
 
-    // La fila debe quedar debajo tanto del panel superior como de la
-    // cabecera fija de la tabla; de lo contrario queda parcialmente tapada.
     const top = target.getBoundingClientRect().top + window.scrollY
         - panelHeight - headingHeight - 8;
     window.scrollTo({{ top: Math.max(0, top), behavior: 'auto' }});
@@ -961,7 +1011,6 @@ function filterTable() {{ applyFilters(); }}
 
 window.addEventListener('load', () => {{
     updateStickyHeadingOffset();
-    // Espera al cálculo del layout antes de desplazar la página.
     requestAnimationFrame(scrollToCurrentEvent);
 }});
 window.addEventListener('resize', updateStickyHeadingOffset);
@@ -979,7 +1028,7 @@ function applyFilters() {{
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
 
-        const rowSport = cleanStr(tr.getAttribute('data-sport'));
+        const rowSlot = cleanStr(tr.getAttribute('data-slot'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
         const text = cleanStr(tr.getAttribute('data-search'));
 
@@ -989,12 +1038,9 @@ function applyFilters() {{
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
         }} else {{
-            matchesFilter = (rowSport === currentFilter);
+            matchesFilter = (rowSlot === currentFilter);
         }}
 
-        // Si la consulta contiene ':', se interpreta como búsqueda de hora
-        // y se compara únicamente con HH:MM. Así, '15:' no coincide con
-        // '20:15' y ':15' no coincide con '15:30'.
         const eventTime = tr.getAttribute('data-time') || '';
         const matchesSearch = isTimeSearch
             ? eventTime.includes(timeSearch)
