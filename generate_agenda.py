@@ -793,6 +793,7 @@ def generate_html(events):
             event_datetime = datetime.combine(ev_date, datetime.strptime(ev["hora"], "%H:%M").time()).replace(tzinfo=spain_tz)
             event_timestamp = int(event_datetime.timestamp() * 1000)
             safe_timestamp = str(event_timestamp)
+            safe_date_str = escape(ev_date.isoformat(), quote=True)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
             safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
             safe_time = escape(str(ev["hora"]))
@@ -803,7 +804,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
                     <td class="date-col">{date_badge_html}</td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
@@ -934,9 +935,6 @@ def generate_html(events):
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
     </header>
     <div class="stats-grid">
-        <div class="stat-card active-card" id="card-todos" onclick="setFilter('todos')">
-            <div><div class="lbl">Todos</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📺</div>
-        </div>
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
             <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
@@ -952,9 +950,12 @@ def generate_html(events):
         <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
             <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['noche']}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
+        <div class="stat-card active-card" id="card-proximamente" onclick="setFilter('proximamente')">
+            <div><div class="lbl">Próximamente</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📅</div>
+        </div>
     </div>
     
-    <!-- Panel de selección visible por defecto en 5 columnas -->
+    <!-- Panel de selección: abierto por defecto solo en Próximamente -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
@@ -963,27 +964,27 @@ def generate_html(events):
         <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
             <div class="comp-section-title">⚽ FÚTBOL</div>
             <div class="comp-checkboxes">
-                <label><input type="checkbox" class="comp-chk" value="laliga" onchange="applyFilters()"> LaLiga</label>
-                <label><input type="checkbox" class="comp-chk" value="champions" onchange="applyFilters()"> Champions League</label>
-                <label><input type="checkbox" class="comp-chk" value="copadelrey" onchange="applyFilters()"> Copa del Rey</label>
-                <label><input type="checkbox" class="comp-chk" value="mundial" onchange="applyFilters()"> Copa Mundial</label>
-                <label><input type="checkbox" class="comp-chk" value="eurocopa" onchange="applyFilters()"> Eurocopa</label>
-                <label><input type="checkbox" class="comp-chk" value="nationsleague" onchange="applyFilters()"> Nations League</label>
-                <label><input type="checkbox" class="comp-chk" value="premier" onchange="applyFilters()"> Premier League</label>
-                <label><input type="checkbox" class="comp-chk" value="bundesliga" onchange="applyFilters()"> Bundesliga</label>
-                <label><input type="checkbox" class="comp-chk" value="seriea" onchange="applyFilters()"> Serie A</label>
-                <label><input type="checkbox" class="comp-chk" value="ligue1" onchange="applyFilters()"> Ligue 1</label>
-                <label><input type="checkbox" class="comp-chk" value="ligaportugal" onchange="applyFilters()"> Liga Portugal</label>
-                <label><input type="checkbox" class="comp-chk" value="eredivisie" onchange="applyFilters()"> Eredivisie</label>
+                <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
+                <label><input type="checkbox" class="comp-chk" value="champions" checked onchange="applyFilters()"> Champions League</label>
+                <label><input type="checkbox" class="comp-chk" value="copadelrey" checked onchange="applyFilters()"> Copa del Rey</label>
+                <label><input type="checkbox" class="comp-chk" value="mundial" checked onchange="applyFilters()"> Copa Mundial</label>
+                <label><input type="checkbox" class="comp-chk" value="eurocopa" checked onchange="applyFilters()"> Eurocopa</label>
+                <label><input type="checkbox" class="comp-chk" value="nationsleague" checked onchange="applyFilters()"> Nations League</label>
+                <label><input type="checkbox" class="comp-chk" value="premier" checked onchange="applyFilters()"> Premier League</label>
+                <label><input type="checkbox" class="comp-chk" value="bundesliga" checked onchange="applyFilters()"> Bundesliga</label>
+                <label><input type="checkbox" class="comp-chk" value="seriea" checked onchange="applyFilters()"> Serie A</label>
+                <label><input type="checkbox" class="comp-chk" value="ligue1" checked onchange="applyFilters()"> Ligue 1</label>
+                <label><input type="checkbox" class="comp-chk" value="ligaportugal" checked onchange="applyFilters()"> Liga Portugal</label>
+                <label><input type="checkbox" class="comp-chk" value="eredivisie" checked onchange="applyFilters()"> Eredivisie</label>
             </div>
             
             <div class="comp-section-title" style="margin-top: 6px;">🏀 BALONCESTO &nbsp;|&nbsp; 🎾 TENIS &nbsp;|&nbsp; 🏆 MOTOR</div>
             <div class="comp-checkboxes">
-                <label><input type="checkbox" class="comp-chk" value="ligaendesa" onchange="applyFilters()"> Liga Endesa / ACB</label>
-                <label><input type="checkbox" class="comp-chk" value="euroliga" onchange="applyFilters()"> Euroliga</label>
-                <label><input type="checkbox" class="comp-chk" value="nba" onchange="applyFilters()"> NBA</label>
-                <label><input type="checkbox" class="comp-chk" value="tenis" onchange="applyFilters()"> Tenis</label>
-                <label><input type="checkbox" class="comp-chk" value="motor" onchange="applyFilters()"> Motor</label>
+                <label><input type="checkbox" class="comp-chk" value="ligaendesa" checked onchange="applyFilters()"> Liga Endesa / ACB</label>
+                <label><input type="checkbox" class="comp-chk" value="euroliga" checked onchange="applyFilters()"> Euroliga</label>
+                <label><input type="checkbox" class="comp-chk" value="nba" checked onchange="applyFilters()"> NBA</label>
+                <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> Tenis</label>
+                <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> Motor</label>
             </div>
         </div>
     </div>
@@ -1011,6 +1012,9 @@ def generate_html(events):
     </div>
 </div>
 <script>
+const TODAY_DATE_STR = "{today_date.isoformat()}";
+let currentFilter = 'proximamente';
+
 function cleanStr(str) {{
     return (str || '')
         .toLowerCase()
@@ -1022,9 +1026,8 @@ function cleanStr(str) {{
         .trim();
 }}
 
-let currentFilter = 'todos';
-
 function toggleCompPanel() {{
+    if (currentFilter === 'favoritos') return; // Bloqueado en favoritos
     const content = document.getElementById('compFilterContent');
     const icon = document.getElementById('compToggleIcon');
     if (content.style.display === 'none') {{
@@ -1085,6 +1088,23 @@ function setFilter(filterType) {{
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
+
+    const content = document.getElementById('compFilterContent');
+    const icon = document.getElementById('compToggleIcon');
+
+    if (currentFilter === 'favoritos') {{
+        content.style.display = 'none';
+        icon.textContent = '▼';
+    }} else if (currentFilter === 'proximamente') {{
+        content.style.display = 'grid';
+        icon.textContent = '▲';
+        document.querySelectorAll('.comp-chk').forEach(chk => chk.checked = true);
+    }} else {{
+        content.style.display = 'none';
+        icon.textContent = '▼';
+        document.querySelectorAll('.comp-chk').forEach(chk => chk.checked = true);
+    }}
+
     applyFilters();
     scrollToCurrentEvent();
 }}
@@ -1105,6 +1125,7 @@ function applyFilters() {{
     const timeSearch = rawSearch.replace(/\\s+/g, '');
     const searchFilter = cleanStr(rawSearch);
     const isTimeSearch = timeSearch.includes(':');
+    const now = Date.now();
 
     // Obtener valores marcados en los checkboxes
     const checkedComps = new Set();
@@ -1122,25 +1143,35 @@ function applyFilters() {{
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
         const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito
-        const sport = cleanStr(tr.getAttribute('data-sport')); // 'futbol', 'baloncesto', 'tenis', 'motor'
+        const sport = cleanStr(tr.getAttribute('data-sport')); 
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
+        const rowDate = tr.getAttribute('data-date');
+        const timestamp = Number(tr.getAttribute('data-ts'));
 
-        // 1. Filtro de pestaña / franja horaria
         let matchesFilter = false;
-        if (currentFilter === 'todos') {{
-            matchesFilter = true;
+        let matchesComp = true;
+
+        if (currentFilter === 'proximamente') {{
+            // Próximamente: sin eventos anteriores a la hora/fecha actual (timestamp >= now)
+            matchesFilter = (timestamp >= now);
+            if (sport === 'tenis') {{
+                matchesComp = checkedComps.has('tenis');
+            }} else if (sport === 'motor') {{
+                matchesComp = checkedComps.has('motor');
+            }} else if (sport === 'futbol' || sport === 'baloncesto') {{
+                matchesComp = compKey ? checkedComps.has(compKey) : false;
+            }} else {{
+                matchesComp = false;
+            }}
         }} else if (currentFilter === 'favoritos') {{
             matchesFilter = isFiltered;
-        }} else {{
-            matchesFilter = (rowSlot === currentFilter);
-        }}
-
-        // 2. Filtro de competiciones y deportes
-        let matchesComp = true;
-        if (currentFilter === 'favoritos') {{
             matchesComp = true;
         }} else {{
+            // Franjas horarias (madrugada, manana, tarde, noche): solo eventos de hoy
+            const isToday = (rowDate === TODAY_DATE_STR);
+            matchesFilter = isToday && (rowSlot === currentFilter);
+
             if (sport === 'tenis') {{
                 matchesComp = checkedComps.has('tenis');
             }} else if (sport === 'motor') {{
@@ -1152,7 +1183,6 @@ function applyFilters() {{
             }}
         }}
 
-        // 3. Filtro de búsqueda por texto / hora
         const eventTime = tr.getAttribute('data-time') || '';
         const matchesSearch = isTimeSearch
             ? eventTime.includes(timeSearch)
