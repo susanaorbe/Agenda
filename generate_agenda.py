@@ -247,7 +247,7 @@ EXCLUDED_CHANNELS = {
     "beisbolplay", "canal 9 soria youtube", "cayotv youtube", "cmmplay",
     "concacaf youtube", "conmebol libertadores youtube", "dazn 1 bar(m148)", "dazn 1 bar", "dazn 2 bar(m149)",
     "dazn 2 bar", "deportes tvcanaria youtube", "eleventv youtube", "esport3 web",
-    "esport3(cataluña)", "esport3", "etb1(país vasco)", "f1 academy youtube", "fanatiz", "fanplay",
+    "esport3(cataluña)", "esport3", "etb1", "etb1(país vasco)", "f1 academy youtube", "fanatiz", "fanplay",
     "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fff tv youtube", "fiba youtube",
     "flamengo tv youtube", "hbo max", "j.league international youtube", "la 7", "la 7 tv",
     "la ocho mediterráneo", "la xarxa+", "laliga tv bar", "laliga tv m2",
@@ -264,7 +264,8 @@ EXCLUDED_CHANNELS = {
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
-    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube"
+    "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
+    "valencia cf youtube", "valencia cf app"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -301,7 +302,10 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\bbasketball champions league\b", r"\bfutsal champions\b",
     r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b",
     r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b",
-    r"\bbrasil\s*[-–—]?\s*serie\s+a\b"
+    r"\bbrasil\s*[-–—]?\s*serie\s+a\b",
+    r"\bargentina\b", r"\btorneo clausura\b", r"\btorneo apertura\b",
+    r"\bliga profesional\b", r"\bprimera division argentina\b",
+    r"\binternational cup\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -982,6 +986,7 @@ function scrollToCurrentEvent() {{
     let firstFuture = null;
 
     for (const row of rows) {{
+        if (row.style.display === 'none') continue;
         const timestamp = Number(row.dataset.ts);
         if (!Number.isFinite(timestamp)) continue;
         if (timestamp <= now) target = row;
@@ -989,7 +994,11 @@ function scrollToCurrentEvent() {{
     }}
 
     target = target || firstFuture;
-    if (!target) return;
+    if (!target) {{
+        const visibleRows = rows.filter(r => r.style.display !== 'none');
+        if (visibleRows.length) target = visibleRows[0];
+        else return;
+    }}
 
     updateStickyHeadingOffset();
     const panel = document.getElementById('stickyPanel');
@@ -1008,6 +1017,7 @@ function setFilter(filterType) {{
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
     applyFilters();
+    scrollToCurrentEvent();
 }}
 
 function filterTable() {{ applyFilters(); }}
