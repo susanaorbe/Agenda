@@ -544,7 +544,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba"
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "portugal"
     )
 
     for part in raw_parts:
@@ -845,7 +845,7 @@ def generate_html(events):
         .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
         .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
 
-        /* Panel de selección de competiciones (Abierto por defecto) */
+        /* Panel de selección de competiciones */
         .comp-filter-panel {{ background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }}
         .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
         .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
@@ -951,10 +951,10 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel desplegable de selección de competiciones (Abierto por defecto) -->
+    <!-- Panel de selección de deportes y competiciones -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
-            <span>⚙️ Filtrar Competiciones (Fútbol y Baloncesto)</span>
+            <span>⚙️ Filtrar Competiciones y Deportes</span>
             <span id="compToggleIcon">▲</span>
         </div>
         <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
@@ -966,7 +966,7 @@ def generate_html(events):
                 <label><input type="checkbox" class="comp-chk" value="bundesliga" onchange="applyFilters()"> Bundesliga</label>
                 <label><input type="checkbox" class="comp-chk" value="ligue1" onchange="applyFilters()"> Ligue 1</label>
                 <label><input type="checkbox" class="comp-chk" value="eredivisie" onchange="applyFilters()"> Eredivisie</label>
-                <label><input type="checkbox" class="comp-chk" value="ligaportugal" onchange="applyFilters()"> Liga Portugal Betclic</label>
+                <label><input type="checkbox" class="comp-chk" value="ligaportugal" checked onchange="applyFilters()"> Liga Portugal Betclic</label>
                 <label><input type="checkbox" class="comp-chk" value="copadelrey" onchange="applyFilters()"> Copa del Rey</label>
                 <label><input type="checkbox" class="comp-chk" value="mundial" onchange="applyFilters()"> Copa Mundial de la FIFA</label>
                 <label><input type="checkbox" class="comp-chk" value="eurocopa" onchange="applyFilters()"> Eurocopa</label>
@@ -978,6 +978,11 @@ def generate_html(events):
                 <label><input type="checkbox" class="comp-chk" value="ligaendesa" checked onchange="applyFilters()"> Liga Endesa / ACB</label>
                 <label><input type="checkbox" class="comp-chk" value="euroliga" checked onchange="applyFilters()"> Euroliga</label>
                 <label><input type="checkbox" class="comp-chk" value="nba" onchange="applyFilters()"> NBA</label>
+            </div>
+            <div class="comp-section-title" style="margin-top: 8px;">🌐 Otros Deportes (Global)</div>
+            <div class="comp-checkboxes">
+                <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> 🎾 Tenis (Todos los torneos)</label>
+                <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> 🏆 Motor (F1, MotoGP, Indycar, F-E)</label>
             </div>
         </div>
     </div>
@@ -1099,7 +1104,7 @@ function applyFilters() {{
     const searchFilter = cleanStr(rawSearch);
     const isTimeSearch = timeSearch.includes(':');
 
-    // Obtener competiciones de fútbol/baloncesto marcadas
+    // Obtener valores marcados en los checkboxes
     const checkedComps = new Set();
     document.querySelectorAll('.comp-chk:checked').forEach(chk => {{
         checkedComps.add(chk.value);
@@ -1114,7 +1119,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito (is_filtered)
+        const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito
         const sport = cleanStr(tr.getAttribute('data-sport')); // 'futbol', 'baloncesto', 'tenis', 'motor'
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
@@ -1129,11 +1134,17 @@ function applyFilters() {{
             matchesFilter = (rowSlot === currentFilter);
         }}
 
-        // 2. Filtro de checkboxes de competición (CON INMUNIDAD PARA FAVORITOS)
+        // 2. Filtro de checkboxes (Con inmunidad absoluta para favoritos)
         let matchesComp = true;
-        if (currentFilter !== 'favoritos' && !isFiltered && (sport === 'futbol' || sport === 'baloncesto')) {{
-            if (compKey && !checkedComps.has(compKey)) {{
-                matchesComp = false;
+        if (currentFilter !== 'favoritos' && !isFiltered) {{
+            if (sport === 'tenis') {{
+                matchesComp = checkedComps.has('tenis');
+            }} else if (sport === 'motor') {{
+                matchesComp = checkedComps.has('motor');
+            }} else if (sport === 'futbol' || sport === 'baloncesto') {{
+                if (compKey && !checkedComps.has(compKey)) {{
+                    matchesComp = false;
+                }}
             }}
         }}
 
