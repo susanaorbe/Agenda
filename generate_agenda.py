@@ -297,15 +297,11 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
     r"\bbasketball champions league\b", r"\bfutsal champions\b",
     r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b",
-    r"\bserie a\b",  # <--- Exclusión añadida de la Serie A Italiana / general
     r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b",
     r"\bbrasil\s*[-–—]?\s*serie\s+a\b",
     r"\bargentina\b", r"\btorneo clausura\b", r"\btorneo apertura\b",
     r"\bliga profesional\b", r"\bprimera division argentina\b",
-    r"\binternational cup\b",
-    r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b",
-    r"\bligue 1\b", r"\bfrancia - ligue 1\b",
-    r"\bbundesliga\b", r"\balemania - bundesliga\b"
+    r"\binternational cup\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -418,39 +414,39 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
 # NÚCLEO DE CLASIFICACIÓN
 # ============================================================================
 
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str]:
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
-        return ("", "", "", False, False, "")
+        return ("", "", "", False, False, "", "")
 
     if EXCLUDED_COMPETITIONS_RE.search(blob):
-        return ("", "", "", False, False, "")
+        return ("", "", "", False, False, "", "")
 
     # Tenis
     if rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b").search(blob):
         if "golf" in tv_blob or "movistar golf" in blob:
-            return ("", "", "", False, False, "")
+            return ("", "", "", False, False, "", "")
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
         is_fav = bool(SPANISH_TENNIS_PLAYERS_RE.search(blob))
-        return ("Tenis", "🎾", comp, is_fav, True, "")
+        return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
 
     # Baloncesto
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
         if WOMEN_RE.search(blob) or rx(r"\(f\)\b", r"\(w\)\b").search(blob):
-            return ("", "", "", False, False, "")
+            return ("", "", "", False, False, "", "")
 
-        comp_name = "Liga Endesa"
-        if rx(r"\beuroliga\b", r"\beuroleague\b").search(blob):
-            comp_name = "Euroliga"
-        elif rx(r"\bcopa acb\b").search(blob) or (rx(r"\bcopa del rey\b").search(blob) and rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b").search(blob)):
-            comp_name = "Copa del Rey"
-        elif rx(r"\bsupercopa\b").search(blob):
-            comp_name = "Supercopa de España"
-        elif rx(r"\bnba\b").search(blob):
+        if rx(r"\bnba\b").search(blob):
             comp_name = "NBA"
+            comp_key = "nba"
+        elif rx(r"\beuroliga\b", r"\beuroleague\b").search(blob):
+            comp_name = "Euroliga"
+            comp_key = "euroliga"
+        else:
+            comp_name = "Liga Endesa / ACB"
+            comp_key = "ligaendesa"
         
         is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
-        return ("Baloncesto", "🏀", comp_name, is_fav, True, "")
+        return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
     # Fútbol Femenino
     if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
@@ -460,36 +456,67 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
                 comp_match = name
                 break
         if comp_match and REAL_MADRID_RE.search(blob):
-            return ("Fútbol", "⚽", comp_match, True, True, "")
-        return ("", "", "", False, False, "")
+            return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
+        return ("", "", "", False, False, "", "")
 
     # Copa del Rey
     if rx(r"\bcopa del rey\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b").search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
-        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "")
+        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
 
-    # Primera RFEF
-    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if CASTILLA_RE.search(blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "")
-        return ("", "", "", False, False, "")
+    # UEFA Champions League
+    if rx(r"\bchampions league\b", r"\bchampions\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b").search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob))
+        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
 
     # La Liga
     if LALIGA_RE.search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
-        return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
+        return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
 
-    # Champions League
-    if rx(r"\bchampions league\b", r"\bchampions\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b").search(blob):
-        is_fav = bool(REAL_MADRID_RE.search(blob))
-        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
+    # Premier League
+    if rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b").search(blob):
+        return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
 
-    # Fútbol general (Excluye Serie A mediante EXCLUDED_COMPETITIONS_RE)
-    if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b").search(blob) and not WOMEN_RE.search(blob):
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
-        return ("Fútbol", "⚽", comp, False, False, "")
+    # Serie A
+    if rx(r"\bserie a\b").search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
+        return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
 
-    return ("", "", "", False, False, "")
+    # Bundesliga
+    if rx(r"\bbundesliga\b", r"\balemania - bundesliga\b").search(blob) and not rx(r"2\.?\s*bundesliga\b").search(blob):
+        return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
+
+    # Ligue 1
+    if rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b").search(blob):
+        return ("Fútbol", "⚽", "Ligue 1", False, True, "", "ligue1")
+
+    # Eredivisie
+    if rx(r"\beredivisie\b").search(blob):
+        return ("Fútbol", "⚽", "Eredivisie", False, True, "", "eredivisie")
+
+    # Liga Portugal Betclic
+    if rx(r"\bliga portugal\b", r"\bportugal\b", r"\bbetclic\b").search(blob):
+        return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
+
+    # Copa Mundial de la FIFA
+    if rx(r"\bcopa mundial\b", r"\bmundial de la fifa\b", r"\bworld cup\b").search(blob):
+        return ("Fútbol", "⚽", "Copa Mundial de la FIFA", False, True, "", "mundial")
+
+    # Eurocopa
+    if rx(r"\beurocopa\b", r"\beuro\s*20\d{2}\b", r"\beuro\s*cup\b").search(blob):
+        return ("Fútbol", "⚽", "Eurocopa", False, True, "", "eurocopa")
+
+    # UEFA Nations League
+    if rx(r"\bnations league\b").search(blob):
+        return ("Fútbol", "⚽", "UEFA Nations League", False, True, "", "nationsleague")
+
+    # Primera RFEF
+    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
+        if CASTILLA_RE.search(blob):
+            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
+        return ("", "", "", False, False, "", "")
+
+    return ("", "", "", False, False, "", "")
 
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
@@ -516,7 +543,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     text_lines = []
 
     competition_terms = (
-        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo",
+        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
         "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba"
     )
 
@@ -655,11 +682,12 @@ def fetch_and_parse_agenda() -> list[dict]:
                         "tv_list": channels,
                         "is_filtered": is_fav,
                         "is_configured": True,
+                        "comp_key": "motor"
                     })
                     continue
 
                 # Resto de deportes
-                sport, icon, competition, is_favorite, is_configured, custom_event = get_sport_and_competition(
+                sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
                 )
                 
@@ -694,6 +722,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "tv_list": channels,
                     "is_filtered": is_favorite,
                     "is_configured": is_configured,
+                    "comp_key": comp_key
                 })
 
     except Exception as e:
@@ -765,6 +794,7 @@ def generate_html(events):
             event_timestamp = int(event_datetime.timestamp() * 1000)
             safe_timestamp = str(event_timestamp)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
+            safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
             safe_time = escape(str(ev["hora"]))
             safe_icon = escape(str(ev["icono"]))
             safe_sport = escape(str(ev["deporte"]))
@@ -773,7 +803,7 @@ def generate_html(events):
 
             rows_list.append(
                 f"""
-                <tr class="event-row" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
+                <tr class="event-row" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
                     <td class="date-col">{date_badge_html}</td>
                     <td class="time-col"><span class="time-badge">{safe_time}</span></td>
                     <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
@@ -809,11 +839,21 @@ def generate_html(events):
         .btn-alt:hover {{ background: #4f46e5; }}
         .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
         
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 16px; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }}
         .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
         .stat-card.active-card {{ border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
         .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
         .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
+
+        /* Panel de selección de competiciones */
+        .comp-filter-panel {{ background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }}
+        .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
+        .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
+        .comp-filter-content {{ padding: 10px 12px; border-top: 1px solid var(--border-color); display: grid; gap: 6px; }}
+        .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.8rem; text-transform: uppercase; margin-top: 4px; }}
+        .comp-checkboxes {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px; }}
+        .comp-checkboxes label {{ display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; }}
+        .comp-checkboxes input[type="checkbox"] {{ accent-color: var(--accent-blue); width: 14px; height: 14px; cursor: pointer; }}
         
         .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
@@ -910,6 +950,38 @@ def generate_html(events):
             <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['noche']}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
     </div>
+    
+    <!-- Panel desplegable de selección de competiciones (Fútbol y Baloncesto) -->
+    <div class="comp-filter-panel">
+        <div class="comp-filter-header" onclick="toggleCompPanel()">
+            <span>⚙️ Filtrar Competiciones (Fútbol y Baloncesto)</span>
+            <span id="compToggleIcon">▼</span>
+        </div>
+        <div class="comp-filter-content" id="compFilterContent" style="display: none;">
+            <div class="comp-section-title">⚽ Fútbol</div>
+            <div class="comp-checkboxes">
+                <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga EA Sports</label>
+                <label><input type="checkbox" class="comp-chk" value="champions" checked onchange="applyFilters()"> UEFA Champions League</label>
+                <label><input type="checkbox" class="comp-chk" value="seriea" onchange="applyFilters()"> Serie A</label>
+                <label><input type="checkbox" class="comp-chk" value="bundesliga" onchange="applyFilters()"> Bundesliga</label>
+                <label><input type="checkbox" class="comp-chk" value="ligue1" onchange="applyFilters()"> Ligue 1</label>
+                <label><input type="checkbox" class="comp-chk" value="eredivisie" onchange="applyFilters()"> Eredivisie</label>
+                <label><input type="checkbox" class="comp-chk" value="ligaportugal" onchange="applyFilters()"> Liga Portugal Betclic</label>
+                <label><input type="checkbox" class="comp-chk" value="copadelrey" onchange="applyFilters()"> Copa del Rey</label>
+                <label><input type="checkbox" class="comp-chk" value="mundial" onchange="applyFilters()"> Copa Mundial de la FIFA</label>
+                <label><input type="checkbox" class="comp-chk" value="eurocopa" onchange="applyFilters()"> Eurocopa</label>
+                <label><input type="checkbox" class="comp-chk" value="nationsleague" onchange="applyFilters()"> UEFA Nations League</label>
+                <label><input type="checkbox" class="comp-chk" value="premier" onchange="applyFilters()"> Premier League</label>
+            </div>
+            <div class="comp-section-title" style="margin-top: 8px;">🏀 Baloncesto</div>
+            <div class="comp-checkboxes">
+                <label><input type="checkbox" class="comp-chk" value="ligaendesa" checked onchange="applyFilters()"> Liga Endesa / ACB</label>
+                <label><input type="checkbox" class="comp-chk" value="euroliga" checked onchange="applyFilters()"> Euroliga</label>
+                <label><input type="checkbox" class="comp-chk" value="nba" onchange="applyFilters()"> NBA</label>
+            </div>
+        </div>
+    </div>
+
     <div class="filter-container">
         <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
     </div>
@@ -945,6 +1017,19 @@ function cleanStr(str) {{
 }}
 
 let currentFilter = 'todos';
+
+function toggleCompPanel() {{
+    const content = document.getElementById('compFilterContent');
+    const icon = document.getElementById('compToggleIcon');
+    if (content.style.display === 'none') {{
+        content.style.display = 'grid';
+        icon.textContent = '▲';
+    }} else {{
+        content.style.display = 'none';
+        icon.textContent = '▼';
+    }}
+    updateStickyHeadingOffset();
+}}
 
 function updateStickyHeadingOffset() {{
     const panel = document.getElementById('stickyPanel');
@@ -1008,6 +1093,13 @@ function applyFilters() {{
     const timeSearch = rawSearch.replace(/\\s+/g, '');
     const searchFilter = cleanStr(rawSearch);
     const isTimeSearch = timeSearch.includes(':');
+
+    // Obtener competiciones de fútbol/baloncesto marcadas
+    const checkedComps = new Set();
+    document.querySelectorAll('.comp-chk:checked').forEach(chk => {{
+        checkedComps.add(chk.value);
+    }});
+
     const table = document.getElementById('agendaTable');
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
@@ -1017,9 +1109,12 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isFiltered = tr.getAttribute('data-filtered'] === 'true'; // es favorito (is_filtered)
+        const sport = cleanStr(tr.getAttribute('data-sport')); // 'futbol', 'baloncesto', 'tenis', 'motor'
+        const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
 
+        // 1. Filtro de pestaña / franja horaria
         let matchesFilter = false;
         if (currentFilter === 'todos') {{
             matchesFilter = true;
@@ -1029,12 +1124,23 @@ function applyFilters() {{
             matchesFilter = (rowSlot === currentFilter);
         }}
 
+        // 2. Filtro de checkboxes de competición (CON INMUNIDAD PARA FAVORITOS)
+        // Si el evento es favorito (!isFiltered es falso), se salta la comprobación de checkboxes
+        // en "Todos", "Madrugada", "Mañana", "Tarde" y "Noche".
+        let matchesComp = true;
+        if (currentFilter !== 'favoritos' && !isFiltered && (sport === 'futbol' || sport === 'baloncesto')) {{
+            if (compKey && !checkedComps.has(compKey)) {{
+                matchesComp = false;
+            }}
+        }}
+
+        // 3. Filtro de búsqueda por texto / hora
         const eventTime = tr.getAttribute('data-time') || '';
         const matchesSearch = isTimeSearch
             ? eventTime.includes(timeSearch)
             : text.includes(searchFilter);
 
-        if (matchesFilter && matchesSearch) {{
+        if (matchesFilter && matchesComp && matchesSearch) {{
             tr.style.display = '';
             visibleCount++;
         }} else {{
