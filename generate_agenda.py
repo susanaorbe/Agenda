@@ -286,10 +286,6 @@ REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b"
 CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
 YOUTH_BASKET_RE = rx(r"\bsub\s*[-]?\d+\b", r"\bjunior\b", r"\bcadete\b", r"\binfantil\b")
 
-PSG_RE = rx(r"\bparis saint germain\b", r"\bpsg\b")
-ARSENAL_RE = rx(r"\barsenal\b")
-BAYERN_RE = rx(r"\bbayern munich\b", r"\bbayern\b")
-
 EXCLUDED_SPORTS_RE = rx(
     r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
     r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
@@ -305,15 +301,17 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\bbrasil\s*[-–—]?\s*serie\s+a\b",
     r"\bargentina\b", r"\btorneo clausura\b", r"\btorneo apertura\b",
     r"\bliga profesional\b", r"\bprimera division argentina\b",
-    r"\binternational cup\b"
+    r"\binternational cup\b",
+    r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b",
+    r"\bligue 1\b", r"\bfrancia - ligue 1\b",
+    r"\bbundesliga\b", r"\balemania - bundesliga\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
     r"\bcarlos alcaraz\b", r"\balcaraz\b", r"\balejandro davidovich\b", r"\bdavidovich\b",
     r"\bcristina bucsa\b", r"\bbucsa\b", r"\bpaula badosa\b", r"\bbadosa\b",
-    r"\bjaume munar\b", r"\bmunar\b", r"\bjessica bouzas\b", r"\bbouzas\b",
-    r"\brafael jodar\b", r"\bjodar\b", r"\broberto bautista\b", r"\bbautista\b",
-    r"\bpedro martinez\b", r"\brabelo\b", r"\bcarballes\b"
+    r"\bjaume munar\b", r"\bmunar\b", r"\brafael jodar\b", r"\bjodar\b",
+    r"\bdani merida\b", r"\bmerida\b"
 )
 
 WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
@@ -480,32 +478,15 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "España - La Liga", is_fav, True, "")
 
-    # Ligas Europeas
-    if not WOMEN_RE.search(blob):
-        if rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b").search(blob) and PSG_RE.search(blob):
-            return ("Fútbol", "⚽", "Francia - Ligue 1", False, True, "")
-        
-        if rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b").search(blob) and ARSENAL_RE.search(blob):
-            return ("Fútbol", "⚽", "Inglaterra - Premier League", True, True, "")
-
-        if rx(r"\bbundesliga\b", r"\balemania - bundesliga\b").search(blob) and BAYERN_RE.search(blob):
-            return ("Fútbol", "⚽", "Alemania - Bundesliga", False, True, "")
-
     # Champions League
     if rx(r"\bchampions league\b", r"\bchampions\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b").search(blob):
-        is_fav = bool(REAL_MADRID_RE.search(blob) or ARSENAL_RE.search(blob))
+        is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
     # Fútbol general
-    if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bpremier league\b", r"\bserie a\b", r"\bbundesliga\b", r"\bligue 1\b").search(blob) and not WOMEN_RE.search(blob):
+    if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bserie a\b").search(blob) and not WOMEN_RE.search(blob):
         if "brasil" in blob or "serie a brasil" in blob:
             return ("", "", "", False, False, "")
-        elif rx(r"\bligue\s*1\b").search(blob):
-            comp = "Francia - Ligue 1"
-        elif rx(r"\bbundesliga\b").search(blob):
-            comp = "Alemania - Bundesliga"
-        elif rx(r"\bpremier league\b").search(blob):
-            comp = "Inglaterra - Premier League"
         elif rx(r"\bserie a\b").search(blob):
             comp = "Italia - Serie A"
         else:
@@ -539,7 +520,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     text_lines = []
 
     competition_terms = (
-        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a", "premier",
+        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
         "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba"
     )
 
