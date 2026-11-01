@@ -319,7 +319,7 @@ PRIMERA_RFEF_RE = rx(
 )
 
 LALIGA_RE = rx(
-    r"\blaliga ea sports\b", r"\blaliga ea\b", r"\bprimera division\b", 
+    r"\bliga ea sports\b", r"\bliga ea\b", r"\bprimera division\b", 
     r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
 )
 
@@ -845,7 +845,7 @@ def generate_html(events):
         .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
         .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
 
-        /* Panel de selección de competiciones */
+        /* Panel de selección de competiciones (Abierto por defecto) */
         .comp-filter-panel {{ background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }}
         .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
         .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
@@ -951,13 +951,13 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel desplegable de selección de competiciones (Fútbol y Baloncesto) -->
+    <!-- Panel desplegable de selección de competiciones (Abierto por defecto) -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Filtrar Competiciones (Fútbol y Baloncesto)</span>
-            <span id="compToggleIcon">▼</span>
+            <span id="compToggleIcon">▲</span>
         </div>
-        <div class="comp-filter-content" id="compFilterContent" style="display: none;">
+        <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
             <div class="comp-section-title">⚽ Fútbol</div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga EA Sports</label>
@@ -1029,6 +1029,7 @@ function toggleCompPanel() {{
         icon.textContent = '▼';
     }}
     updateStickyHeadingOffset();
+    scrollToCurrentEvent();
 }}
 
 function updateStickyHeadingOffset() {{
@@ -1038,37 +1039,39 @@ function updateStickyHeadingOffset() {{
 }}
 
 function scrollToCurrentEvent() {{
-    const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row'));
-    if (!rows.length) return;
+    setTimeout(() => {{
+        const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row'));
+        if (!rows.length) return;
 
-    const now = Date.now();
-    let target = null;
-    let firstFuture = null;
+        const now = Date.now();
+        let target = null;
+        let firstFuture = null;
 
-    for (const row of rows) {{
-        if (row.style.display === 'none') continue;
-        const timestamp = Number(row.dataset.ts);
-        if (!Number.isFinite(timestamp)) continue;
-        if (timestamp <= now) target = row;
-        else if (!firstFuture) firstFuture = row;
-    }}
+        for (const row of rows) {{
+            if (row.style.display === 'none') continue;
+            const timestamp = Number(row.dataset.ts);
+            if (!Number.isFinite(timestamp)) continue;
+            if (timestamp <= now) target = row;
+            else if (!firstFuture) firstFuture = row;
+        }}
 
-    target = target || firstFuture;
-    if (!target) {{
-        const visibleRows = rows.filter(r => r.style.display !== 'none');
-        if (visibleRows.length) target = visibleRows[0];
-        else return;
-    }}
+        target = target || firstFuture;
+        if (!target) {{
+            const visibleRows = rows.filter(r => r.style.display !== 'none');
+            if (visibleRows.length) target = visibleRows[0];
+            else return;
+        }}
 
-    updateStickyHeadingOffset();
-    const panel = document.getElementById('stickyPanel');
-    const tableHead = document.querySelector('.table-card thead');
-    const panelHeight = panel ? panel.getBoundingClientRect().height : 0;
-    const headingHeight = tableHead ? tableHead.getBoundingClientRect().height : 0;
+        updateStickyHeadingOffset();
+        const panel = document.getElementById('stickyPanel');
+        const tableHead = document.querySelector('.table-card thead');
+        const panelHeight = panel ? panel.getBoundingClientRect().height : 0;
+        const headingHeight = tableHead ? tableHead.getBoundingClientRect().height : 0;
 
-    const top = target.getBoundingClientRect().top + window.scrollY
-        - panelHeight - headingHeight - 8;
-    window.scrollTo({{ top: Math.max(0, top), behavior: 'auto' }});
+        const top = target.getBoundingClientRect().top + window.scrollY
+            - panelHeight - headingHeight - 8;
+        window.scrollTo({{ top: Math.max(0, top), behavior: 'smooth' }});
+    }}, 60);
 }}
 
 function setFilter(filterType) {{
@@ -1084,9 +1087,11 @@ function filterTable() {{ applyFilters(); }}
 
 window.addEventListener('load', () => {{
     updateStickyHeadingOffset();
-    requestAnimationFrame(scrollToCurrentEvent);
+    scrollToCurrentEvent();
 }});
-window.addEventListener('resize', updateStickyHeadingOffset);
+window.addEventListener('resize', () => {{
+    updateStickyHeadingOffset();
+}});
 
 function applyFilters() {{
     const rawSearch = (document.getElementById('searchInput').value || '').trim();
@@ -1109,7 +1114,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered'] === 'true'; // es favorito (is_filtered)
+        const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito (is_filtered)
         const sport = cleanStr(tr.getAttribute('data-sport')); // 'futbol', 'baloncesto', 'tenis', 'motor'
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
@@ -1125,8 +1130,6 @@ function applyFilters() {{
         }}
 
         // 2. Filtro de checkboxes de competición (CON INMUNIDAD PARA FAVORITOS)
-        // Si el evento es favorito (!isFiltered es falso), se salta la comprobación de checkboxes
-        // en "Todos", "Madrugada", "Mañana", "Tarde" y "Noche".
         let matchesComp = true;
         if (currentFilter !== 'favoritos' && !isFiltered && (sport === 'futbol' || sport === 'baloncesto')) {{
             if (compKey && !checkedComps.has(compKey)) {{
