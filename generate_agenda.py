@@ -845,7 +845,7 @@ def generate_html(events):
         .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
         .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
 
-        /* Panel de selección de competiciones y deportes compacto */
+        /* Panel compacto de filtrado en 5 columnas estrictas */
         .comp-filter-panel {{ background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }}
         .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
         .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
@@ -853,10 +853,9 @@ def generate_html(events):
         .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.8rem; text-transform: uppercase; margin-top: 4px; }}
         
         .comp-checkboxes {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }}
-        .comp-checkboxes.compact-inline {{ display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }}
         
-        .comp-checkboxes label {{ display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; }}
-        .comp-checkboxes input[type="checkbox"] {{ accent-color: var(--accent-blue); width: 14px; height: 14px; cursor: pointer; }}
+        .comp-checkboxes label {{ display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; white-space: nowrap; }}
+        .comp-checkboxes input[type="checkbox"] {{ accent-color: var(--accent-blue); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }}
         
         .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
@@ -955,36 +954,36 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel compacto de filtrado -->
+    <!-- Panel de selección optimizado en 5 columnas -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
-            <span>⚙️ Filtrar Deportes y Competiciones</span>
+            <span>⚙️ Deportes y Competiciones</span>
             <span id="compToggleIcon">▲</span>
         </div>
         <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
             <div class="comp-section-title">⚽ FÚTBOL</div>
             <div class="comp-checkboxes">
-                <label><input type="checkbox" class="comp-chk" value="laliga" onchange="applyFilters()"> LaLiga EA Sports</label>
-                <label><input type="checkbox" class="comp-chk" value="champions" onchange="applyFilters()"> UEFA Champions League</label>
+                <label><input type="checkbox" class="comp-chk" value="laliga" onchange="applyFilters()"> LaLiga</label>
+                <label><input type="checkbox" class="comp-chk" value="champions" onchange="applyFilters()"> Champions League</label>
                 <label><input type="checkbox" class="comp-chk" value="copadelrey" onchange="applyFilters()"> Copa del Rey</label>
-                <label><input type="checkbox" class="comp-chk" value="mundial" onchange="applyFilters()"> Copa Mundial de la FIFA</label>
+                <label><input type="checkbox" class="comp-chk" value="mundial" onchange="applyFilters()"> Copa Mundial</label>
                 <label><input type="checkbox" class="comp-chk" value="eurocopa" onchange="applyFilters()"> Eurocopa</label>
-                <label><input type="checkbox" class="comp-chk" value="nationsleague" onchange="applyFilters()"> UEFA Nations League</label>
+                <label><input type="checkbox" class="comp-chk" value="nationsleague" onchange="applyFilters()"> Nations League</label>
                 <label><input type="checkbox" class="comp-chk" value="premier" onchange="applyFilters()"> Premier League</label>
                 <label><input type="checkbox" class="comp-chk" value="bundesliga" onchange="applyFilters()"> Bundesliga</label>
                 <label><input type="checkbox" class="comp-chk" value="seriea" onchange="applyFilters()"> Serie A</label>
                 <label><input type="checkbox" class="comp-chk" value="ligue1" onchange="applyFilters()"> Ligue 1</label>
-                <label><input type="checkbox" class="comp-chk" value="ligaportugal" onchange="applyFilters()"> Liga Portugal Betclic</label>
+                <label><input type="checkbox" class="comp-chk" value="ligaportugal" onchange="applyFilters()"> Liga Portugal</label>
                 <label><input type="checkbox" class="comp-chk" value="eredivisie" onchange="applyFilters()"> Eredivisie</label>
             </div>
             
-            <div class="comp-section-title" style="margin-top: 6px;">🏀 BALONCESTO &nbsp;&nbsp;|&nbsp;&nbsp; 🎾 TENIS &nbsp;&nbsp;|&nbsp;&nbsp; 🏆 MOTOR</div>
-            <div class="comp-checkboxes compact-inline">
+            <div class="comp-section-title" style="margin-top: 6px;">🏀 BALONCESTO &nbsp;|&nbsp; 🎾 TENIS &nbsp;|&nbsp; 🏆 MOTOR</div>
+            <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="ligaendesa" onchange="applyFilters()"> Liga Endesa / ACB</label>
                 <label><input type="checkbox" class="comp-chk" value="euroliga" onchange="applyFilters()"> Euroliga</label>
                 <label><input type="checkbox" class="comp-chk" value="nba" onchange="applyFilters()"> NBA</label>
-                <label><input type="checkbox" class="comp-chk" value="tenis" onchange="applyFilters()"> 🎾 Tenis (Todos los torneos)</label>
-                <label><input type="checkbox" class="comp-chk" value="motor" onchange="applyFilters()"> 🏆 Fórmula 1, MotoGP, Indycar, Fórmula e</label>
+                <label><input type="checkbox" class="comp-chk" value="tenis" onchange="applyFilters()"> 🎾 Tenis</label>
+                <label><input type="checkbox" class="comp-chk" value="motor" onchange="applyFilters()"> 🏆 Motor</label>
             </div>
         </div>
     </div>
@@ -1122,7 +1121,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito
+        const isFiltered = tr.getAttribute('data-filtered'] === 'true'; // es favorito
         const sport = cleanStr(tr.getAttribute('data-sport')); // 'futbol', 'baloncesto', 'tenis', 'motor'
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
