@@ -954,13 +954,13 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel de selección optimizado en 5 columnas -->
+    <!-- Panel de selección visible por defecto en 5 columnas -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
             <span id="compToggleIcon">▲</span>
         </div>
-        <div class="comp-filter-content" id="compFilterContent" style="display: none;">
+        <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
             <div class="comp-section-title">⚽ FÚTBOL</div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" onchange="applyFilters()"> LaLiga</label>
@@ -1027,7 +1027,7 @@ let currentFilter = 'todos';
 function toggleCompPanel() {{
     const content = document.getElementById('compFilterContent');
     const icon = document.getElementById('compToggleIcon');
-    if (content.style.display === 'none' || content.style.display === '') {{
+    if (content.style.display === 'none') {{
         content.style.display = 'grid';
         icon.textContent = '▲';
     }} else {{
