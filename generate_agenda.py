@@ -935,7 +935,7 @@ def generate_html(events):
         <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
     </header>
     <div class="stats-grid">
-        <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
+        <div class="stat-card active-card" id="card-favoritos" onclick="setFilter('favoritos')">
             <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
@@ -950,18 +950,18 @@ def generate_html(events):
         <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
             <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['noche']}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
-        <div class="stat-card active-card" id="card-proximamente" onclick="setFilter('proximamente')">
+        <div class="stat-card" id="card-proximamente" onclick="setFilter('proximamente')">
             <div><div class="lbl">Próximamente</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📅</div>
         </div>
     </div>
     
-    <!-- Panel de selección: abierto por defecto solo en Próximamente -->
+    <!-- Panel de selección: cerrado por defecto excepto en Próximamente -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
-            <span id="compToggleIcon">▲</span>
+            <span id="compToggleIcon">▼</span>
         </div>
-        <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
+        <div class="comp-filter-content" id="compFilterContent" style="display: none;">
             <div class="comp-section-title">⚽ FÚTBOL</div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
@@ -1013,7 +1013,7 @@ def generate_html(events):
 </div>
 <script>
 const TODAY_DATE_STR = "{today_date.isoformat()}";
-let currentFilter = 'proximamente';
+let currentFilter = 'favoritos';
 
 function cleanStr(str) {{
     return (str || '')
@@ -1052,24 +1052,33 @@ function scrollToCurrentEvent() {{
         const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row'));
         if (!rows.length) return;
 
-        const now = Date.now();
+        const visibleRows = rows.filter(r => r.style.display !== 'none');
+        if (!visibleRows.length) return;
+
         let target = null;
-        let firstFuture = null;
 
-        for (const row of rows) {{
-            if (row.style.display === 'none') continue;
-            const timestamp = Number(row.dataset.ts);
-            if (!Number.isFinite(timestamp)) continue;
-            if (timestamp <= now) target = row;
-            else if (!firstFuture) firstFuture = row;
+        if (currentFilter === 'proximamente') {{
+            // En Próximamente se sitúa en el primer elemento visible
+            target = visibleRows[0];
+        }} else {{
+            // En Favoritos y Franjas Horarias: evento anterior a la hora actual
+            const now = Date.now();
+            let lastPast = null;
+
+            for (const row of visibleRows) {{
+                const timestamp = Number(row.dataset.ts);
+                if (!Number.isFinite(timestamp)) continue;
+                if (timestamp <= now) {{
+                    lastPast = row;
+                }} else {{
+                    break;
+                }}
+            }}
+
+            target = lastPast || visibleRows[0];
         }}
 
-        target = target || firstFuture;
-        if (!target) {{
-            const visibleRows = rows.filter(r => r.style.display !== 'none');
-            if (visibleRows.length) target = visibleRows[0];
-            else return;
-        }}
+        if (!target) return;
 
         updateStickyHeadingOffset();
         const panel = document.getElementById('stickyPanel');
