@@ -845,7 +845,7 @@ def generate_html(events):
         .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
         .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
 
-        /* Panel compacto de filtrado en 5 columnas estrictas */
+        /* Panel de filtrado en 5 columnas estrictas */
         .comp-filter-panel {{ background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }}
         .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
         .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
@@ -960,7 +960,7 @@ def generate_html(events):
             <span>⚙️ Deportes y Competiciones</span>
             <span id="compToggleIcon">▲</span>
         </div>
-        <div class="comp-filter-content" id="compFilterContent" style="display: grid;">
+        <div class="comp-filter-content" id="compFilterContent" style="display: none;">
             <div class="comp-section-title">⚽ FÚTBOL</div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" onchange="applyFilters()"> LaLiga</label>
@@ -982,8 +982,8 @@ def generate_html(events):
                 <label><input type="checkbox" class="comp-chk" value="ligaendesa" onchange="applyFilters()"> Liga Endesa / ACB</label>
                 <label><input type="checkbox" class="comp-chk" value="euroliga" onchange="applyFilters()"> Euroliga</label>
                 <label><input type="checkbox" class="comp-chk" value="nba" onchange="applyFilters()"> NBA</label>
-                <label><input type="checkbox" class="comp-chk" value="tenis" onchange="applyFilters()"> 🎾 Tenis</label>
-                <label><input type="checkbox" class="comp-chk" value="motor" onchange="applyFilters()"> 🏆 Motor</label>
+                <label><input type="checkbox" class="comp-chk" value="tenis" onchange="applyFilters()"> Tenis</label>
+                <label><input type="checkbox" class="comp-chk" value="motor" onchange="applyFilters()"> Motor</label>
             </div>
         </div>
     </div>
@@ -1027,7 +1027,7 @@ let currentFilter = 'todos';
 function toggleCompPanel() {{
     const content = document.getElementById('compFilterContent');
     const icon = document.getElementById('compToggleIcon');
-    if (content.style.display === 'none') {{
+    if (content.style.display === 'none' || content.style.display === '') {{
         content.style.display = 'grid';
         icon.textContent = '▲';
     }} else {{
@@ -1121,7 +1121,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered'] === 'true'; // es favorito
+        const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito
         const sport = cleanStr(tr.getAttribute('data-sport')); // 'futbol', 'baloncesto', 'tenis', 'motor'
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
