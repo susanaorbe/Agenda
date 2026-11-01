@@ -297,6 +297,7 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
     r"\bbasketball champions league\b", r"\bfutsal champions\b",
     r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b",
+    r"\bserie a\b",  # <--- Exclusión añadida de la Serie A Italiana / general
     r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b",
     r"\bbrasil\s*[-–—]?\s*serie\s+a\b",
     r"\bargentina\b", r"\btorneo clausura\b", r"\btorneo apertura\b",
@@ -483,14 +484,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "")
 
-    # Fútbol general
-    if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b", r"\bserie a\b").search(blob) and not WOMEN_RE.search(blob):
-        if "brasil" in blob or "serie a brasil" in blob:
-            return ("", "", "", False, False, "")
-        elif rx(r"\bserie a\b").search(blob):
-            comp = "Italia - Serie A"
-        else:
-            comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
+    # Fútbol general (Excluye Serie A mediante EXCLUDED_COMPETITIONS_RE)
+    if rx(r"\bfutbol\b", r"\bliga ea sports\b", r"\bchampions\b", r"\bcopa del rey\b").search(blob) and not WOMEN_RE.search(blob):
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"general", ""} else "Fútbol"
         return ("Fútbol", "⚽", comp, False, False, "")
 
     return ("", "", "", False, False, "")
@@ -520,7 +516,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     text_lines = []
 
     competition_terms = (
-        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
+        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo",
         "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba"
     )
 
@@ -886,8 +882,6 @@ def generate_html(events):
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <!-- <a href="https://hubu.ru/fctvlink" target="_blank" class="btn-alt">FCTV33</a> -->
-            <!-- <a href="https://daddylive.pk/" target="_blank" class="btn-alt">DLHD</a> -->
             <a href="https://{domain}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
             <a href="https://{domain}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
             <a href="https://{domain}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
