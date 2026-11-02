@@ -1058,10 +1058,8 @@ function scrollToCurrentEvent() {{
         let target = null;
 
         if (currentFilter === 'proximamente') {{
-            // En Próximamente se sitúa en el primer elemento visible
             target = visibleRows[0];
         }} else {{
-            // En Favoritos y Franjas Horarias: evento anterior a la hora actual
             const now = Date.now();
             let lastPast = null;
 
@@ -1136,13 +1134,13 @@ function applyFilters() {{
     const isTimeSearch = timeSearch.includes(':');
     const now = Date.now();
 
-    // Obtener valores marcados en los checkboxes
     const checkedComps = new Set();
     document.querySelectorAll('.comp-chk:checked').forEach(chk => {{
         checkedComps.add(chk.value);
     }});
 
     const table = document.getElementById('agendaTable');
+    if (!table) return;
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
 
@@ -1151,7 +1149,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered'] === 'true'; // es favorito
+        const isFiltered = tr.getAttribute('data-filtered') === 'true';
         const sport = cleanStr(tr.getAttribute('data-sport')); 
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
@@ -1162,7 +1160,6 @@ function applyFilters() {{
         let matchesComp = true;
 
         if (currentFilter === 'proximamente') {{
-            // Próximamente: sin eventos anteriores a la hora/fecha actual (timestamp >= now)
             matchesFilter = (timestamp >= now);
             if (sport === 'tenis') {{
                 matchesComp = checkedComps.has('tenis');
@@ -1177,7 +1174,6 @@ function applyFilters() {{
             matchesFilter = isFiltered;
             matchesComp = true;
         }} else {{
-            // Franjas horarias (madrugada, manana, tarde, noche): solo eventos de hoy
             const isToday = (rowDate === TODAY_DATE_STR);
             matchesFilter = isToday && (rowSlot === currentFilter);
 
