@@ -301,7 +301,7 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r"\bbrasil\s*[-–—]?\s*serie\s+a\b",
     r"\bargentina\b", r"\btorneo clausura\b", r"\btorneo apertura\b",
     r"\bliga profesional\b", r"\bprimera division argentina\b",
-    r"\binternational cup\b"
+    r"\binternational cup\b", r"\beurocup\b"
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -503,7 +503,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "Copa Mundial de la FIFA", False, True, "", "mundial")
 
     # Eurocopa
-    if rx(r"\beurocopa\b", r"\beuro\s*20\d{2}\b", r"\beuro\s*cup\b").search(blob):
+    if rx(r"\beurocopa\b", r"\beuro\s*20\d{2}\b", r"\beuro\s*cup\b").search(blob) and not rx(r"\beurocup\b").search(blob):
         return ("Fútbol", "⚽", "Eurocopa", False, True, "", "eurocopa")
 
     # UEFA Nations League
@@ -1151,7 +1151,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true'; // es favorito
+        const isFiltered = tr.getAttribute('data-filtered'] === 'true'; // es favorito
         const sport = cleanStr(tr.getAttribute('data-sport')); 
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
