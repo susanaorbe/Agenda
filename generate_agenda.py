@@ -860,9 +860,15 @@ def generate_html(events):
         .comp-checkboxes label {{ display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; white-space: nowrap; }}
         .comp-checkboxes input[type="checkbox"] {{ accent-color: var(--accent-blue); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }}
         
+        /* 
+        ======================================================================
+        CAMPO DE BÚSQUEDA COMENTADO VISUALMENTE
+        Descomentar este bloque si se desea mostrar el input de búsqueda de nuevo
+        ======================================================================
         .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
         .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
         .search-input:focus {{ border-color: var(--accent-blue); }}
+        */
         
         .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
         table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
@@ -999,9 +1005,15 @@ def generate_html(events):
         </div>
     </div>
 
+    <!-- 
+    ======================================================================
+    INPUT DE BÚSQUEDA COMENTADO
+    Descomentar este bloque HTML para volver a mostrar el campo de búsqueda
+    ======================================================================
     <div class="filter-container">
         <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
     </div>
+    -->
     </div>
     <div class="table-card">
         <table>
@@ -1150,7 +1162,9 @@ window.addEventListener('resize', () => {{
 }});
 
 function applyFilters() {{
-    const rawSearch = (document.getElementById('searchInput').value || '').trim();
+    /* Lógica de lectura de input comentada / adaptada para evitar errores al no existir en el DOM */
+    const searchInputElem = document.getElementById('searchInput');
+    const rawSearch = searchInputElem ? (searchInputElem.value || '').trim() : '';
     const timeSearch = rawSearch.replace(/\s+/g, '');
     const searchFilter = cleanStr(rawSearch);
     const isTimeSearch = timeSearch.includes(':');
@@ -1226,7 +1240,7 @@ function applyFilters() {{
         if (!emptyRow) {{
             emptyRow = document.createElement('tr');
             emptyRow.id = 'dynamicEmptyState';
-            emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección y búsqueda.</td>';
+            emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección.</td>';
             table.appendChild(emptyRow);
         }} else {{ emptyRow.style.display = ''; }}
     }} else {{ if (emptyRow) emptyRow.style.display = 'none'; }}
