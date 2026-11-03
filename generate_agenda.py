@@ -838,7 +838,9 @@ def generate_html(events):
         .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
         .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }}
         .btn-alt:hover {{ background: #4f46e5; }}
-        .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; text-align: right; }}
+        .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }}
+        .btn-toggle-chk {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }}
+        .btn-toggle-chk:hover {{ background: rgba(59, 130, 246, 0.4); color: #ffffff; }}
         
         .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }}
         .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
@@ -851,7 +853,7 @@ def generate_html(events):
         .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
         .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
         .comp-filter-content {{ padding: 10px 12px; border-top: 1px solid var(--border-color); display: grid; gap: 6px; }}
-        .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.8rem; text-transform: uppercase; margin-top: 4px; }}
+        .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.8rem; text-transform: uppercase; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }}
         
         .comp-checkboxes {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }}
         
@@ -932,7 +934,10 @@ def generate_html(events):
             <a href="https://{domain}/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
-        <div class="last-update">Última actualización: <strong>{fecha_act} (España)</strong></div>
+        <div class="last-update">
+            <span>Última actualización: <strong>{fecha_act}</strong></span>
+            <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
+        </div>
     </header>
     <div class="stats-grid">
         <div class="stat-card active-card" id="card-favoritos" onclick="setFilter('favoritos')">
@@ -955,14 +960,17 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel de selección: cerrado por defecto excepto en Próximamente -->
+    <!-- Panel de selección: cerrado por defecto en todas las pestañas -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
             <span id="compToggleIcon">▼</span>
         </div>
         <div class="comp-filter-content" id="compFilterContent" style="display: none;">
-            <div class="comp-section-title">⚽ FÚTBOL</div>
+            <div class="comp-section-title">
+                <span>⚽ FÚTBOL</span>
+                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todas / Marcar todas</button>
+            </div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
                 <label><input type="checkbox" class="comp-chk" value="champions" checked onchange="applyFilters()"> Champions League</label>
@@ -1015,6 +1023,16 @@ def generate_html(events):
 const TODAY_DATE_STR = "{today_date.isoformat()}";
 let currentFilter = 'favoritos';
 
+function updateLiveClock() {{
+    const now = new Date();
+    const options = {{ timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }};
+    const timeStr = new Intl.DateTimeFormat('es-ES', options).format(now);
+    const clockElem = document.getElementById('liveClock');
+    if (clockElem) clockElem.textContent = timeStr;
+}}
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
+
 function cleanStr(str) {{
     return (str || '')
         .toLowerCase()
@@ -1022,7 +1040,7 @@ function cleanStr(str) {{
         .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c')
         .replace(/ñ/g, 'n')
         .replace(new RegExp('[|,;:/]+', 'g'), ' ')
-        .replace(/\\s+/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim();
 }}
 
@@ -1039,6 +1057,14 @@ function toggleCompPanel() {{
     }}
     updateStickyHeadingOffset();
     scrollToCurrentEvent();
+}}
+
+function toggleAllCheckboxes(event) {{
+    if (event) event.stopPropagation();
+    const checkboxes = document.querySelectorAll('.comp-chk');
+    const anyChecked = Array.from(checkboxes).some(chk => chk.checked);
+    checkboxes.forEach(chk => chk.checked = !anyChecked);
+    applyFilters();
 }}
 
 function updateStickyHeadingOffset() {{
@@ -1099,16 +1125,10 @@ function setFilter(filterType) {{
     const content = document.getElementById('compFilterContent');
     const icon = document.getElementById('compToggleIcon');
 
-    if (currentFilter === 'favoritos') {{
-        content.style.display = 'none';
-        icon.textContent = '▼';
-    }} else if (currentFilter === 'proximamente') {{
-        content.style.display = 'grid';
-        icon.textContent = '▲';
-        document.querySelectorAll('.comp-chk').forEach(chk => chk.checked = true);
-    }} else {{
-        content.style.display = 'none';
-        icon.textContent = '▼';
+    content.style.display = 'none';
+    icon.textContent = '▼';
+
+    if (currentFilter !== 'favoritos') {{
         document.querySelectorAll('.comp-chk').forEach(chk => chk.checked = true);
     }}
 
@@ -1129,10 +1149,9 @@ window.addEventListener('resize', () => {{
 
 function applyFilters() {{
     const rawSearch = (document.getElementById('searchInput').value || '').trim();
-    const timeSearch = rawSearch.replace(/\\s+/g, '');
+    const timeSearch = rawSearch.replace(/\s+/g, '');
     const searchFilter = cleanStr(rawSearch);
     const isTimeSearch = timeSearch.includes(':');
-    const now = Date.now();
 
     const checkedComps = new Set();
     document.querySelectorAll('.comp-chk:checked').forEach(chk => {{
@@ -1154,13 +1173,12 @@ function applyFilters() {{
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
         const rowDate = tr.getAttribute('data-date');
-        const timestamp = Number(tr.getAttribute('data-ts'));
 
         let matchesFilter = false;
         let matchesComp = true;
 
         if (currentFilter === 'proximamente') {{
-            matchesFilter = (timestamp >= now);
+            matchesFilter = (rowDate > TODAY_DATE_STR);
             if (sport === 'tenis') {{
                 matchesComp = checkedComps.has('tenis');
             }} else if (sport === 'motor') {{
