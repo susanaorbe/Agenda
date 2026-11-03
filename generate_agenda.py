@@ -172,7 +172,7 @@ def normalize_search_text(text: str) -> str:
 def clean_time(time_str: str) -> str:
     if not time_str:
         return ""
-    match = re.fullmatch(r"\s*(\d{1,2}):(\d{2})\s*", str(time_str))
+    match = re.search(r"(\d{1,2}):(\d{2})", str(time_str))
     if not match:
         return ""
     hours, minutes = map(int, match.groups())
@@ -330,8 +330,8 @@ WOMEN_FOOTBALL_COMPETITIONS = (
     (rx(r" women'?s champions league ", r" champions league femenina "), "UEFA Women's Champions League"),
 )
 
-TIME_RE = re.compile(r" \d{1,2}:\d{2} ")
-DATE_RE = re.compile(r" (\d{1,2})/(\d{1,2})/(\d{4}) ")
+TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
+DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
 
 CLEAN_TV_RE = re.compile(
     r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
@@ -493,7 +493,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         for part in item.get_text("\n", strip=True).split("\n")
         if part.strip()
     ]
-    if not 3 <= len(raw_parts) <= 25:
+    if not 3 <= len(raw_parts) <= 30:
         return "", "", [], "", []
 
     text_full = " | ".join(raw_parts)
@@ -609,81 +609,88 @@ def fetch_and_parse_agenda() -> list[dict]:
             response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
 
-        for element in soup.descendants:
-            if element.name in ["tr", "div", "section", "h2", "h3", "th"]:
-                el_text = element.get_text(" ", strip=True)
-                date_match = DATE_RE.search(el_text)
-                if date_match:
-                    try:
-                        d, m, y = map(int, date_match.groups())
-                        current_date_obj = date(y, m, d)
-                    except ValueError:
-                        pass
+        # Seleccionamos cualquier contenedor de eventos posible en la estructura HTML actual
+        elements = soup.find_all(["tr", "div", "li", "article", "section", "p"])
+        if not elements:
+            elements = list(soup.descendants)
 
-                time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
-                if not time_clean or not channels:
-                    continue
+        for element in elements:
+            if not hasattr(element, "get_text"):
+                continue
 
-                tv_blob = " ".join(channels).lower()
-                blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
+            el_text = element.get_text(" ", strip=True)
+            date_match = DATE_RE.search(el_text)
+            if date_match:
+                try:
+                    d, m, y = map(int, date_match.groups())
+                    current_date_obj = date(y, m, d)
+                except ValueError:
+                    pass
 
-                comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
-                if comp_name:
-                    event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
-                    if event_key in seen_events:
-                        continue
-                    seen_events.add(event_key)
+            time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
+            if not time_clean or not channels:
+                continue
 
-                    results.append({
-                        "date_obj": current_date_obj,
-                        "hora": time_clean,
-                        "deporte": "Motor",
-                        "icono": "🏆",
-                        "competicion": comp_name,
-                        "evento": motor_event_title,
-                        "tv_list": channels,
-                        "is_filtered": is_fav,
-                        "is_configured": True,
-                        "comp_key": "motor"
-                    })
-                    continue
+            tv_blob = " ".join(channels).lower()
+            blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
-                    blob, tournament, tv_blob, text_lines
-                )
-                if not sport:
-                    continue
-
-                normalized_competition = normalize_search_text(competition)
-                if (
-                    normalized_competition == "brasil serie a"
-                    or ("brasil" in normalized_competition and "serie a" in normalized_competition)
-                ):
-                    continue
-
-                final_event = custom_event if custom_event else event_str
-                final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
-
-                if not EVENT_TEXT_RE.search(final_event):
-                    continue
-
-                event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
-                if event_key in seen_events: 
+            comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
+            if comp_name:
+                event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
+                if event_key in seen_events:
                     continue
                 seen_events.add(event_key)
 
                 results.append({
                     "date_obj": current_date_obj,
                     "hora": time_clean,
-                    "deporte": sport,
-                    "icono": icon,
-                    "competicion": competition,
-                    "evento": final_event,
+                    "deporte": "Motor",
+                    "icono": "🏆",
+                    "competicion": comp_name,
+                    "evento": motor_event_title,
                     "tv_list": channels,
-                    "is_filtered": is_favorite,
-                    "is_configured": is_configured,
-                    "comp_key": comp_key
+                    "is_filtered": is_fav,
+                    "is_configured": True,
+                    "comp_key": "motor"
                 })
+                continue
+
+            sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
+                blob, tournament, tv_blob, text_lines
+            )
+            if not sport:
+                continue
+
+            normalized_competition = normalize_search_text(competition)
+            if (
+                normalized_competition == "brasil serie a"
+                or ("brasil" in normalized_competition and "serie a" in normalized_competition)
+            ):
+                continue
+
+            final_event = custom_event if custom_event else event_str
+            final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
+
+            if not EVENT_TEXT_RE.search(final_event):
+                continue
+
+            event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+            if event_key in seen_events: 
+                continue
+            seen_events.add(event_key)
+
+            results.append({
+                "date_obj": current_date_obj,
+                "hora": time_clean,
+                "deporte": sport,
+                "icono": icon,
+                "competicion": competition,
+                "evento": final_event,
+                "tv_list": channels,
+                "is_filtered": is_favorite,
+                "is_configured": is_configured,
+                "comp_key": comp_key
+            })
 
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
@@ -947,13 +954,12 @@ function scrollToCurrentEvent() {
         if (!visibleRows.length) return;
 
         let target = null;
+        const now = Date.now();
 
         if (currentFilter === 'proximamente') {
             target = visibleRows[0];
         } else {
-            const now = Date.now();
             let lastPast = null;
-
             for (const row of visibleRows) {
                 const timestamp = Number(row.dataset.ts);
                 if (!Number.isFinite(timestamp)) continue;
@@ -963,7 +969,6 @@ function scrollToCurrentEvent() {
                     break;
                 }
             }
-
             target = lastPast || visibleRows[0];
         }
 
@@ -1038,6 +1043,7 @@ function applyFilters() {
     if (!table) return;
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
+    const now = Date.now();
 
     for (let i = 0; i < trs.length; i++) {
         const tr = trs[i];
