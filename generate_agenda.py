@@ -804,7 +804,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35);
         }
         tr.event-row.previous-event .event-title::before {
-            content: "ÚLTIMO EVENTO ANTERIOR";
+            content: "EVENTO PREVIO";
             display: block;
             color: #38bdf8;
             font-size: 0.62rem;
@@ -873,7 +873,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <div class="container">
     <div class="sticky-panel" id="stickyPanel">
     <header>
-        <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
+        <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
             <a href="https://{DOMAIN}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
             <a href="https://{DOMAIN}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
