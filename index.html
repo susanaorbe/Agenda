@@ -43,6 +43,28 @@
         th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
         td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }
         tr.event-row:hover { background-color: #243146; }
+        /* Identificación discreta del último horario anterior a la hora actual. */
+        tr.event-row.previous-event td {
+            background: rgba(56, 189, 248, 0.075);
+            border-top: 1px solid rgba(56, 189, 248, 0.42);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.42);
+        }
+        tr.event-row.previous-event td:first-child {
+            border-left: 3px solid #38bdf8;
+        }
+        tr.event-row.previous-event .time-badge {
+            background: #0369a1;
+            box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35);
+        }
+        tr.event-row.previous-event .event-title::before {
+            content: "ÚLTIMO EVENTO ANTERIOR";
+            display: block;
+            color: #38bdf8;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.65px;
+            margin-bottom: 4px;
+        }
         
         .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
         .time-col, .date-col { white-space: nowrap; }
@@ -82,6 +104,10 @@
                 margin-bottom: 10px;
                 gap: 6px;
             }
+            tr.event-row.previous-event {
+                border-color: rgba(56, 189, 248, 0.75);
+                box-shadow: inset 3px 0 0 #38bdf8, 0 0 0 1px rgba(56, 189, 248, 0.12);
+            }
             
             td { padding: 0; border: none; width: auto !important; white-space: normal; }
             .date-col { display: inline-block; order: 0; }
@@ -110,7 +136,7 @@
         </div>
         <div class="last-update">
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
-            <span>Última actualización: <strong>03/11/2026 - 15:14</strong></span>
+            <span>Última actualización: <strong>03/11/2026 - 15:38</strong></span>
         </div>
     </header>
     <div class="stats-grid">
@@ -193,6 +219,7 @@
 <script>
 const TODAY_DATE_STR = "2026-11-03";
 let currentFilter = 'favoritos';
+let initialTimeSlot = '';
 
 function updateLiveClock() {
     const now = new Date();
@@ -264,18 +291,52 @@ function setFilter(filterType) {
 
 function filterTable() { applyFilters(); }
 
+function highlightPreviousEvents() {
+    const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
+    rows.forEach(row => row.classList.remove('previous-event'));
+
+    // La agenda trabaja con precisión de minuto: solo cuentan inicios
+    // anteriores al minuto actual, no los que empiezan en este mismo minuto.
+    const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
+    let previousTimestamp = null;
+
+    rows.forEach(row => {
+        if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
+
+        const timestamp = Number(row.getAttribute('data-ts'));
+        if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
+
+        if (previousTimestamp === null || timestamp > previousTimestamp) {
+            previousTimestamp = timestamp;
+        }
+    });
+
+    if (previousTimestamp === null) return;
+
+    // Se resaltan todos los eventos que comparten el último horario anterior.
+    rows.forEach(row => {
+        if (
+            row.getAttribute('data-date') === TODAY_DATE_STR &&
+            Number(row.getAttribute('data-ts')) === previousTimestamp
+        ) {
+            row.classList.add('previous-event');
+        }
+    });
+}
+
 window.addEventListener('load', () => {
     const nowMadrid = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
     const h = nowMadrid.getHours();
     const m = nowMadrid.getMinutes();
     const totalMins = h * 60 + m;
-    let initialSlot = 'noche';
-    if (totalMins <= 419) initialSlot = 'madrugada';
-    else if (totalMins <= 839) initialSlot = 'manana';
-    else if (totalMins <= 1229) initialSlot = 'tarde';
-    else initialSlot = 'noche';
+    initialTimeSlot = 'noche';
+    if (totalMins <= 419) initialTimeSlot = 'madrugada';
+    else if (totalMins <= 839) initialTimeSlot = 'manana';
+    else if (totalMins <= 1229) initialTimeSlot = 'tarde';
+    else initialTimeSlot = 'noche';
 
-    setFilter(initialSlot);
+    highlightPreviousEvents();
+    setFilter(initialTimeSlot);
     updateStickyHeadingOffset();
 });
 
@@ -332,7 +393,11 @@ function applyFilters() {
             matchesComp = true;
         } else {
             const isToday = (rowDate === TODAY_DATE_STR);
-            matchesFilter = isToday && (rowSlot === currentFilter);
+            const isPreviousEvent = tr.classList.contains('previous-event');
+            matchesFilter = isToday && (
+                rowSlot === currentFilter ||
+                (currentFilter === initialTimeSlot && isPreviousEvent)
+            );
 
             if (sport === 'tenis') {
                 matchesComp = checkedComps.has('tenis');
