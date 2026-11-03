@@ -737,9 +737,9 @@ def generate_html(events):
     today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
     
-    total_cnt = len(events)
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    slot_counts = Counter(get_time_slot(event["hora"]) for event in events)
+    slot_counts = Counter(get_time_slot(event["hora"]) for event in events if event["date_obj"] == today_date)
+    total_cnt = sum(1 for event in events if event["date_obj"] > today_date)
     domain = get_dynamic_domain()
 
     def clean_key(s):
@@ -853,7 +853,7 @@ def generate_html(events):
         .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
         .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
         .comp-filter-content {{ padding: 10px 12px; border-top: 1px solid var(--border-color); display: grid; gap: 6px; }}
-        .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.8rem; text-transform: uppercase; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }}
+        .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.80rem; text-transform: uppercase; margin-top: 4px; }}
         
         .comp-checkboxes {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }}
         
@@ -960,7 +960,7 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel de selección: cerrado por defecto en todas las pestañas con botón en la barra superior -->
+    <!-- Panel de selección: cerrado por defecto en todas las pestañas -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
