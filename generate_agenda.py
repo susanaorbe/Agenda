@@ -767,10 +767,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
         .btn-alt:hover { background: #4f46e5; }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
-        .search-panel { display: flex; gap: 8px; margin: 0 0 12px; }
-        .search-input { width: 100%; min-width: 0; background: #111827; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 0.85rem; outline: none; }
-        .search-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59,130,246,.18); }
-        .search-input::placeholder { color: var(--text-muted); }
         .btn-toggle-chk { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn-toggle-chk:hover { background: rgba(59, 130, 246, 0.4); color: #ffffff; }
         
@@ -885,17 +881,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
     </div>
     
-    <div class="search-panel">
-        <input id="searchInput" class="search-input" type="search"
-               placeholder="Buscar equipo, competición, canal u hora (HH:MM)…"
-               aria-label="Buscar en la agenda" oninput="applyFilters()">
-    </div>
-
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
             <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todas / Marcar todas</button>
+                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todo / Marcar todo</button>
                 <span id="compToggleIcon">▼</span>
             </div>
         </div>
@@ -984,7 +974,6 @@ function toggleCompPanel() {
         icon.textContent = '▼';
     }
     updateStickyHeadingOffset();
-    scrollToCurrentEvent();
 }
 
 function toggleAllCheckboxes(event) {
@@ -999,47 +988,6 @@ function updateStickyHeadingOffset() {
     const panel = document.getElementById('stickyPanel');
     if (!panel) return;
     document.documentElement.style.setProperty('--sticky-panel-height', panel.getBoundingClientRect().height + 'px');
-}
-
-function scrollToCurrentEvent() {
-    setTimeout(() => {
-        const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row'));
-        if (!rows.length) return;
-
-        const visibleRows = rows.filter(r => r.style.display !== 'none');
-        if (!visibleRows.length) return;
-
-        let target = null;
-        const now = Date.now();
-
-        if (currentFilter === 'proximamente') {
-            target = visibleRows[0];
-        } else {
-            let lastPast = null;
-            for (const row of visibleRows) {
-                const timestamp = Number(row.dataset.ts);
-                if (!Number.isFinite(timestamp)) continue;
-                if (timestamp <= now) {
-                    lastPast = row;
-                } else {
-                    break;
-                }
-            }
-            target = lastPast || visibleRows[0];
-        }
-
-        if (!target) return;
-
-        updateStickyHeadingOffset();
-        const panel = document.getElementById('stickyPanel');
-        const tableHead = document.querySelector('.table-card thead');
-        const panelHeight = panel ? panel.getBoundingClientRect().height : 0;
-        const headingHeight = tableHead ? tableHead.getBoundingClientRect().height : 0;
-
-        const top = target.getBoundingClientRect().top + window.scrollY
-            - panelHeight - headingHeight - 8;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-    }, 60);
 }
 
 function setFilter(filterType) {
@@ -1059,7 +1007,6 @@ function setFilter(filterType) {
     }
 
     applyFilters();
-    scrollToCurrentEvent();
 }
 
 function filterTable() { applyFilters(); }
@@ -1094,14 +1041,6 @@ if ('ResizeObserver' in window) {
 }
 
 function applyFilters() {
-    const searchInputElem = document.getElementById('searchInput');
-    const rawSearch = searchInputElem ? (searchInputElem.value || '').trim() : '';
-    const timeSearch = rawSearch.replace(/\s+/g, '');
-    const searchFilter = cleanStr(rawSearch);
-    const fullTimeMatch = /^(\d{1,2}):(\d{2})$/.exec(timeSearch);
-    const hourTimeMatch = /^(\d{1,2}):$/.exec(timeSearch);
-    const minuteTimeMatch = /^:(\d{2})$/.exec(timeSearch);
-
     const checkedComps = new Set();
     document.querySelectorAll('.comp-chk:checked').forEach(chk => {
         checkedComps.add(chk.value);
@@ -1111,8 +1050,6 @@ function applyFilters() {
     if (!table) return;
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
-    const now = Date.now();
-
     for (let i = 0; i < trs.length; i++) {
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
@@ -1121,15 +1058,13 @@ function applyFilters() {
         const isFiltered = tr.getAttribute('data-filtered') === 'true';
         const sport = cleanStr(tr.getAttribute('data-sport')); 
         const compKey = tr.getAttribute('data-comp-key') || '';
-        const text = cleanStr(tr.getAttribute('data-search'));
         const rowDate = tr.getAttribute('data-date');
-        const timestamp = Number(tr.getAttribute('data-ts'));
 
         let matchesFilter = false;
         let matchesComp = true;
 
         if (currentFilter === 'proximamente') {
-            matchesFilter = (timestamp >= now);
+            matchesFilter = (rowDate > TODAY_DATE_STR);
             if (sport === 'tenis') {
                 matchesComp = checkedComps.has('tenis');
             } else if (sport === 'motor') {
@@ -1157,17 +1092,7 @@ function applyFilters() {
             }
         }
 
-        const eventTime = tr.getAttribute('data-time') || '';
-        let matchesSearch = text.includes(searchFilter);
-        if (fullTimeMatch) {
-            matchesSearch = eventTime === `${fullTimeMatch[1].padStart(2, '0')}:${fullTimeMatch[2]}`;
-        } else if (hourTimeMatch) {
-            matchesSearch = eventTime.startsWith(`${hourTimeMatch[1].padStart(2, '0')}:`);
-        } else if (minuteTimeMatch) {
-            matchesSearch = eventTime.endsWith(`:${minuteTimeMatch[1]}`);
-        }
-
-        if (matchesFilter && matchesComp && matchesSearch) {
+        if (matchesFilter && matchesComp) {
             tr.style.display = '';
             visibleCount++;
         } else {
@@ -1197,11 +1122,7 @@ def generate_html(events):
     
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
     slot_counts = Counter(get_time_slot(event["hora"]) for event in events if event["date_obj"] == today_date)
-    now = datetime.now(spain_tz)
-    total_cnt = sum(
-        1 for event in events
-        if datetime.combine(event["date_obj"], datetime.strptime(event["hora"], "%H:%M").time()).replace(tzinfo=spain_tz) >= now
-    )
+    total_cnt = sum(1 for event in events if event["date_obj"] > today_date)
     domain = get_dynamic_domain()
 
     def clean_key(s):
