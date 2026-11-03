@@ -948,7 +948,7 @@ def generate_html(events):
         </div>
     </header>
     <div class="stats-grid">
-        <div class="stat-card active-card" id="card-favoritos" onclick="setFilter('favoritos')">
+        <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
             <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
@@ -1009,7 +1009,7 @@ def generate_html(events):
 
     <!-- 
     ======================================================================
-    INPUT DE BÚSQUEDA COMENTADO
+    CAMPO DE BÚSQUEDA COMENTADO
     Descomentar este bloque HTML para volver a mostrar el campo de búsqueda
     ======================================================================
     <div class="filter-container">
@@ -1155,10 +1155,21 @@ function setFilter(filterType) {{
 function filterTable() {{ applyFilters(); }}
 
 window.addEventListener('load', () => {{
+    // Detectar la franja horaria actual en Madrid e inicializarla por defecto
+    const nowMadrid = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
+    const h = nowMadrid.getHours();
+    const m = nowMadrid.getMinutes();
+    const totalMins = h * 60 + m;
+    let initialSlot = 'noche';
+    if (totalMins <= 419) initialSlot = 'madrugada';
+    else if (totalMins <= 839) initialSlot = 'manana';
+    else if (totalMins <= 1229) initialSlot = 'tarde';
+    else initialSlot = 'noche';
+
+    setFilter(initialSlot);
     updateStickyHeadingOffset();
-    applyFilters();
-    scrollToCurrentEvent();
-}});
+});
+
 window.addEventListener('resize', () => {{
     updateStickyHeadingOffset();
 }});
@@ -1185,7 +1196,7 @@ function applyFilters() {{
         if (tr.id === 'dynamicEmptyState') continue;
 
         const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-        const isFiltered = tr.getAttribute('data-filtered') === 'true';
+        const isFiltered = tr.getAttribute('data-filtered'] === 'true';
         const sport = cleanStr(tr.getAttribute('data-sport')); 
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
