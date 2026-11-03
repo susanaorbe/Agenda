@@ -125,7 +125,6 @@ FIRETV_APP_PACKAGES = {
 }
 
 CHANNEL_APP_MAP = {
-    # MOVISTAR PLUS+
     "la 1": "movistar",
     "la 2": "movistar",
     "antena 3": "movistar",
@@ -142,19 +141,13 @@ CHANNEL_APP_MAP = {
     "real madrid tv": "movistar",
     "teledeporte": "movistar",
     "replay": "movistar",
-
-    # DAZN
     "dazn": "dazn",
     "dazn laliga": "dazn",
     "dazn 1": "dazn",
     "dazn 2": "dazn",
-
-    # PRIME VIDEO
     "tennis channel": "prime",
     "tennis channel - orange tv": "prime",
     "amazon prime video": "prime",
-
-    # KODI
     "dazn 3": "kodi",
     "dazn 4": "kodi",
     "dazn f1": "kodi",
@@ -196,7 +189,6 @@ def normalize_channel_name(channel_name: str) -> str:
 
 
 def clean_channel_display_name(channel_name: str) -> str:
-    """Limpia etiquetas de distribución sin alterar el nombre del canal."""
     cleaned = str(channel_name or "").strip()
     cleaned = re.sub(
         r"\s*[-–—]\s*orange\s+tv\s*$",
@@ -283,63 +275,63 @@ def rx(*patterns: str) -> re.Pattern:
     return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
 
 
-REAL_MADRID_RE = rx(r"\breal madrid\b", r"\brm castilla\b", r"\br\.?\s*madrid\b")
-CASTILLA_RE = rx(r"\breal madrid castilla\b", r"\brm castilla\b", r"\bcastilla\b")
-YOUTH_BASKET_RE = rx(r"\bsub\s*[-]?\d+\b", r"\bjunior\b", r"\bcadete\b", r"\binfantil\b")
+REAL_MADRID_RE = rx(r" real madrid ", r" rm castilla ", r" r\.?\s*madrid ")
+CASTILLA_RE = rx(r" real madrid castilla ", r" rm castilla ", r" castilla ")
+YOUTH_BASKET_RE = rx(r" sub\s*[-]?\d+ ", r" junior ", r" cadete ", r" infantil ")
 
 EXCLUDED_SPORTS_RE = rx(
-    r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
-    r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
-    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b",
-    r"\bpadel\b", r"\bpadell\b"
+    r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
+    r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
+    r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ",
+    r" padel ", r" padell "
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
-    r"\bnational league\b", r"\bvanarama national league\b", r"\bliga u\b",
-    r"\btercera\b", r"\b3ª\b", r"\b3a\b", r"\bgrupo 8\b", r"\btercera federacion\b",
-    r"\bbasketball champions league\b", r"\bfutsal champions\b",
-    r"\b2\.?\s*bundesliga\b", r"\bserie a fem+inile\b", r"\bserie a femminile\b",
-    r"\blaliga hypermotion\b", r"\bsegunda division\b", r"\bhypermotion\b",
-    r"\bbrasil\s*[-–—]?\s*serie\s+a\b",
-    r"\bargentina\b", r"\btorneo clausura\b", r"\btorneo apertura\b",
-    r"\bliga profesional\b", r"\bprimera division argentina\b",
-    r"\binternational cup\b", r"\beurocup\b"
+    r" national league ", r" vanarama national league ", r" liga u ",
+    r" tercera ", r" 3ª ", r" 3a ", r" grupo 8 ", r" tercera federacion ",
+    r" basketball champions league ", r" futsal champions ",
+    r" 2\.?\s*bundesliga ", r" serie a fem+inile ", r" serie a femminile ",
+    r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
+    r" brasil\s*[-–—]?\s*serie\s+a ",
+    r" argentina ", r" torneo clausura ", r" torneo apertura ",
+    r" liga profesional ", r" primera division argentina ",
+    r" international cup ", r" eurocup "
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
-    r"\bcarlos alcaraz\b", r"\balcaraz\b", r"\balejandro davidovich\b", r"\bdavidovich\b",
-    r"\bcristina bucsa\b", r"\bbucsa\b", r"\bpaula badosa\b", r"\bbadosa\b",
-    r"\bjaume munar\b", r"\bmunar\b", r"\brafael jodar\b", r"\bjodar\b",
-    r"\bdani merida\b", r"\bmerida\b"
+    r" carlos alcaraz ", r" alcaraz ", r" alejandro davidovich ", r" davidovich ",
+    r" cristina bucsa ", r" bucsa ", r" paula badosa ", r" badosa ",
+    r" jaume munar ", r" munar ", r" rafael jodar ", r" jodar ",
+    r" dani merida ", r" merida "
 )
 
-WTA_RE = re.compile(r"\bwta\b", re.IGNORECASE)
-WOMEN_RE = rx(r"\bfemenina\b", r"\bfemenino\b", r"\bfrauen\b", r"\bwomen\b", r"\(f\)\b", r"\(w\)\b")
+WTA_RE = re.compile(r" wta ", re.IGNORECASE)
+WOMEN_RE = rx(r" femenina ", r" femenino ", r" frauen ", r" women ", r"\(f\) ", r"\(w\) ")
 
 PRIMERA_RFEF_RE = rx(
-    r"\bprimera federacion\b", r"\bprimera rfef\b", r"\b1[ªa]\s*federacion\b",
+    r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ",
 )
 
 LALIGA_RE = rx(
-    r"\bliga ea sports\b", r"\bliga ea\b", r"\bprimera division\b", 
-    r"\bespaña - la liga\b", r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123))\b"
+    r" liga ea sports ", r" liga ea ", r" primera division ", 
+    r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) "
 )
 
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
-    r"\bliga endesa\b", r"\bacb\b", r"\beuroliga\b", r"\beuroleague\b", r"\beuro league\b",
-    r"\bcopa acb\b", r"\bsupercopa endesa\b", r"\bsupercopa de espana\b",
-    r"\bnba\b"
+    r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ",
+    r" copa acb ", r" supercopa endesa ", r" supercopa de espana ",
+    r" nba "
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r"\bliga f\b", r"\bprimera division femenina\b"), "Liga F"),
-    (rx(r"\bcopa de la reina\b"), "Copa de la Reina"),
-    (rx(r"\bsupercopa de espana femenina\b", r"\bsupercopa femenina\b"), "Supercopa de España Femenina"),
-    (rx(r"\bwomen'?s champions league\b", r"\bchampions league femenina\b"), "UEFA Women's Champions League"),
+    (rx(r" liga f ", r" primera division femenina "), "Liga F"),
+    (rx(r" copa de la reina "), "Copa de la Reina"),
+    (rx(r" supercopa de espana femenina ", r" supercopa femenina "), "Supercopa de España Femenina"),
+    (rx(r" women'?s champions league ", r" champions league femenina "), "UEFA Women's Champions League"),
 )
 
-TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
-DATE_RE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
+TIME_RE = re.compile(r" \d{1,2}:\d{2} ")
+DATE_RE = re.compile(r" (\d{1,2})/(\d{1,2})/(\d{4}) ")
 
 CLEAN_TV_RE = re.compile(
     r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
@@ -352,7 +344,7 @@ TV_IDENTIFIERS_RE = rx(
 )
 
 CHANNEL_LINE_RE = rx(
-    r"\btennis channel\b", r"\borange tv\b", r"\bchannel\s*[-–—]\s*orange tv\b", r"\bprime video\b", r"\bà punt mèdia\b", r"\bà punt\b"
+    r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt "
 )
 
 JUNK_RESIDUES_RE = rx(
@@ -367,16 +359,10 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
 )
 
 
-# ============================================================================
-# PARSER ROBUSTO DE MOTOR
-# ============================================================================
-
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
-
     if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
         return ("", "", False)
-
     if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
         return ("", "", False)
 
@@ -412,19 +398,13 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     return (comp_name, event_title, is_fav)
 
 
-# ============================================================================
-# NÚCLEO DE CLASIFICACIÓN
-# ============================================================================
-
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
         return ("", "", "", False, False, "", "")
-
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "", "")
 
-    # Tenis
-    if rx(r"\btenis\b", r"\batp\b", r"\bwta\b", r"\bmasters\b", r"\bopen\b", r"\bchallenger\b", r"\bitf\b", r"\btorneo de\b").search(blob):
+    if rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ").search(blob):
         if "golf" in tv_blob or "movistar golf" in blob:
             return ("", "", "", False, False, "", "")
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
@@ -432,25 +412,21 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(SPANISH_TENNIS_PLAYERS_RE.search(blob))
         return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
 
-    # Baloncesto
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
-        if WOMEN_RE.search(blob) or rx(r"\(f\)\b", r"\(w\)\b").search(blob):
+        if WOMEN_RE.search(blob) or rx(r"\(f\) ", r"\(w\) ").search(blob):
             return ("", "", "", False, False, "", "")
-
-        if rx(r"\bnba\b").search(blob):
+        if rx(r" nba ").search(blob):
             comp_name = "NBA"
             comp_key = "nba"
-        elif rx(r"\beuroliga\b", r"\beuroleague\b").search(blob):
+        elif rx(r" euroliga ", r" euroleague ").search(blob):
             comp_name = "Euroliga"
             comp_key = "euroliga"
         else:
             comp_name = "Liga Endesa / ACB"
             comp_key = "ligaendesa"
-        
         is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
-    # Fútbol Femenino
     if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
@@ -461,58 +437,45 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
         return ("", "", "", False, False, "", "")
 
-    # Copa del Rey
-    if rx(r"\bcopa del rey\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasket\b", r"\bbaloncesto\b", r"\bacb\b").search(blob):
+    if rx(r" copa del rey ").search(blob) and not WOMEN_RE.search(blob) and not rx(r" basket ", r" baloncesto ", r" acb ").search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
 
-    # UEFA Champions League
-    if rx(r"\bchampions league\b", r"\bchampions\b").search(blob) and not WOMEN_RE.search(blob) and not rx(r"\bbasketball\b", r"\bcl\b", r"\bafc\b", r"\basia\b").search(blob):
+    if rx(r" champions league ", r" champions ").search(blob) and not WOMEN_RE.search(blob) and not rx(r" basketball ", r" cl ", r" afc ", r" asia ").search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
 
-    # La Liga
     if LALIGA_RE.search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
 
-    # Premier League
-    if rx(r"\bpremier league\b", r"\bpremier\b", r"\binglaterra - premier league\b").search(blob):
+    if rx(r" premier league ", r" premier ", r" inglaterra - premier league ").search(blob):
         return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
 
-    # Serie A
-    if rx(r"\bserie a\b").search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
+    if rx(r" serie a ").search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
         return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
 
-    # Bundesliga
-    if rx(r"\bbundesliga\b", r"\balemania - bundesliga\b").search(blob) and not rx(r"2\.?\s*bundesliga\b").search(blob):
+    if rx(r" bundesliga ", r" alemania - bundesliga ").search(blob) and not rx(r"2\.?\s*bundesliga ").search(blob):
         return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
 
-    # Ligue 1
-    if rx(r"\bligue 1\b", r"\bfrancia - ligue 1\b").search(blob):
+    if rx(r" ligue 1 ", r" francia - ligue 1 ").search(blob):
         return ("Fútbol", "⚽", "Ligue 1", False, True, "", "ligue1")
 
-    # Eredivisie
-    if rx(r"\beredivisie\b").search(blob):
+    if rx(r" eredivisie ").search(blob):
         return ("Fútbol", "⚽", "Eredivisie", False, True, "", "eredivisie")
 
-    # Liga Portugal Betclic
-    if rx(r"\bliga portugal\b", r"\bportugal\b", r"\bbetclic\b").search(blob):
+    if rx(r" liga portugal ", r" portugal ", r" betclic ").search(blob):
         return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
 
-    # Copa Mundial de la FIFA
-    if rx(r"\bcopa mundial\b", r"\bmundial de la fifa\b", r"\bworld cup\b").search(blob):
+    if rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ").search(blob):
         return ("Fútbol", "⚽", "Copa Mundial de la FIFA", False, True, "", "mundial")
 
-    # Eurocopa
-    if rx(r"\beurocopa\b", r"\beuro\s*20\d{2}\b", r"\beuro\s*cup\b").search(blob) and not rx(r"\beurocup\b").search(blob):
+    if rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ").search(blob) and not rx(r" eurocup ").search(blob):
         return ("Fútbol", "⚽", "Eurocopa", False, True, "", "eurocopa")
 
-    # UEFA Nations League
-    if rx(r"\bnations league\b").search(blob):
+    if rx(r" nations league ").search(blob):
         return ("Fútbol", "⚽", "UEFA Nations League", False, True, "", "nationsleague")
 
-    # Primera RFEF
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
         if CASTILLA_RE.search(blob):
             return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
@@ -636,7 +599,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 def fetch_and_parse_agenda() -> list[dict]:
     results = []
     seen_events = set()
-
     spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
     current_date_obj = today_date
@@ -650,7 +612,6 @@ def fetch_and_parse_agenda() -> list[dict]:
         for element in soup.descendants:
             if element.name in ["tr", "div", "section", "h2", "h3", "th"]:
                 el_text = element.get_text(" ", strip=True)
-                
                 date_match = DATE_RE.search(el_text)
                 if date_match:
                     try:
@@ -666,7 +627,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 tv_blob = " ".join(channels).lower()
                 blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-                # Motor
                 comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
                 if comp_name:
                     event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
@@ -688,11 +648,9 @@ def fetch_and_parse_agenda() -> list[dict]:
                     })
                     continue
 
-                # Resto de deportes
                 sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
                     blob, tournament, tv_blob, text_lines
                 )
-                
                 if not sport:
                     continue
 
@@ -734,92 +692,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     return results
 
 
-def generate_html(events):
-    spain_tz = get_spain_timezone()
-    today_date = datetime.now(spain_tz).date()
-    fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
-    
-    filtered_cnt = sum(1 for event in events if event["is_filtered"])
-    slot_counts = Counter(get_time_slot(event["hora"]) for event in events if event["date_obj"] == today_date)
-    total_cnt = sum(1 for event in events if event["date_obj"] > today_date)
-    domain = get_dynamic_domain()
-
-    def clean_key(s):
-        return normalize_search_text(s)
-
-    rows_list = []
-    if not events:
-        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
-    else:
-        for ev in events:
-            tv_badges_list = []
-            for channel in ev["tv_list"]:
-                safe_channel = escape(str(channel), quote=True)
-                app_key = get_channel_app(channel)
-                app_intent = escape(get_firetv_intent(channel), quote=True)
-                app_label = {
-                    "movistar": "Movistar Plus+",
-                    "dazn": "DAZN",
-                    "prime": "Prime Video",
-                    "kodi": "Kodi",
-                }[app_key]
-
-                if app_key == "kodi":
-                    tv_badges_list.append(
-                        f'<span class="tv-badge tv-badge-no-link" '
-                        f'title="Canal {safe_channel}">'
-                        f'{safe_channel}</span>'
-                    )
-                else:
-                    tv_badges_list.append(
-                        f'<a href="{app_intent}" class="tv-badge" '
-                        f'title="Abrir {app_label} en Fire TV para el canal {safe_channel}">'
-                        f'{safe_channel} 🔗</a>'
-                    )
-
-            tv_badges = "".join(tv_badges_list)
-            
-            ev_date = ev["date_obj"]
-            if ev_date == today_date:
-                date_badge_html = '<span class="date-badge today">Hoy</span>'
-            else:
-                date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
-
-            slot = get_time_slot(ev["hora"])
-            safe_slot = escape(clean_key(slot), quote=True)
-
-            search_text = normalize_search_text(" ".join(
-                [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
-            ))
-            safe_search = escape(search_text, quote=True)
-            event_datetime = datetime.combine(ev_date, datetime.strptime(ev["hora"], "%H:%M").time()).replace(tzinfo=spain_tz)
-            event_timestamp = int(event_datetime.timestamp() * 1000)
-            safe_timestamp = str(event_timestamp)
-            safe_date_str = escape(ev_date.isoformat(), quote=True)
-            safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
-            safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
-            safe_time = escape(str(ev["hora"]))
-            safe_icon = escape(str(ev["icono"]))
-            safe_sport = escape(str(ev["deporte"]))
-            safe_competition = escape(str(ev["competicion"]))
-            safe_event = escape(str(ev["evento"]))
-
-            rows_list.append(
-                f"""
-                <tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{str(ev['is_filtered']).lower()}" data-configured="{str(ev['is_configured']).lower()}" data-search="{safe_search}">
-                    <td class="date-col">{date_badge_html}</td>
-                    <td class="time-col"><span class="time-badge">{safe_time}</span></td>
-                    <td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>
-                    <td class="comp-col"><div class="comp-title">{safe_competition}</div></td>
-                    <td class="event-col"><div class="event-title">{safe_event}</div></td>
-                    <td class="tv-col"><div class="tv-container">{tv_badges}</div></td>
-                </tr>
-                """
-            )
-
-    rows_html = "".join(rows_list)
-
-    return f"""<!DOCTYPE html>
+HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -827,86 +700,73 @@ def generate_html(events):
     <title>Agenda Deportiva</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {{ --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }}
-        .container {{ width: 100%; max-width: 1150px; }}
-        .sticky-panel {{ position: sticky; top: 0; z-index: 1000; background: var(--bg-color); padding-top: 8px; margin-top: -8px; box-shadow: 0 8px 14px -12px rgba(0,0,0,.9); }}
-        header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }}
-        h1 {{ font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 6px; }}
-        .icon-link {{ text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; transition: transform 0.2s; }}
-        .icon-link:hover {{ transform: scale(1.15); }}
-        .header-controls {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
-        .btn-update {{ background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }}
-        .btn-alt {{ background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }}
-        .btn-alt:hover {{ background: #4f46e5; }}
-        .last-update {{ font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }}
-        .btn-toggle-chk {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }}
-        .btn-toggle-chk:hover {{ background: rgba(59, 130, 246, 0.4); color: #ffffff; }}
+        :root { --bg-color: #0f172a; --card-bg: #1e293b; --border-color: #334155; --text-main: #f8fafc; --text-muted: #94a3b8; --accent-blue: #3b82f6; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 16px 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 1150px; }
+        .sticky-panel { position: sticky; top: 0; z-index: 1000; background: var(--bg-color); padding-top: 8px; margin-top: -8px; box-shadow: 0 8px 14px -12px rgba(0,0,0,.9); }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px; }
+        h1 { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 6px; }
+        .icon-link { text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; transition: transform 0.2s; }
+        .icon-link:hover { transform: scale(1.15); }
+        .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn-update { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
+        .btn-alt:hover { background: #4f46e5; }
+        .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .btn-toggle-chk { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-toggle-chk:hover { background: rgba(59, 130, 246, 0.4); color: #ffffff; }
         
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }}
-        .stat-card {{ background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }}
-        .stat-card.active-card {{ border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }}
-        .stat-card .val {{ font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }}
-        .stat-card .lbl {{ font-size: 0.72rem; color: var(--text-muted); }}
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
+        .stat-card { background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
+        .stat-card.active-card { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
+        .stat-card .val { font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); }
+        .stat-card .lbl { font-size: 0.72rem; color: var(--text-muted); }
 
-        /* Panel de filtrado en 5 columnas estrictas */
-        .comp-filter-panel {{ background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }}
-        .comp-filter-header {{ padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }}
-        .comp-filter-header:hover {{ background: rgba(56, 189, 248, 0.1); }}
-        .comp-filter-content {{ padding: 10px 12px; border-top: 1px solid var(--border-color); display: grid; gap: 6px; }}
-        .comp-section-title {{ font-weight: 700; color: #cbd5e1; font-size: 0.80rem; text-transform: uppercase; margin-top: 4px; }}
+        .comp-filter-panel { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }
+        .comp-filter-header { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }
+        .comp-filter-header:hover { background: rgba(56, 189, 248, 0.1); }
+        .comp-filter-content { padding: 10px 12px; border-top: 1px solid var(--border-color); display: grid; gap: 6px; }
+        .comp-section-title { font-weight: 700; color: #cbd5e1; font-size: 0.80rem; text-transform: uppercase; margin-top: 4px; }
+        .comp-checkboxes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .comp-checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; white-space: nowrap; }
+        .comp-checkboxes input[type="checkbox"] { accent-color: var(--accent-blue); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
         
-        .comp-checkboxes {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }}
+        .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
+        th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }
+        tr.event-row:hover { background-color: #243146; }
         
-        .comp-checkboxes label {{ display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; white-space: nowrap; }}
-        .comp-checkboxes input[type="checkbox"] {{ accent-color: var(--accent-blue); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }}
+        .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
+        .time-col, .date-col { white-space: nowrap; }
+        .sport-tag { font-weight: 600; white-space: nowrap; }
+        .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
+        .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
+        .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
+        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
+        .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; }
+        .tv-container { display: flex; flex-direction: column; gap: 4px; }
         
-        /* 
-        ======================================================================
-        CAMPO DE BÚSQUEDA COMENTADO VISUALMENTE
-        Descomentar este bloque si se desea mostrar el input de búsqueda de nuevo
-        ======================================================================
-        .filter-container {{ display: flex; gap: 10px; margin-bottom: 14px; }}
-        .search-input {{ padding: 10px 14px; border-radius: 8px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.9rem; outline: none; width: 100%; }}
-        .search-input:focus {{ border-color: var(--accent-blue); }}
-        */
-        
-        .table-card {{ background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }}
-        table {{ width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }}
-        th {{ position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }}
-        td {{ padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }}
-        tr.event-row:hover {{ background-color: #243146; }}
-        
-        .sport-col {{ width: 155px !important; min-width: 155px !important; white-space: nowrap; }}
-        .time-col, .date-col {{ white-space: nowrap; }}
-        .sport-tag {{ font-weight: 600; white-space: nowrap; }}
-        .date-badge {{ display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }}
-        .date-badge.today {{ background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }}
-        .time-badge {{ background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }}
-        .comp-title {{ font-weight: 600; color: #38bdf8; font-size: 0.85rem; }}
-        .event-title {{ font-weight: 700; color: #ffffff; font-size: 0.9rem; }}
-        .tv-container {{ display: flex; flex-direction: column; gap: 4px; }}
-        
-        .tv-badge {{ display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }}
-        .tv-badge:hover {{ background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }}
-        .tv-badge-no-link {{ cursor: default; }}
-        .tv-badge-no-link:hover {{ transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }}
+        .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
+        .tv-badge:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
+        .tv-badge-no-link { cursor: default; }
+        .tv-badge-no-link:hover { transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }
 
-        .empty-state {{ text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }}
+        .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
 
-        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {{
-            body {{ padding: 8px 6px; }}
-            h1 {{ font-size: 1.25rem; }}
-            .stats-grid {{ grid-template-columns: repeat(3, 1fr); gap: 6px; }}
-            .stat-card {{ padding: 6px 8px; }}
-            .comp-checkboxes {{ grid-template-columns: repeat(2, 1fr) !important; }}
+        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {
+            body { padding: 8px 6px; }
+            h1 { font-size: 1.25rem; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .stat-card { padding: 6px 8px; }
+            .comp-checkboxes { grid-template-columns: repeat(2, 1fr) !important; }
             
-            thead {{ display: none; }}
-            table, tbody {{ display: block; width: 100%; }}
-            .table-card {{ background: transparent; border: none; box-shadow: none; }}
+            thead { display: none; }
+            table, tbody { display: block; width: 100%; }
+            .table-card { background: transparent; border: none; box-shadow: none; }
             
-            tr.event-row {{
+            tr.event-row {
                 display: flex;
                 flex-direction: column;
                 background: var(--card-bg);
@@ -915,19 +775,19 @@ def generate_html(events):
                 padding: 12px;
                 margin-bottom: 10px;
                 gap: 6px;
-            }}
+            }
             
-            td {{ padding: 0; border: none; width: auto !important; white-space: normal; }}
-            .date-col {{ display: inline-block; order: 0; }}
-            .time-col {{ order: 1; display: inline-block; }}
-            .sport-col {{ order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }}
-            .comp-col {{ order: 3; margin-top: 4px; }}
-            .comp-title {{ font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }}
-            .event-col {{ order: 4; margin: 2px 0 4px 0; }}
-            .event-title {{ font-size: 1rem; line-height: 1.35; }}
-            .tv-col {{ order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }}
-            .tv-badge {{ font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }}
-        }}
+            td { padding: 0; border: none; width: auto !important; white-space: normal; }
+            .date-col { display: inline-block; order: 0; }
+            .time-col { order: 1; display: inline-block; }
+            .sport-col { order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }
+            .comp-col { order: 3; margin-top: 4px; }
+            .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+            .event-col { order: 4; margin: 2px 0 4px 0; }
+            .event-title { font-size: 1rem; line-height: 1.35; }
+            .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }
+            .tv-badge { font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }
+        }
     </style>
 </head>
 <body>
@@ -936,39 +796,38 @@ def generate_html(events):
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <a href="https://{domain}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
-            <a href="https://{domain}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
-            <a href="https://{domain}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
-            <a href="https://{domain}/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
+            <a href="https://{DOMAIN}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
+            <a href="https://{DOMAIN}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
+            <a href="https://{DOMAIN}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
+            <a href="https://{DOMAIN}/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
-            <span>Última actualización: <strong>{fecha_act}</strong></span>
+            <span>Última actualización: <strong>{FECHA_ACT}</strong></span>
         </div>
     </header>
     <div class="stats-grid">
         <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
-            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{filtered_cnt}</div></div><div style="font-size:1.1rem">📌</div>
+            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{FILTERED_CNT}</div></div><div style="font-size:1.1rem">📌</div>
         </div>
         <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
-            <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{slot_counts['madrugada']}</div></div><div style="font-size:1.1rem">💤</div>
+            <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{MADRUGADA_CNT}</div></div><div style="font-size:1.1rem">💤</div>
         </div>
         <div class="stat-card" id="card-manana" onclick="setFilter('manana')">
-            <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{slot_counts['manana']}</div></div><div style="font-size:1.1rem">☀️</div>
+            <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{MANANA_CNT}</div></div><div style="font-size:1.1rem">☀️</div>
         </div>
         <div class="stat-card" id="card-tarde" onclick="setFilter('tarde')">
-            <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{slot_counts['tarde']}</div></div><div style="font-size:1.1rem">🌇</div>
+            <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{TARDE_CNT}</div></div><div style="font-size:1.1rem">🌇</div>
         </div>
         <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
-            <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{slot_counts['noche']}</div></div><div style="font-size:1.1rem">🌙</div>
+            <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{NOCHE_CNT}</div></div><div style="font-size:1.1rem">🌙</div>
         </div>
         <div class="stat-card" id="card-proximamente" onclick="setFilter('proximamente')">
-            <div><div class="lbl">Próximamente</div><div class="val">{total_cnt}</div></div><div style="font-size:1.1rem">📅</div>
+            <div><div class="lbl">Próximamente</div><div class="val">{TOTAL_CNT}</div></div><div style="font-size:1.1rem">📅</div>
         </div>
     </div>
     
-    <!-- Panel de selección: cerrado por defecto en todas las pestañas -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
@@ -1006,16 +865,6 @@ def generate_html(events):
             </div>
         </div>
     </div>
-
-    <!-- 
-    ======================================================================
-    CAMPO DE BÚSQUEDA COMENTADO
-    Descomentar este bloque HTML para volver a mostrar el campo de búsqueda
-    ======================================================================
-    <div class="filter-container">
-        <input type="text" id="searchInput" class="search-input" onkeyup="filterTable()" placeholder="🔍 Filtrar partido, equipo, tenista o canal TV...">
-    </div>
-    -->
     </div>
     <div class="table-card">
         <table>
@@ -1030,26 +879,26 @@ def generate_html(events):
                 </tr>
             </thead>
             <tbody id="agendaTable">
-                {rows_html}
+                {ROWS_HTML}
             </tbody>
         </table>
     </div>
 </div>
 <script>
-const TODAY_DATE_STR = "{today_date.isoformat()}";
+const TODAY_DATE_STR = "{TODAY_DATE_STR}";
 let currentFilter = 'favoritos';
 
-function updateLiveClock() {{
+function updateLiveClock() {
     const now = new Date();
-    const options = {{ timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }};
+    const options = { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
     const timeStr = new Intl.DateTimeFormat('es-ES', options).format(now);
     const clockElem = document.getElementById('liveClock');
     if (clockElem) clockElem.textContent = timeStr;
-}}
+}
 setInterval(updateLiveClock, 1000);
 updateLiveClock();
 
-function cleanStr(str) {{
+function cleanStr(str) {
     return (str || '')
         .toLowerCase()
         .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
@@ -1058,39 +907,39 @@ function cleanStr(str) {{
         .replace(new RegExp('[|,;:/]+', 'g'), ' ')
         .replace(/\s+/g, ' ')
         .trim();
-}}
+}
 
-function toggleCompPanel() {{
-    if (currentFilter === 'favoritos') return; // Bloqueado en favoritos
+function toggleCompPanel() {
+    if (currentFilter === 'favoritos') return;
     const content = document.getElementById('compFilterContent');
     const icon = document.getElementById('compToggleIcon');
-    if (content.style.display === 'none') {{
+    if (content.style.display === 'none') {
         content.style.display = 'grid';
         icon.textContent = '▲';
-    }} else {{
+    } else {
         content.style.display = 'none';
         icon.textContent = '▼';
-    }}
+    }
     updateStickyHeadingOffset();
     scrollToCurrentEvent();
-}}
+}
 
-function toggleAllCheckboxes(event) {{
+function toggleAllCheckboxes(event) {
     if (event) event.stopPropagation();
     const checkboxes = document.querySelectorAll('.comp-chk');
     const anyChecked = Array.from(checkboxes).some(chk => chk.checked);
     checkboxes.forEach(chk => chk.checked = !anyChecked);
     applyFilters();
-}}
+}
 
-function updateStickyHeadingOffset() {{
+function updateStickyHeadingOffset() {
     const panel = document.getElementById('stickyPanel');
     if (!panel) return;
     document.documentElement.style.setProperty('--sticky-panel-height', panel.getBoundingClientRect().height + 'px');
-}}
+}
 
-function scrollToCurrentEvent() {{
-    setTimeout(() => {{
+function scrollToCurrentEvent() {
+    setTimeout(() => {
         const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row'));
         if (!rows.length) return;
 
@@ -1099,24 +948,24 @@ function scrollToCurrentEvent() {{
 
         let target = null;
 
-        if (currentFilter === 'proximamente') {{
+        if (currentFilter === 'proximamente') {
             target = visibleRows[0];
-        }} else {{
+        } else {
             const now = Date.now();
             let lastPast = null;
 
-            for (const row of visibleRows) {{
+            for (const row of visibleRows) {
                 const timestamp = Number(row.dataset.ts);
                 if (!Number.isFinite(timestamp)) continue;
-                if (timestamp <= now) {{
+                if (timestamp <= now) {
                     lastPast = row;
-                }} else {{
+                } else {
                     break;
-                }}
-            }}
+                }
+            }
 
             target = lastPast || visibleRows[0];
-        }}
+        }
 
         if (!target) return;
 
@@ -1128,11 +977,11 @@ function scrollToCurrentEvent() {{
 
         const top = target.getBoundingClientRect().top + window.scrollY
             - panelHeight - headingHeight - 8;
-        window.scrollTo({{ top: Math.max(0, top), behavior: 'smooth' }});
-    }}, 60);
-}}
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }, 60);
+}
 
-function setFilter(filterType) {{
+function setFilter(filterType) {
     currentFilter = cleanStr(filterType);
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
     const activeCard = document.getElementById('card-' + currentFilter);
@@ -1144,19 +993,18 @@ function setFilter(filterType) {{
     content.style.display = 'none';
     icon.textContent = '▼';
 
-    if (currentFilter !== 'favoritos') {{
+    if (currentFilter !== 'favoritos') {
         document.querySelectorAll('.comp-chk').forEach(chk => chk.checked = true);
-    }}
+    }
 
     applyFilters();
     scrollToCurrentEvent();
-}}
+}
 
-function filterTable() {{ applyFilters(); }}
+function filterTable() { applyFilters(); }
 
-window.addEventListener('load', () => {{
-    // Detectar la franja horaria actual en Madrid e inicializarla por defecto
-    const nowMadrid = new Date(new Date().toLocaleString("en-US", {{timeZone: "Europe/Madrid"}}));
+window.addEventListener('load', () => {
+    const nowMadrid = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
     const h = nowMadrid.getHours();
     const m = nowMadrid.getMinutes();
     const totalMins = h * 60 + m;
@@ -1170,11 +1018,11 @@ window.addEventListener('load', () => {{
     updateStickyHeadingOffset();
 });
 
-window.addEventListener('resize', () => {{
+window.addEventListener('resize', () => {
     updateStickyHeadingOffset();
-}});
+});
 
-function applyFilters() {{
+function applyFilters() {
     const searchInputElem = document.getElementById('searchInput');
     const rawSearch = searchInputElem ? (searchInputElem.value || '').trim() : '';
     const timeSearch = rawSearch.replace(/\s+/g, '');
@@ -1182,16 +1030,16 @@ function applyFilters() {{
     const isTimeSearch = timeSearch.includes(':');
 
     const checkedComps = new Set();
-    document.querySelectorAll('.comp-chk:checked').forEach(chk => {{
+    document.querySelectorAll('.comp-chk:checked').forEach(chk => {
         checkedComps.add(chk.value);
-    }});
+    });
 
     const table = document.getElementById('agendaTable');
     if (!table) return;
     const trs = table.getElementsByClassName('event-row');
     let visibleCount = 0;
 
-    for (let i = 0; i < trs.length; i++) {{
+    for (let i = 0; i < trs.length; i++) {
         const tr = trs[i];
         if (tr.id === 'dynamicEmptyState') continue;
 
@@ -1201,65 +1049,160 @@ function applyFilters() {{
         const compKey = tr.getAttribute('data-comp-key') || '';
         const text = cleanStr(tr.getAttribute('data-search'));
         const rowDate = tr.getAttribute('data-date');
+        const timestamp = Number(tr.getAttribute('data-ts'));
 
         let matchesFilter = false;
         let matchesComp = true;
 
-        if (currentFilter === 'proximamente') {{
-            matchesFilter = (rowDate > TODAY_DATE_STR);
-            if (sport === 'tenis') {{
+        if (currentFilter === 'proximamente') {
+            matchesFilter = (timestamp >= now);
+            if (sport === 'tenis') {
                 matchesComp = checkedComps.has('tenis');
-            }} else if (sport === 'motor') {{
+            } else if (sport === 'motor') {
                 matchesComp = checkedComps.has('motor');
-            }} else if (sport === 'futbol' || sport === 'baloncesto') {{
+            } else if (sport === 'futbol' || sport === 'baloncesto') {
                 matchesComp = compKey ? checkedComps.has(compKey) : false;
-            }} else {{
+            } else {
                 matchesComp = false;
-            }}
-        }} else if (currentFilter === 'favoritos') {{
+            }
+        } else if (currentFilter === 'favoritos') {
             matchesFilter = isFiltered;
             matchesComp = true;
-        }} else {{
+        } else {
             const isToday = (rowDate === TODAY_DATE_STR);
             matchesFilter = isToday && (rowSlot === currentFilter);
 
-            if (sport === 'tenis') {{
+            if (sport === 'tenis') {
                 matchesComp = checkedComps.has('tenis');
-            }} else if (sport === 'motor') {{
+            } else if (sport === 'motor') {
                 matchesComp = checkedComps.has('motor');
-            }} else if (sport === 'futbol' || sport === 'baloncesto') {{
+            } else if (sport === 'futbol' || sport === 'baloncesto') {
                 matchesComp = compKey ? checkedComps.has(compKey) : false;
-            }} else {{
+            } else {
                 matchesComp = false;
-            }}
-        }}
+            }
+        }
 
         const eventTime = tr.getAttribute('data-time') || '';
         const matchesSearch = isTimeSearch
             ? eventTime.includes(timeSearch)
             : text.includes(searchFilter);
 
-        if (matchesFilter && matchesComp && matchesSearch) {{
+        if (matchesFilter && matchesComp && matchesSearch) {
             tr.style.display = '';
             visibleCount++;
-        }} else {{
+        } else {
             tr.style.display = 'none';
-        }}
-    }}
+        }
+    }
 
     let emptyRow = document.getElementById('dynamicEmptyState');
-    if (visibleCount === 0) {{
-        if (!emptyRow) {{
+    if (visibleCount === 0) {
+        if (!emptyRow) {
             emptyRow = document.createElement('tr');
             emptyRow.id = 'dynamicEmptyState';
             emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección.</td>';
             table.appendChild(emptyRow);
-        }} else {{ emptyRow.style.display = ''; }}
-    }} else {{ if (emptyRow) emptyRow.style.display = 'none'; }}
-}}
+        } else { emptyRow.style.display = ''; }
+    } else { if (emptyRow) emptyRow.style.display = 'none'; }
+}
 </script>
 </body>
 </html>"""
+
+
+def generate_html(events):
+    spain_tz = get_spain_timezone()
+    today_date = datetime.now(spain_tz).date()
+    fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
+    
+    filtered_cnt = sum(1 for event in events if event["is_filtered"])
+    slot_counts = Counter(get_time_slot(event["hora"]) for event in events if event["date_obj"] == today_date)
+    total_cnt = sum(1 for event in events if event["date_obj"] > today_date)
+    domain = get_dynamic_domain()
+
+    def clean_key(s):
+        return normalize_search_text(s)
+
+    rows_list = []
+    if not events:
+        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
+    else:
+        for ev in events:
+            tv_badges_list = []
+            for channel in ev["tv_list"]:
+                safe_channel = escape(str(channel), quote=True)
+                app_key = get_channel_app(channel)
+                app_intent = escape(get_firetv_intent(channel), quote=True)
+                app_label = {
+                    "movistar": "Movistar Plus+",
+                    "dazn": "DAZN",
+                    "prime": "Prime Video",
+                    "kodi": "Kodi",
+                }[app_key]
+
+                if app_key == "kodi":
+                    tv_badges_list.append(
+                        f'<span class="tv-badge tv-badge-no-link" title="Canal {safe_channel}">{safe_channel}</span>'
+                    )
+                else:
+                    tv_badges_list.append(
+                        f'<a href="{app_intent}" class="tv-badge" title="Abrir {app_label} en Fire TV para el canal {safe_channel}">{safe_channel} 🔗</a>'
+                    )
+
+            tv_badges = "".join(tv_badges_list)
+            
+            ev_date = ev["date_obj"]
+            if ev_date == today_date:
+                date_badge_html = '<span class="date-badge today">Hoy</span>'
+            else:
+                date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
+
+            slot = get_time_slot(ev["hora"])
+            safe_slot = escape(clean_key(slot), quote=True)
+
+            search_text = normalize_search_text(" ".join(
+                [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+            ))
+            safe_search = escape(search_text, quote=True)
+            event_datetime = datetime.combine(ev_date, datetime.strptime(ev["hora"], "%H:%M").time()).replace(tzinfo=spain_tz)
+            event_timestamp = int(event_datetime.timestamp() * 1000)
+            safe_timestamp = str(event_timestamp)
+            safe_date_str = escape(ev_date.isoformat(), quote=True)
+            safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
+            safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
+            safe_time = escape(str(ev["hora"]))
+            safe_icon = escape(str(ev["icono"]))
+            safe_sport = escape(str(ev["deporte"]))
+            safe_competition = escape(str(ev["competicion"]))
+            safe_event = escape(str(ev["evento"]))
+
+            is_filtered_str = str(ev["is_filtered"]).lower()
+            is_configured_str = str(ev["is_configured"]).lower()
+            rows_list.append(
+                f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
+                f'<td class="date-col">{date_badge_html}</td>'
+                f'<td class="time-col"><span class="time-badge">{safe_time}</span></td>'
+                f'<td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
+                f'<td class="comp-col"><div class="comp-title">{safe_competition}</div></td>'
+                f'<td class="event-col"><div class="event-title">{safe_event}</div></td>'
+                f'<td class="tv-col"><div class="tv-container">{tv_badges}</div></td>'
+                f'</tr>'
+            )
+
+    rows_html = "".join(rows_list)
+
+    html = HTML_TEMPLATE.replace("{DOMAIN}", domain)
+    html = html.replace("{FECHA_ACT}", fecha_act)
+    html = html.replace("{FILTERED_CNT}", str(filtered_cnt))
+    html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
+    html = html.replace("{MANANA_CNT}", str(slot_counts["manana"]))
+    html = html.replace("{TARDE_CNT}", str(slot_counts["tarde"]))
+    html = html.replace("{NOCHE_CNT}", str(slot_counts["noche"]))
+    html = html.replace("{TOTAL_CNT}", str(total_cnt))
+    html = html.replace("{TODAY_DATE_STR}", today_date.isoformat())
+    html = html.replace("{ROWS_HTML}", rows_html)
+    return html
 
 
 if __name__ == "__main__":
