@@ -172,7 +172,7 @@ def normalize_search_text(text: str) -> str:
 def clean_time(time_str: str) -> str:
     if not time_str:
         return ""
-    match = re.search(r"(\d{1,2}):(\d{2})", str(time_str))
+    match = re.search(r"\b(\d{1,2}):(\d{2})\b", str(time_str))
     if not match:
         return ""
     hours, minutes = map(int, match.groups())
@@ -261,14 +261,20 @@ EXCLUDED_CHANNELS = {
     "fip - international padel federation youtube", "fip youtube"
 }
 
-EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
+def channel_exclusion_key(channel: str) -> str:
+    """Clave de comparación sin acentos, puntuación ni identificadores entre paréntesis."""
+    base = re.sub(r"\([^)]*\)", "", normalize_search_text(channel))
+    return re.sub(r"[^a-z0-9]+", "", base)
+
+
+EXCLUDED_CHANNEL_KEYS = {channel_exclusion_key(c) for c in EXCLUDED_CHANNELS}
 
 
 def is_excluded_channel(channel: str) -> bool:
-    key = re.sub(r"[^a-z0-9]+", "", normalize_search_text(channel))
+    key = channel_exclusion_key(channel)
     if not key:
         return True
-    return any(key == excluded or key.startswith(excluded) for excluded in EXCLUDED_CHANNEL_KEYS)
+    return key in EXCLUDED_CHANNEL_KEYS
 
 
 def rx(*patterns: str) -> re.Pattern:
@@ -358,6 +364,28 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
     re.IGNORECASE
 )
 
+# Patrones compilados reutilizados durante la clasificación de cada evento.
+TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
+GOLF_RE = rx(r" golf ")
+NBA_RE = rx(r" nba ")
+EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
+BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
+COPA_DEL_REY_RE = rx(r" copa del rey ")
+BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
+CHAMPIONS_RE = rx(r" champions league ", r" champions ")
+CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
+PREMIER_RE = rx(r" premier league ", r" premier ", r" inglaterra - premier league ")
+SERIE_A_RE = rx(r" serie a ")
+BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
+BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
+LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
+EREDIVISIE_RE = rx(r" eredivisie ")
+LIGA_PORTUGAL_RE = rx(r" liga portugal ", r" portugal ", r" betclic ")
+WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
+EUROCUP_RE = rx(r" eurocup ")
+EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
+NATIONS_LEAGUE_RE = rx(r" nations league ")
+
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
@@ -404,8 +432,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EXCLUDED_COMPETITIONS_RE.search(blob):
         return ("", "", "", False, False, "", "")
 
-    if rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ").search(blob):
-        if "golf" in tv_blob or "movistar golf" in blob:
+    if TENNIS_EVENT_RE.search(blob):
+        if GOLF_RE.search(tv_blob) or "movistar golf" in blob:
             return ("", "", "", False, False, "", "")
         tour = "WTA" if WTA_RE.search(blob) else "ATP"
         comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
@@ -413,12 +441,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
 
     if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
-        if WOMEN_RE.search(blob) or rx(r"\(f\) ", r"\(w\) ").search(blob):
+        if WOMEN_RE.search(blob) or BASKET_WOMEN_RE.search(blob):
             return ("", "", "", False, False, "", "")
-        if rx(r" nba ").search(blob):
+        if NBA_RE.search(blob):
             comp_name = "NBA"
             comp_key = "nba"
-        elif rx(r" euroliga ", r" euroleague ").search(blob):
+        elif EUROLIGA_RE.search(blob):
             comp_name = "Euroliga"
             comp_key = "euroliga"
         else:
@@ -437,11 +465,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
         return ("", "", "", False, False, "", "")
 
-    if rx(r" copa del rey ").search(blob) and not WOMEN_RE.search(blob) and not rx(r" basket ", r" baloncesto ", r" acb ").search(blob):
+    if COPA_DEL_REY_RE.search(blob) and not WOMEN_RE.search(blob) and not BASKET_CONTEXT_RE.search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
 
-    if rx(r" champions league ", r" champions ").search(blob) and not WOMEN_RE.search(blob) and not rx(r" basketball ", r" cl ", r" afc ", r" asia ").search(blob):
+    if CHAMPIONS_RE.search(blob) and not WOMEN_RE.search(blob) and not CHAMPIONS_NON_FOOTBALL_RE.search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
 
@@ -449,31 +477,31 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(blob))
         return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
 
-    if rx(r" premier league ", r" premier ", r" inglaterra - premier league ").search(blob):
+    if PREMIER_RE.search(blob):
         return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
 
-    if rx(r" serie a ").search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
+    if SERIE_A_RE.search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
         return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
 
-    if rx(r" bundesliga ", r" alemania - bundesliga ").search(blob) and not rx(r"2\.?\s*bundesliga ").search(blob):
+    if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob):
         return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
 
-    if rx(r" ligue 1 ", r" francia - ligue 1 ").search(blob):
+    if LIGUE1_RE.search(blob):
         return ("Fútbol", "⚽", "Ligue 1", False, True, "", "ligue1")
 
-    if rx(r" eredivisie ").search(blob):
+    if EREDIVISIE_RE.search(blob):
         return ("Fútbol", "⚽", "Eredivisie", False, True, "", "eredivisie")
 
-    if rx(r" liga portugal ", r" portugal ", r" betclic ").search(blob):
+    if LIGA_PORTUGAL_RE.search(blob):
         return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
 
-    if rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ").search(blob):
+    if WORLD_CUP_RE.search(blob):
         return ("Fútbol", "⚽", "Copa Mundial de la FIFA", False, True, "", "mundial")
 
-    if rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ").search(blob) and not rx(r" eurocup ").search(blob):
+    if EURO_FINAL_RE.search(blob) and not EUROCUP_RE.search(blob):
         return ("Fútbol", "⚽", "Eurocopa", False, True, "", "eurocopa")
 
-    if rx(r" nations league ").search(blob):
+    if NATIONS_LEAGUE_RE.search(blob):
         return ("Fútbol", "⚽", "UEFA Nations League", False, True, "", "nationsleague")
 
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
@@ -530,9 +558,17 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
         is_primera_federacion_channel = part_lower == "primera federacion"
 
+        # "LaLiga EA Sports" es una competición, no un canal. Solo tratamos
+        # una línea que contenga LaLiga como canal cuando incluye un indicador
+        # inequívoco de emisión (TV, M+, Movistar o DAZN).
+        is_laliga_competition = (
+            "laliga" in part_lower
+            and not any(token in part_lower for token in (" tv", "m+", "movistar", "dazn"))
+        )
+
         looks_like_channel = (
             is_primera_federacion_channel
-            or TV_IDENTIFIERS_RE.search(part)
+            or (TV_IDENTIFIERS_RE.search(part) and not is_laliga_competition)
             or CHANNEL_LINE_RE.search(part_lower)
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
@@ -587,9 +623,16 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         else:
             matchup_candidates.append(part)
 
-    tournament = tournament_candidates[0] if tournament_candidates else text_lines[0]
-    remaining_lines = [p for p in text_lines if p != tournament]
-    matchup = " - ".join(remaining_lines) if remaining_lines else tournament
+    if tournament_candidates:
+        tournament = tournament_candidates[0]
+        event_lines = [part for part in matchup_candidates if part != tournament]
+    else:
+        # Cuando no hay una línea que identifique claramente la competición,
+        # mantenemos la primera como competición por compatibilidad con el origen.
+        tournament = text_lines[0]
+        event_lines = text_lines[1:]
+
+    matchup = " - ".join(event_lines) if event_lines else tournament
 
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
@@ -609,10 +652,13 @@ def fetch_and_parse_agenda() -> list[dict]:
             response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
 
-        # Seleccionamos cualquier contenedor de eventos posible en la estructura HTML actual
-        elements = soup.find_all(["tr", "div", "li", "article", "section", "p"])
+        # Si la agenda usa filas de tabla, son la unidad de evento más fiable.
+        # Solo recurrimos a contenedores genéricos cuando no existen filas.
+        elements = soup.find_all("tr")
         if not elements:
-            elements = list(soup.descendants)
+            elements = soup.find_all(["article", "li", "div", "section", "p"])
+        if not elements:
+            elements = [node for node in soup.descendants if getattr(node, "name", None)]
 
         for element in elements:
             if not hasattr(element, "get_text"):
@@ -699,7 +745,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     return results
 
 
-HTML_TEMPLATE = """<!DOCTYPE html>
+HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -721,6 +767,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
         .btn-alt:hover { background: #4f46e5; }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .search-panel { display: flex; gap: 8px; margin: 0 0 12px; }
+        .search-input { width: 100%; min-width: 0; background: #111827; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 0.85rem; outline: none; }
+        .search-input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(59,130,246,.18); }
+        .search-input::placeholder { color: var(--text-muted); }
         .btn-toggle-chk { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn-toggle-chk:hover { background: rgba(59, 130, 246, 0.4); color: #ffffff; }
         
@@ -835,6 +885,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         </div>
     </div>
     
+    <div class="search-panel">
+        <input id="searchInput" class="search-input" type="search"
+               placeholder="Buscar equipo, competición, canal u hora (HH:MM)…"
+               aria-label="Buscar en la agenda" oninput="applyFilters()">
+    </div>
+
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
@@ -1027,12 +1083,24 @@ window.addEventListener('resize', () => {
     updateStickyHeadingOffset();
 });
 
+// Recalcula el desplazamiento si cambia la altura del panel fijo (p. ej. al
+// abrir/cerrar filtros o al cambiar de orientación en móvil/Fire TV).
+if ('ResizeObserver' in window) {
+    const stickyPanel = document.getElementById('stickyPanel');
+    if (stickyPanel) {
+        const stickyObserver = new ResizeObserver(updateStickyHeadingOffset);
+        stickyObserver.observe(stickyPanel);
+    }
+}
+
 function applyFilters() {
     const searchInputElem = document.getElementById('searchInput');
     const rawSearch = searchInputElem ? (searchInputElem.value || '').trim() : '';
     const timeSearch = rawSearch.replace(/\s+/g, '');
     const searchFilter = cleanStr(rawSearch);
-    const isTimeSearch = timeSearch.includes(':');
+    const fullTimeMatch = /^(\d{1,2}):(\d{2})$/.exec(timeSearch);
+    const hourTimeMatch = /^(\d{1,2}):$/.exec(timeSearch);
+    const minuteTimeMatch = /^:(\d{2})$/.exec(timeSearch);
 
     const checkedComps = new Set();
     document.querySelectorAll('.comp-chk:checked').forEach(chk => {
@@ -1090,9 +1158,14 @@ function applyFilters() {
         }
 
         const eventTime = tr.getAttribute('data-time') || '';
-        const matchesSearch = isTimeSearch
-            ? eventTime.includes(timeSearch)
-            : text.includes(searchFilter);
+        let matchesSearch = text.includes(searchFilter);
+        if (fullTimeMatch) {
+            matchesSearch = eventTime === `${fullTimeMatch[1].padStart(2, '0')}:${fullTimeMatch[2]}`;
+        } else if (hourTimeMatch) {
+            matchesSearch = eventTime.startsWith(`${hourTimeMatch[1].padStart(2, '0')}:`);
+        } else if (minuteTimeMatch) {
+            matchesSearch = eventTime.endsWith(`:${minuteTimeMatch[1]}`);
+        }
 
         if (matchesFilter && matchesComp && matchesSearch) {
             tr.style.display = '';
@@ -1124,7 +1197,11 @@ def generate_html(events):
     
     filtered_cnt = sum(1 for event in events if event["is_filtered"])
     slot_counts = Counter(get_time_slot(event["hora"]) for event in events if event["date_obj"] == today_date)
-    total_cnt = sum(1 for event in events if event["date_obj"] > today_date)
+    now = datetime.now(spain_tz)
+    total_cnt = sum(
+        1 for event in events
+        if datetime.combine(event["date_obj"], datetime.strptime(event["hora"], "%H:%M").time()).replace(tzinfo=spain_tz) >= now
+    )
     domain = get_dynamic_domain()
 
     def clean_key(s):
@@ -1216,4 +1293,7 @@ if __name__ == "__main__":
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print(f"Archivo index.html generado con éxito. Eventos totales ordenados cronológicamente: {len(events)}")
+    print(
+        "Archivo index.html generado con éxito. "
+        f"Eventos totales ordenados cronológicamente: {len(events)}"
+    )
