@@ -941,8 +941,8 @@ def generate_html(events):
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">
-            <span>Última actualización: <strong>{fecha_act}</strong></span>
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
+            <span>Última actualización: <strong>{fecha_act}</strong></span>
         </div>
     </header>
     <div class="stats-grid">
