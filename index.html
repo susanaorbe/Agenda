@@ -109,14 +109,14 @@
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <a href="https://www.fctv33go.boats/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
-            <a href="https://www.fctv33go.boats/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
-            <a href="https://www.fctv33go.boats/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
-            <a href="https://www.fctv33go.boats/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
+            <a href="https://www.fctv33go.motorcycles/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
+            <a href="https://www.fctv33go.motorcycles/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
+            <a href="https://www.fctv33go.motorcycles/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
+            <a href="https://www.fctv33go.motorcycles/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">
-            <span>Última actualización: <strong>03/11/2026 - 08:13</strong></span>
+            <span>Última actualización: <strong>03/11/2026 - 08:20</strong></span>
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
         </div>
     </header>
@@ -141,16 +141,18 @@
         </div>
     </div>
     
-    <!-- Panel de selección: cerrado por defecto en todas las pestañas -->
+    <!-- Panel de selección: cerrado por defecto en todas las pestañas con botón en la barra superior -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
-            <span id="compToggleIcon">▼</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todas / Marcar todas</button>
+                <span id="compToggleIcon">▼</span>
+            </div>
         </div>
         <div class="comp-filter-content" id="compFilterContent" style="display: none;">
             <div class="comp-section-title">
                 <span>⚽ FÚTBOL</span>
-                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todas / Marcar todas</button>
             </div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
