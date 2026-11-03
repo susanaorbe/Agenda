@@ -265,7 +265,8 @@ EXCLUDED_CHANNELS = {
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
     "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
-    "valencia cf youtube", "valencia cf app"
+    "valencia cf youtube", "valencia cf app", "à punt", "à punt mèdia",
+    "fip - international padel federation youtube", "fip youtube"
 }
 
 EXCLUDED_CHANNEL_KEYS = {re.sub(r"[^a-z0-9]+", "", normalize_search_text(c)) for c in EXCLUDED_CHANNELS}
@@ -289,7 +290,8 @@ YOUTH_BASKET_RE = rx(r"\bsub\s*[-]?\d+\b", r"\bjunior\b", r"\bcadete\b", r"\binf
 EXCLUDED_SPORTS_RE = rx(
     r"\bhockey\b", r"\bpatines\b", r"\bnfl\b", r"\bcowboys\b", r"\bpackers\b",
     r"\bbalonmano\b", r"\basobal\b", r"\bhandball\b", r"\bwaterpolo\b", r"\brugby\b", r"\brutby\b", r"\brucby\b", r"\brubgy\b",
-    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b"
+    r"\behf\b", r"\bihf\b", r"\bfutsal\b", r"\bfutbol sala\b", r"\bgolf\b", r"\bbeisbol\b",
+    r"\bpadel\b", r"\bpadell\b"
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
@@ -1162,7 +1164,6 @@ window.addEventListener('resize', () => {{
 }});
 
 function applyFilters() {{
-    /* Lógica de lectura de input comentada / adaptada para evitar errores al no existir en el DOM */
     const searchInputElem = document.getElementById('searchInput');
     const rawSearch = searchInputElem ? (searchInputElem.value || '').trim() : '';
     const timeSearch = rawSearch.replace(/\s+/g, '');
