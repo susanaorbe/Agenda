@@ -960,16 +960,18 @@ def generate_html(events):
         </div>
     </div>
     
-    <!-- Panel de selección: cerrado por defecto en todas las pestañas -->
+    <!-- Panel de selección: cerrado por defecto en todas las pestañas con botón en la barra superior -->
     <div class="comp-filter-panel">
         <div class="comp-filter-header" onclick="toggleCompPanel()">
             <span>⚙️ Deportes y Competiciones</span>
-            <span id="compToggleIcon">▼</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todas / Marcar todas</button>
+                <span id="compToggleIcon">▼</span>
+            </div>
         </div>
         <div class="comp-filter-content" id="compFilterContent" style="display: none;">
             <div class="comp-section-title">
                 <span>⚽ FÚTBOL</span>
-                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todas / Marcar todas</button>
             </div>
             <div class="comp-checkboxes">
                 <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
