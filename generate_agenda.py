@@ -558,9 +558,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
         is_primera_federacion_channel = part_lower == "primera federacion"
 
-        # "LaLiga EA Sports" es una competición, no un canal. Solo tratamos
-        # una línea que contenga LaLiga como canal cuando incluye un indicador
-        # inequívoco de emisión (TV, M+, Movistar o DAZN).
         is_laliga_competition = (
             "laliga" in part_lower
             and not any(token in part_lower for token in (" tv", "m+", "movistar", "dazn"))
@@ -627,8 +624,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         tournament = tournament_candidates[0]
         event_lines = [part for part in matchup_candidates if part != tournament]
     else:
-        # Cuando no hay una línea que identifique claramente la competición,
-        # mantenemos la primera como competición por compatibilidad con el origen.
         tournament = text_lines[0]
         event_lines = text_lines[1:]
 
@@ -652,8 +647,6 @@ def fetch_and_parse_agenda() -> list[dict]:
             response.raise_for_status()
         soup = BeautifulSoup(response.content, "html.parser")
 
-        # Si la agenda usa filas de tabla, son la unidad de evento más fiable.
-        # Solo recurrimos a contenedores genéricos cuando no existen filas.
         elements = soup.find_all("tr")
         if not elements:
             elements = soup.find_all(["article", "li", "div", "section", "p"])
@@ -861,7 +854,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
         td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }
         tr.event-row:hover { background-color: #243146; }
-        /* Identificación discreta del último horario anterior a la hora actual. */
         tr.event-row.previous-event td {
             background: rgba(56, 189, 248, 0.075);
             border-top: 1px solid rgba(56, 189, 248, 0.42);
@@ -1135,8 +1127,6 @@ function highlightPreviousEvents() {
     const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
     rows.forEach(row => row.classList.remove('previous-event'));
 
-    // La agenda trabaja con precisión de minuto: solo cuentan inicios
-    // anteriores al minuto actual, no los que empiezan en este mismo minuto.
     const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
     let previousTimestamp = null;
 
@@ -1153,7 +1143,6 @@ function highlightPreviousEvents() {
 
     if (previousTimestamp === null) return;
 
-    // Se resaltan todos los eventos que comparten el último horario anterior.
     rows.forEach(row => {
         if (
             row.getAttribute('data-date') === TODAY_DATE_STR &&
@@ -1162,6 +1151,31 @@ function highlightPreviousEvents() {
             row.classList.add('previous-event');
         }
     });
+}
+
+function scheduleNextEventRefresh() {
+    const now = Date.now();
+    const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
+    
+    let nextTimestamp = null;
+
+    rows.forEach(row => {
+        const timestamp = Number(row.getAttribute('data-ts'));
+        if (Number.isFinite(timestamp) && timestamp > now) {
+            if (nextTimestamp === null || timestamp < nextTimestamp) {
+                nextTimestamp = timestamp;
+            }
+        }
+    });
+
+    if (nextTimestamp !== null) {
+        const timeToWait = nextTimestamp - now;
+        console.log(`Próxima recarga programada en ${Math.round(timeToWait / 1000)} segundos.`);
+        
+        setTimeout(() => {
+            location.reload();
+        }, timeToWait + 1000);
+    }
 }
 
 window.addEventListener('load', () => {
@@ -1178,14 +1192,13 @@ window.addEventListener('load', () => {
     highlightPreviousEvents();
     setFilter(initialSlot);
     updateStickyHeadingOffset();
+    scheduleNextEventRefresh();
 });
 
 window.addEventListener('resize', () => {
     updateStickyHeadingOffset();
 });
 
-// Recalcula el desplazamiento si cambia la altura del panel fijo (p. ej. al
-// abrir/cerrar filtros o al cambiar de orientación en móvil/Fire TV).
 if ('ResizeObserver' in window) {
     const stickyPanel = document.getElementById('stickyPanel');
     if (stickyPanel) {
