@@ -1119,6 +1119,7 @@ function setFilter(filterType) {
     }
 
     applyFilters();
+    scrollToFirstActiveEvent();
 }
 
 function filterTable() { applyFilters(); }
@@ -1153,6 +1154,29 @@ function highlightPreviousEvents() {
     });
 }
 
+function scrollToFirstActiveEvent() {
+    const firstActiveRow = document.querySelector('#agendaTable tr.event-row.previous-event:not([style*="display: none"])');
+    if (!firstActiveRow) return;
+
+    const panel = document.getElementById('stickyPanel');
+    const stickyHeight = panel ? panel.getBoundingClientRect().height : 0;
+    
+    // Obtenemos la cabecera th de la tabla en versión desktop para dejar espacio suficiente si es visible
+    const thElem = document.querySelector('thead th');
+    const thHeight = (thElem && thElem.offsetParent !== null) ? thElem.getBoundingClientRect().height : 0;
+
+    const rowRect = firstActiveRow.getBoundingClientRect();
+    const absoluteElementTop = rowRect.top + window.pageYOffset;
+    
+    // Calculamos la posición exacta compensando el panel superior fijo + margen para no recortar la tarjeta ni el borde superior
+    const targetScrollPosition = absoluteElementTop - stickyHeight - thHeight - 8;
+
+    window.scrollTo({
+        top: Math.max(0, targetScrollPosition),
+        behavior: 'smooth'
+    });
+}
+
 function scheduleNextEventRefresh() {
     const now = Date.now();
     const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
@@ -1169,12 +1193,15 @@ function scheduleNextEventRefresh() {
     });
 
     if (nextTimestamp !== null) {
-        const timeToWait = nextTimestamp - now;
-        console.log(`Próxima recarga programada en ${Math.round(timeToWait / 1000)} segundos.`);
+        // Refrescar exactamente 61 segundos (61,000 ms) después de la hora de inicio prevista
+        const targetTime = nextTimestamp + 61000;
+        const timeToWait = Math.max(0, targetTime - now);
+        
+        console.log(`Próxima recarga programada en ${Math.round(timeToWait / 1000)} segundos (61s tras el inicio del evento).`);
         
         setTimeout(() => {
             location.reload();
-        }, timeToWait + 1000);
+        }, timeToWait);
     }
 }
 
