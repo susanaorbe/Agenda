@@ -887,6 +887,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
         .time-col, .date-col { white-space: nowrap; }
         .sport-tag { font-weight: 600; white-space: nowrap; }
+        .favorite-pin {
+            display: inline-block;
+            margin-right: 6px;
+            color: #c4b5fd;
+            font-size: 0.88rem;
+            line-height: 1;
+            vertical-align: 1px;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+        }
+        body.favorites-view .favorite-pin { display: none; }
         .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
         .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
         .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
@@ -1101,6 +1111,7 @@ function updateStickyHeadingOffset() {
 
 function setFilter(filterType) {
     currentFilter = cleanStr(filterType);
+    document.body.classList.toggle('favorites-view', currentFilter === 'favoritos');
     document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active-card'));
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
@@ -1326,12 +1337,16 @@ def generate_html(events):
 
             is_filtered_str = str(ev["is_filtered"]).lower()
             is_configured_str = str(ev["is_configured"]).lower()
+            favorite_pin_html = (
+                '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
+                if ev["is_filtered"] else ""
+            )
             rows_list.append(
                 f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{safe_time}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
                 f'<td class="date-col">{date_badge_html}</td>'
                 f'<td class="time-col"><span class="time-badge">{safe_time}</span></td>'
                 f'<td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
-                f'<td class="comp-col"><div class="comp-title">{safe_competition}</div></td>'
+                f'<td class="comp-col"><div class="comp-title">{favorite_pin_html}{safe_competition}</div></td>'
                 f'<td class="event-col"><div class="event-title">{safe_event}</div></td>'
                 f'<td class="tv-col"><div class="tv-container">{tv_badges}</div></td>'
                 f'</tr>'
