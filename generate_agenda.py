@@ -381,7 +381,7 @@ BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
 BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
 LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
 EREDIVISIE_RE = rx(r" eredivisie ")
-LIGA_PORTUGAL_RE = rx(r" liga portugal ", r" portugal ", r" betclic ")
+LIGA_PORTUGAL_RE = rx(r" liga portugues[ae] ", r" portugues[ae] ", r" betclic ")
 WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
 EUROCUP_RE = rx(r" eurocup ")
 EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
@@ -541,7 +541,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "portugal"
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "portugal", "portuguesa"
     )
 
     for part in raw_parts:
