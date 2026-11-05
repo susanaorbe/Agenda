@@ -271,6 +271,7 @@ EXCLUDED_CHANNEL_KEYS = {channel_exclusion_key(c) for c in EXCLUDED_CHANNELS}
 
 
 def is_excluded_channel(channel: str) -> bool:
+    """Excluye únicamente este canal; no descarta los demás canales del evento."""
     key = channel_exclusion_key(channel)
     if not key:
         return True
@@ -294,7 +295,7 @@ EXCLUDED_SPORTS_RE = rx(
 
 EXCLUDED_COMPETITIONS_RE = rx(
     r" national league ", r" vanarama national league ", r" liga u ",
-    r" tercera ", r" 3ª ", r" 3a ", r" grupo 8 ", r" tercera federacion ",
+    r" tercera ", r" 3[ªa]\s*(?:rfef|federacion|division|grupo) ", r" grupo 8 ", r" tercera federacion ",
     r" basketball champions league ", r" futsal champions ",
     r" 2\.?\s*bundesliga ", r" serie a fem+inile ", r" serie a femminile ",
     r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
@@ -429,7 +430,10 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
         return ("", "", "", False, False, "", "")
-    if EXCLUDED_COMPETITIONS_RE.search(blob):
+    competition_filter_blob = re.sub(
+        r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", blob, flags=re.IGNORECASE
+    )
+    if EXCLUDED_COMPETITIONS_RE.search(competition_filter_blob):
         return ("", "", "", False, False, "", "")
 
     if TENNIS_EVENT_RE.search(blob):
@@ -563,8 +567,13 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             and not any(token in part_lower for token in (" tv", "m+", "movistar", "dazn"))
         )
 
+        is_tennis_tv_channel = bool(
+            re.fullmatch(r"(?:atp|wta)\s+tennis\s+tv", part_lower)
+        )
+
         looks_like_channel = (
             is_primera_federacion_channel
+            or is_tennis_tv_channel
             or (TV_IDENTIFIERS_RE.search(part) and not is_laliga_competition)
             or CHANNEL_LINE_RE.search(part_lower)
             or any(term in part_lower for term in (
@@ -893,7 +902,22 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
         .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
         .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
-        .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; }
+        tr.event-row.previous-event { height: auto !important; }
+        tr.event-row.previous-event td,
+        tr.event-row.previous-event .event-col { height: auto !important; min-height: 0; overflow: visible !important; }
+        .event-title {
+            display: block;
+            max-height: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 0.9rem;
+            line-height: 1.35;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
         .tv-container { display: flex; flex-direction: column; gap: 4px; }
         
         .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
@@ -937,7 +961,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             .comp-col { order: 3; margin-top: 4px; }
             .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
             .event-col { order: 4; margin: 2px 0 4px 0; }
-            .event-title { font-size: 1rem; line-height: 1.35; }
+            .event-title { font-size: 1rem; line-height: 1.35; max-height: none !important; overflow: visible !important; }
             .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }
             .tv-badge { font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }
         }
@@ -1119,7 +1143,6 @@ function setFilter(filterType) {
     }
 
     applyFilters();
-    scrollToFirstActiveEvent();
 }
 
 function filterTable() { applyFilters(); }
@@ -1154,29 +1177,6 @@ function highlightPreviousEvents() {
     });
 }
 
-function scrollToFirstActiveEvent() {
-    const firstActiveRow = document.querySelector('#agendaTable tr.event-row.previous-event:not([style*="display: none"])');
-    if (!firstActiveRow) return;
-
-    const panel = document.getElementById('stickyPanel');
-    const stickyHeight = panel ? panel.getBoundingClientRect().height : 0;
-    
-    // Obtenemos la cabecera th de la tabla en versión desktop para dejar espacio suficiente si es visible
-    const thElem = document.querySelector('thead th');
-    const thHeight = (thElem && thElem.offsetParent !== null) ? thElem.getBoundingClientRect().height : 0;
-
-    const rowRect = firstActiveRow.getBoundingClientRect();
-    const absoluteElementTop = rowRect.top + window.pageYOffset;
-    
-    // Margen de seguridad aumentado a -24 para evitar que el evento quede cortado
-    const targetScrollPosition = absoluteElementTop - stickyHeight - thHeight - 24;
-
-    window.scrollTo({
-        top: Math.max(0, targetScrollPosition),
-        behavior: 'smooth'
-    });
-}
-
 function scheduleNextEventRefresh() {
     const now = Date.now();
     const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
@@ -1193,6 +1193,7 @@ function scheduleNextEventRefresh() {
     });
 
     if (nextTimestamp !== null) {
+        // Refrescar exactamente 61 segundos (61,000 ms) después de la hora de inicio prevista
         const targetTime = nextTimestamp + 61000;
         const timeToWait = Math.max(0, targetTime - now);
         
