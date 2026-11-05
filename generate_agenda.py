@@ -1168,8 +1168,8 @@ function scrollToFirstActiveEvent() {
     const rowRect = firstActiveRow.getBoundingClientRect();
     const absoluteElementTop = rowRect.top + window.pageYOffset;
     
-    // Calculamos la posición exacta compensando el panel superior fijo + margen para no recortar la tarjeta ni el borde superior
-    const targetScrollPosition = absoluteElementTop - stickyHeight - thHeight - 8;
+    // Margen de seguridad aumentado a -24 para evitar que el evento quede cortado
+    const targetScrollPosition = absoluteElementTop - stickyHeight - thHeight - 24;
 
     window.scrollTo({
         top: Math.max(0, targetScrollPosition),
@@ -1193,7 +1193,6 @@ function scheduleNextEventRefresh() {
     });
 
     if (nextTimestamp !== null) {
-        // Refrescar exactamente 61 segundos (61,000 ms) después de la hora de inicio prevista
         const targetTime = nextTimestamp + 61000;
         const timeToWait = Math.max(0, targetTime - now);
         
