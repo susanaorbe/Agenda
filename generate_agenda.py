@@ -706,13 +706,26 @@ def fetch_and_parse_agenda() -> list[dict]:
             sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
                 blob, tournament, tv_blob, text_lines
             )
+            
+            # INCLUSIÓN OBLIGATORIA DE MOVISTAR PLUS+ (todo lo emitido en este canal)
+            is_movistar_plus_channel = any(normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"} for ch in channels)
+            if not sport and is_movistar_plus_channel:
+                sport = "Otros"
+                icon = "📺"
+                competition = tournament if tournament else "Movistar Plus+"
+                is_favorite = True
+                is_configured = True
+                comp_key = "other_movistar"
+
             if not sport:
                 continue
 
             normalized_competition = normalize_search_text(competition)
             if (
-                normalized_competition == "brasil serie a"
-                or ("brasil" in normalized_competition and "serie a" in normalized_competition)
+                not is_movistar_plus_channel and (
+                    normalized_competition == "brasil serie a"
+                    or ("brasil" in normalized_competition and "serie a" in normalized_competition)
+                )
             ):
                 continue
 
@@ -861,7 +874,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
         table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
         th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
-        td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; }
+        td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; overflow: visible !important; }
         tr.event-row:hover { background-color: #243146; }
         tr.event-row.previous-event td {
             background: rgba(56, 189, 248, 0.075);
@@ -901,7 +914,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
         .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
         .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
-        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
+        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; overflow: visible !important; text-overflow: clip !important; }
         tr.event-row.previous-event { height: auto !important; }
         tr.event-row.previous-event td,
         tr.event-row.previous-event .event-col { height: auto !important; min-height: 0; overflow: visible !important; }
@@ -918,7 +931,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             overflow-wrap: anywhere;
             word-break: normal;
         }
-        .tv-container { display: flex; flex-direction: column; gap: 4px; }
+        .tv-container { display: flex; flex-direction: column; gap: 4px; overflow: visible !important; }
         
         .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
         .tv-badge:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
@@ -936,8 +949,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             .comp-group:not(.football-group) .comp-checkboxes { grid-template-columns: 1fr !important; }
             
             thead { display: none; }
-            table, tbody { display: block; width: 100%; }
-            .table-card { background: transparent; border: none; box-shadow: none; }
+            table, tbody { display: block; width: 100%; overflow: visible !important; }
+            .table-card { background: transparent; border: none; box-shadow: none; overflow: visible !important; }
             
             tr.event-row {
                 display: flex;
@@ -948,21 +961,23 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 padding: 12px;
                 margin-bottom: 10px;
                 gap: 6px;
+                height: auto !important;
+                overflow: visible !important;
             }
             tr.event-row.previous-event {
                 border-color: rgba(56, 189, 248, 0.75);
                 box-shadow: inset 3px 0 0 #38bdf8, 0 0 0 1px rgba(56, 189, 248, 0.12);
             }
             
-            td { padding: 0; border: none; width: auto !important; white-space: normal; }
+            td { padding: 0; border: none; width: auto !important; white-space: normal; overflow: visible !important; height: auto !important; min-height: 0 !important; }
             .date-col { display: inline-block; order: 0; }
             .time-col { order: 1; display: inline-block; }
             .sport-col { order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }
-            .comp-col { order: 3; margin-top: 4px; }
-            .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
-            .event-col { order: 4; margin: 2px 0 4px 0; }
-            .event-title { font-size: 1rem; line-height: 1.35; max-height: none !important; overflow: visible !important; }
-            .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; }
+            .comp-col { order: 3; margin-top: 4px; overflow: visible !important; }
+            .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; overflow: visible !important; text-overflow: clip !important; }
+            .event-col { order: 4; margin: 2px 0 4px 0; overflow: visible !important; height: auto !important; }
+            .event-title { font-size: 1rem; line-height: 1.35; max-height: none !important; overflow: visible !important; text-overflow: clip !important; white-space: normal !important; }
+            .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; overflow: visible !important; }
             .tv-badge { font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }
         }
     </style>
@@ -1193,7 +1208,6 @@ function scheduleNextEventRefresh() {
     });
 
     if (nextTimestamp !== null) {
-        // Refrescar exactamente 61 segundos (61,000 ms) después de la hora de inicio prevista
         const targetTime = nextTimestamp + 61000;
         const timeToWait = Math.max(0, targetTime - now);
         
@@ -1266,7 +1280,7 @@ function applyFilters() {
             } else if (sport === 'futbol' || sport === 'baloncesto') {
                 matchesComp = compKey ? checkedComps.has(compKey) : false;
             } else {
-                matchesComp = false;
+                matchesComp = true; // Permite canales Movistar u otros sin compKey restringida
             }
         } else if (currentFilter === 'favoritos') {
             matchesFilter = isFiltered;
@@ -1282,7 +1296,7 @@ function applyFilters() {
             } else if (sport === 'futbol' || sport === 'baloncesto') {
                 matchesComp = compKey ? checkedComps.has(compKey) : false;
             } else {
-                matchesComp = false;
+                matchesComp = true;
             }
         }
 
