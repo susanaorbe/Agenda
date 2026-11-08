@@ -59,40 +59,47 @@ def create_http_session() -> requests.Session:
 
 
 def get_dynamic_domain() -> str:
-    """Obtiene dinámicamente el dominio actual siguiendo fctvlink y fclink."""
+    """Obtiene dinámicamente el dominio actual siguiendo la nueva URL de Taplink con html.parser nativo."""
     default_domain = "www.fctv33go.pics"
     try:
+        from html.parser import HTMLParser
+        
+        class TaplinkParser(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.links = []
+            def handle_starttag(self, tag, attrs):
+                if tag == 'a':
+                    href = dict(attrs).get('href', '')
+                    if href:
+                        self.links.append(href)
+                        
         with create_http_session() as session:
-            resp1 = session.get("https://hubu.ru/fctvlink", headers=REQUEST_HEADERS, timeout=10)
-            soup1 = BeautifulSoup(resp1.content, "html.parser")
-            
-            fclink_url = "https://hubu.ru/fclink"
-            for a in soup1.find_all("a", href=True):
-                if "fctv33" in a.get_text(strip=True).lower() or "page" in a.get_text(strip=True).lower():
-                    fclink_url = a["href"]
-                    break
-            
-            resp2 = session.get(fclink_url, headers=REQUEST_HEADERS, timeout=10)
-            soup2 = BeautifulSoup(resp2.content, "html.parser")
+            resp1 = session.get("https://taplink.cc/fctvlink", headers=REQUEST_HEADERS, timeout=10)
+            parser = TaplinkParser()
+            parser.feed(resp1.text)
             
             target_url = None
-            for a in soup2.find_all("a", href=True):
-                txt = a.get_text(strip=True).lower()
-                if "link - fctv33" in txt or ("link" in txt and "fctv33" in txt):
-                    target_url = a["href"]
+            for href in parser.links:
+                if "taplink.cc" not in href and "telegram" not in href and "whatsapp" not in href and "instagram" not in href:
+                    target_url = href
                     break
             
-            if not target_url:
-                for a in soup2.find_all("a", href=True):
-                    href = a["href"]
-                    if href.startswith("http") and "hubu.ru" not in href:
+            if not target_url and parser.links:
+                for href in parser.links:
+                    if href.startswith("http") and "taplink.cc" not in href:
                         target_url = href
                         break
                         
             if target_url:
-                parsed = urlparse(target_url)
-                if parsed.netloc:
-                    return parsed.netloc
+                if target_url.startswith("http"):
+                    r_final = session.get(target_url, headers=REQUEST_HEADERS, allow_redirects=True, timeout=10)
+                    parsed = urlparse(r_final.url)
+                    if parsed.netloc and "taplink.cc" not in parsed.netloc:
+                        return parsed.netloc
+                    parsed_target = urlparse(target_url)
+                    if parsed_target.netloc:
+                        return parsed_target.netloc
     except Exception as e:
         print(f"Error obteniendo dominio dinámico: {e}")
     return default_domain
