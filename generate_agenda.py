@@ -3,6 +3,7 @@ from datetime import datetime, date
 from html import escape
 import zoneinfo
 import re
+import json
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -50,12 +51,27 @@ def create_http_session() -> requests.Session:
     }
     try:
         retry = Retry(**retry_options, allowed_methods=frozenset({"GET"}))
-    except TypeError:  # Compatibilidad con versiones antiguas de urllib3.
+    except TypeError:
         retry = Retry(**retry_options, method_whitelist=frozenset({"GET"}))
     adapter = HTTPAdapter(max_retries=retry)
     session.mount("https://", adapter)
     session.mount("http://", adapter)
     return session
+
+
+def update_channels_json_from_api():
+    """Consulta la API oficial de CDN Live TV y actualiza channels.json correctamente."""
+    api_url = "https://api.cdnlivetv.tv/api/v1/channels/?user=cdnlivetv&plan=free"
+    try:
+        with create_http_session() as session:
+            response = session.get(api_url, headers=REQUEST_HEADERS, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                with open("channels.json", "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False, indent=2)
+                print("Catálogo de canales actualizado desde la API correctamente.")
+    except Exception as e:
+        print(f"Aviso: No se pudo actualizar channels.json desde la API ({e}). Usando versión local.")
 
 
 def get_dynamic_domain() -> str:
@@ -104,63 +120,22 @@ def get_dynamic_domain() -> str:
 
 
 def get_time_slot(time_str: str) -> str:
-    """Clasifica una hora en su franja horaria correspondiente (en minúsculas sin ñ)."""
+    """Clasifica una hora en su franja horaria correspondiente."""
     try:
         parts = time_str.split(":")
         h = int(parts[0])
         m = int(parts[1]) if len(parts) > 1 else 0
         total_mins = h * 60 + m
-        if total_mins <= 419:  # 00:00 - 06:59
+        if total_mins <= 419:
             return "madrugada"
-        elif total_mins <= 839:  # 07:00 - 13:59
+        elif total_mins <= 839:
             return "manana"
-        elif total_mins <= 1229:  # 14:00 - 20:29
+        elif total_mins <= 1229:
             return "tarde"
-        else:  # 20:30 - 23:59
+        else:
             return "noche"
     except Exception:
         return "noche"
-
-# Aplicaciones instaladas en Fire TV
-FIRETV_APP_PACKAGES = {
-    "movistar": "com.movistarplus.androidtv",
-    "dazn": "com.dazn",
-    "prime": "com.amazon.firebat",
-    "kodi": "org.xbmc.kodi",
-}
-
-CHANNEL_APP_MAP = {
-    "la 1": "movistar",
-    "la 2": "movistar",
-    "antena 3": "movistar",
-    "cuatro": "movistar",
-    "telecinco": "movistar",
-    "la sexta": "movistar",
-    "movistar plus+": "movistar",
-    "m+ vamos": "movistar",
-    "m+ vamos 2": "movistar",
-    "m+ vamos 3": "movistar",
-    "primera federacion": "movistar",
-    "eurosport 1": "movistar",
-    "eurosport 2": "movistar",
-    "real madrid tv": "movistar",
-    "teledeporte": "movistar",
-    "replay": "movistar",
-    "dazn": "dazn",
-    "dazn laliga": "dazn",
-    "dazn 1": "dazn",
-    "dazn 2": "dazn",
-    "tennis channel": "prime",
-    "tennis channel - orange tv": "prime",
-    "amazon prime video": "prime",
-    "dazn 3": "kodi",
-    "dazn 4": "kodi",
-    "dazn f1": "kodi",
-    "dazn motogp": "kodi",
-    "dazn baloncesto": "kodi",
-    "dazn baloncesto 2": "kodi",
-    "dazn baloncesto 3": "kodi",
-}
 
 
 def normalize_search_text(text: str) -> str:
@@ -206,37 +181,6 @@ def clean_channel_display_name(channel_name: str) -> str:
     return cleaned
 
 
-def get_channel_app(channel_name: str) -> str:
-    normalized = normalize_channel_name(channel_name)
-    aliases = {
-        "movistar plus": "movistar plus+",
-        "movistar+": "movistar plus+",
-        "tdp": "teledeporte",
-        "tennis channel orange tv": "tennis channel - orange tv",
-        "m+ #vamos": "m+ vamos",
-        "#vamos": "m+ vamos",
-        "#vamos spain": "m+ vamos",
-        "m+ vamos 8 y 50": "m+ vamos",
-    }
-    normalized = aliases.get(normalized, normalized)
-    return CHANNEL_APP_MAP.get(normalized, "kodi")
-
-
-def get_firetv_intent(channel_name: str) -> str:
-    app_key = get_channel_app(channel_name)
-    if app_key == "kodi":
-        return ""
-    package_name = FIRETV_APP_PACKAGES.get(app_key)
-    if not package_name:
-        return ""
-    return (
-        "intent:#Intent;"
-        "action=android.intent.action.MAIN;"
-        "category=android.intent.category.LEANBACK_LAUNCHER;"
-        f"package={package_name};end"
-    )
-
-
 EXCLUDED_CHANNELS = {
     "* sin tv en directo *", "antel tv internacional", "aragón play", "aragón tv",
     "asobal tv", "atp tennis tv", "athletic-club.eus", "baloncesto tv",
@@ -266,8 +210,8 @@ EXCLUDED_CHANNELS = {
     "fip - international padel federation youtube", "fip youtube"
 }
 
+
 def channel_exclusion_key(channel: str) -> str:
-    """Clave de comparación sin acentos, puntuación ni identificadores entre paréntesis."""
     base = re.sub(r"\([^)]*\)", "", normalize_search_text(channel))
     return re.sub(r"[^a-z0-9]+", "", base)
 
@@ -276,7 +220,6 @@ EXCLUDED_CHANNEL_KEYS = {channel_exclusion_key(c) for c in EXCLUDED_CHANNELS}
 
 
 def is_excluded_channel(channel: str) -> bool:
-    """Excluye únicamente este canal; no descarta los demás canales del evento."""
     key = channel_exclusion_key(channel)
     if not key:
         return True
@@ -319,21 +262,9 @@ SPANISH_TENNIS_PLAYERS_RE = rx(
 
 WTA_RE = re.compile(r" wta ", re.IGNORECASE)
 WOMEN_RE = rx(r" femenina ", r" femenino ", r" frauen ", r" women ", r"\(f\) ", r"\(w\) ")
-
-PRIMERA_RFEF_RE = rx(
-    r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ",
-)
-
-LALIGA_RE = rx(
-    r" liga ea sports ", r" liga ea ", r" primera division ", 
-    r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) "
-)
-
-BASKET_ALLOWED_COMPETITIONS_RE = rx(
-    r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ",
-    r" copa acb ", r" supercopa endesa ", r" supercopa de espana ",
-    r" nba "
-)
+PRIMERA_RFEF_RE = rx(r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ")
+LALIGA_RE = rx(r" liga ea sports ", r" liga ea ", r" primera division ", r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ")
+BASKET_ALLOWED_COMPETITIONS_RE = rx(r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ", r" copa acb ", r" supercopa endesa ", r" supercopa de espana ", r" nba ")
 
 WOMEN_FOOTBALL_COMPETITIONS = (
     (rx(r" liga f ", r" primera division femenina "), "Liga F"),
@@ -350,27 +281,11 @@ CLEAN_TV_RE = re.compile(
     re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
+TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt)")
+CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ")
+JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)", r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)", r"\(\s*\d+\s*\)")
+EVENT_CLEANUP_TRAIL_RE = re.compile(r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$", re.IGNORECASE)
 
-TV_IDENTIFIERS_RE = rx(
-    r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt)"
-)
-
-CHANNEL_LINE_RE = rx(
-    r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt "
-)
-
-JUNK_RESIDUES_RE = rx(
-    r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)",
-    r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)",
-    r"\(\s*\d+\s*\)"
-)
-
-EVENT_CLEANUP_TRAIL_RE = re.compile(
-    r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
-    re.IGNORECASE
-)
-
-# Patrones compilados reutilizados durante la clasificación de cada evento.
 TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
 GOLF_RE = rx(r" golf ")
 NBA_RE = rx(r" nba ")
@@ -435,9 +350,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
         return ("", "", "", False, False, "", "")
-    competition_filter_blob = re.sub(
-        r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", blob, flags=re.IGNORECASE
-    )
+    competition_filter_blob = re.sub(r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", blob, flags=re.IGNORECASE)
     if EXCLUDED_COMPETITIONS_RE.search(competition_filter_blob):
         return ("", "", "", False, False, "", "")
 
@@ -525,11 +438,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     if item is None or not hasattr(item, "get_text"):
         return "", "", [], "", []
 
-    raw_parts = [
-        part.strip()
-        for part in item.get_text("\n", strip=True).split("\n")
-        if part.strip()
-    ]
+    raw_parts = [part.strip() for part in item.get_text("\n", strip=True).split("\n") if part.strip()]
     if not 3 <= len(raw_parts) <= 30:
         return "", "", [], "", []
 
@@ -555,10 +464,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             continue
 
         part_lower = normalize_search_text(part)
-        if TIME_RE.fullmatch(part) or part_lower in {
-            "ver partido", "directo", "(ver en directo)", "ver gratis",
-            "(ver)", "acceder", "(acceder)"
-        }:
+        if TIME_RE.fullmatch(part) or part_lower in {"ver partido", "directo", "(ver en directo)", "ver gratis", "(ver)", "acceder", "(acceder)"}:
             continue
         if re.fullmatch(r"[\s,.|;:/-]*", part):
             continue
@@ -566,15 +472,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             continue
 
         is_primera_federacion_channel = part_lower == "primera federacion"
-
-        is_laliga_competition = (
-            "laliga" in part_lower
-            and not any(token in part_lower for token in (" tv", "m+", "movistar", "dazn"))
-        )
-
-        is_tennis_tv_channel = bool(
-            re.fullmatch(r"(?:atp|wta)\s+tennis\s+tv", part_lower)
-        )
+        is_laliga_competition = "laliga" in part_lower and not any(token in part_lower for token in (" tv", "m+", "movistar", "dazn"))
+        is_tennis_tv_channel = bool(re.fullmatch(r"(?:atp|wta)\s+tennis\s+tv", part_lower))
 
         looks_like_channel = (
             is_primera_federacion_channel
@@ -642,7 +541,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         event_lines = text_lines[1:]
 
     matchup = " - ".join(event_lines) if event_lines else tournament
-
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
     return time_clean, matchup, channels, tournament, text_lines
@@ -712,7 +610,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob, tournament, tv_blob, text_lines
             )
             
-            # INCLUSIÓN OBLIGATORIA DE MOVISTAR PLUS+ (todo lo emitido en este canal)
             is_movistar_plus_channel = any(normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"} for ch in channels)
             if not sport and is_movistar_plus_channel:
                 sport = "Otros"
@@ -765,6 +662,9 @@ def fetch_and_parse_agenda() -> list[dict]:
     return results
 
 
+# ============================================================================
+# PLANTILLA HTML CON VISTA DE AGENDA Y VISTA DE CANALES INTEGRADA
+# ============================================================================
 HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -786,6 +686,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .btn-update { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
         .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
         .btn-alt:hover { background: #4f46e5; }
+        .nav-tab-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .nav-tab-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
         .btn-toggle-chk { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
         .btn-toggle-chk:hover { background: rgba(59, 130, 246, 0.4); color: #ffffff; }
@@ -808,183 +710,52 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             gap: 14px;
         }
         .comp-group { min-width: 0; }
-        .comp-section-title {
-            font-weight: 700;
-            color: #cbd5e1;
-            font-size: 0.80rem;
-            text-transform: uppercase;
-            margin: 4px 0 8px;
-        }
-        .comp-checkboxes {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 7px 12px;
-        }
-        .comp-group:not(.football-group) .comp-checkboxes {
-            grid-template-columns: 1fr;
-        }
-        .football-group .comp-checkboxes {
-            grid-auto-flow: column;
-            grid-template-rows: repeat(3, minmax(0, auto));
-        }
-        .comp-checkboxes label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            color: var(--text-main);
-            font-size: 0.82rem;
-            white-space: nowrap;
-            min-width: 0;
-        }
-        .comp-checkboxes input[type="checkbox"] {
-            accent-color: var(--accent-blue);
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            flex: 0 0 16px;
-            margin: 0;
-        }
-        @media (max-width: 900px) {
-            .comp-filter-content {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 12px 16px;
-            }
-            .football-group { grid-column: 1 / -1; }
-            .football-group .comp-checkboxes {
-                grid-auto-flow: row;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                grid-template-rows: none;
-            }
-        }
-        @media (max-width: 520px) {
-            .comp-filter-content {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            .football-group { grid-column: auto; }
-            .football-group .comp-checkboxes {
-                grid-auto-flow: row;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                grid-template-rows: none;
-                gap: 8px 6px;
-            }
-            .comp-group:not(.football-group) .comp-checkboxes {
-                grid-template-columns: 1fr;
-            }
-            .comp-section-title { font-size: 0.76rem; }
-            .comp-checkboxes label { font-size: 0.80rem; }
-        }
+        .comp-section-title { font-weight: 700; color: #cbd5e1; font-size: 0.80rem; text-transform: uppercase; margin: 4px 0 8px; }
+        .comp-checkboxes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px 12px; }
+        .comp-checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.82rem; white-space: nowrap; min-width: 0; }
+        .comp-checkboxes input[type="checkbox"] { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; flex: 0 0 16px; margin: 0; }
         
         .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
         table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
         th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
         td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; overflow: visible !important; }
         tr.event-row:hover { background-color: #243146; }
-        tr.event-row.previous-event td {
-            background: rgba(56, 189, 248, 0.075);
-            border-top: 1px solid rgba(56, 189, 248, 0.42);
-            border-bottom: 1px solid rgba(56, 189, 248, 0.42);
-        }
-        tr.event-row.previous-event td:first-child {
-            border-left: 3px solid #38bdf8;
-        }
-        tr.event-row.previous-event .time-badge {
-            background: #0369a1;
-            box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35);
-        }
-        tr.event-row.previous-event .event-title::before {
-            content: "EN JUEGO";
-            display: block;
-            color: #38bdf8;
-            font-size: 0.62rem;
-            font-weight: 800;
-            letter-spacing: 0.65px;
-            margin-bottom: 4px;
-        }
+        tr.event-row.previous-event td { background: rgba(56, 189, 248, 0.075); border-top: 1px solid rgba(56, 189, 248, 0.42); border-bottom: 1px solid rgba(56, 189, 248, 0.42); }
+        tr.event-row.previous-event td:first-child { border-left: 3px solid #38bdf8; }
+        tr.event-row.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
+        tr.event-row.previous-event .event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
         
         .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
         .time-col, .date-col { white-space: nowrap; }
         .sport-tag { font-weight: 600; white-space: nowrap; }
-        .favorite-pin {
-            display: inline-block;
-            margin-right: 6px;
-            color: #c4b5fd;
-            font-size: 0.88rem;
-            line-height: 1;
-            vertical-align: 1px;
-            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
-        }
+        .favorite-pin { display: inline-block; margin-right: 6px; color: #c4b5fd; font-size: 0.88rem; line-height: 1; vertical-align: 1px; }
         body.favorites-view .favorite-pin { display: none; }
         .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
         .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
         .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
-        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; overflow: visible !important; text-overflow: clip !important; }
-        tr.event-row.previous-event { height: auto !important; }
-        tr.event-row.previous-event td,
-        tr.event-row.previous-event .event-col { height: auto !important; min-height: 0; overflow: visible !important; }
-        .event-title {
-            display: block;
-            max-height: none !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            font-weight: 700;
-            color: #ffffff;
-            font-size: 0.9rem;
-            line-height: 1.35;
-            white-space: normal !important;
-            overflow-wrap: anywhere;
-            word-break: normal;
-        }
-        .tv-container { display: flex; flex-direction: column; gap: 4px; overflow: visible !important; }
-        
-        .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
-        .tv-badge:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
-        .tv-badge-no-link { cursor: default; }
-        .tv-badge-no-link:hover { transform: none; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3); }
-
+        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
+        .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; line-height: 1.35; overflow-wrap: anywhere; }
+        .tv-container { display: flex; flex-direction: column; gap: 4px; }
+        .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; }
+        .tv-badge.channel-chip-link { cursor: pointer; }
+        .tv-badge.channel-chip-link:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
         .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
 
-        @media screen and (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {
-            body { padding: 8px 6px; }
-            h1 { font-size: 1.25rem; }
-            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-            .stat-card { padding: 6px 8px; }
-            .football-group .comp-checkboxes { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-            .comp-group:not(.football-group) .comp-checkboxes { grid-template-columns: 1fr !important; }
-            
-            thead { display: none; }
-            table, tbody { display: block; width: 100%; overflow: visible !important; }
-            .table-card { background: transparent; border: none; box-shadow: none; overflow: visible !important; }
-            
-            tr.event-row {
-                display: flex;
-                flex-direction: column;
-                background: var(--card-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 12px;
-                padding: 12px;
-                margin-bottom: 10px;
-                gap: 6px;
-                height: auto !important;
-                overflow: visible !important;
-            }
-            tr.event-row.previous-event {
-                border-color: rgba(56, 189, 248, 0.75);
-                box-shadow: inset 3px 0 0 #38bdf8, 0 0 0 1px rgba(56, 189, 248, 0.12);
-            }
-            
-            td { padding: 0; border: none; width: auto !important; white-space: normal; overflow: visible !important; height: auto !important; min-height: 0 !important; }
-            .date-col { display: inline-block; order: 0; }
-            .time-col { order: 1; display: inline-block; }
-            .sport-col { order: 2; margin-left: 8px; display: inline-block; font-size: 0.95rem; width: auto !important; min-width: 0 !important; }
-            .comp-col { order: 3; margin-top: 4px; overflow: visible !important; }
-            .comp-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; overflow: visible !important; text-overflow: clip !important; }
-            .event-col { order: 4; margin: 2px 0 4px 0; overflow: visible !important; height: auto !important; }
-            .event-title { font-size: 1rem; line-height: 1.35; max-height: none !important; overflow: visible !important; text-overflow: clip !important; white-space: normal !important; }
-            .tv-col { order: 5; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px; overflow: visible !important; }
-            .tv-badge { font-size: 0.72rem; padding: 4px 8px; white-space: nowrap; }
-        }
+        /* Estilos de la vista de Canales */
+        .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 16px; }
+        .channel-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.2s; }
+        .channel-card:hover { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.05); }
+        .channel-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+        .channel-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: #111827; flex-shrink: 0; }
+        .channel-name { font-size: 0.85rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .channel-action { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
+        .channel-action:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
+
+        /* Estilos del reproductor modal */
+        #player-dialog { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 0; width: 90%; max-width: 900px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); margin: auto; }
+        #player-dialog::backdrop { background: rgba(0, 0, 0, 0.8); }
+        .player-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: #111827; }
+        .player-body { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; }
     </style>
 </head>
 <body>
@@ -993,6 +764,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
+            <button class="nav-tab-btn active" id="btn-view-sports" onclick="switchView('sports')">📅 Agenda</button>
+            <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">📺 Canales</button>
             <a href="https://{DOMAIN}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
             <a href="https://{DOMAIN}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
             <a href="https://{DOMAIN}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
@@ -1004,77 +777,72 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <span>Última actualización: <strong>{FECHA_ACT}</strong></span>
         </div>
     </header>
-    <div class="stats-grid">
-        <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
-            <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{FILTERED_CNT}</div></div><div style="font-size:1.1rem">📌</div>
-        </div>
-        <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
-            <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{MADRUGADA_CNT}</div></div><div style="font-size:1.1rem">💤</div>
-        </div>
-        <div class="stat-card" id="card-manana" onclick="setFilter('manana')">
-            <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{MANANA_CNT}</div></div><div style="font-size:1.1rem">☀️</div>
-        </div>
-        <div class="stat-card" id="card-tarde" onclick="setFilter('tarde')">
-            <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{TARDE_CNT}</div></div><div style="font-size:1.1rem">🌇</div>
-        </div>
-        <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
-            <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{NOCHE_CNT}</div></div><div style="font-size:1.1rem">🌙</div>
-        </div>
-        <div class="stat-card" id="card-proximamente" onclick="setFilter('proximamente')">
-            <div><div class="lbl">Próximamente</div><div class="val">{TOTAL_CNT}</div></div><div style="font-size:1.1rem">📅</div>
-        </div>
-    </div>
     
-    <div class="comp-filter-panel">
-        <div class="comp-filter-header" onclick="toggleCompPanel()">
-            <span>⚙️ Deportes y Competiciones</span>
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todo / Marcar todo</button>
-                <span id="compToggleIcon">▼</span>
+    <div id="sports-controls">
+        <div class="stats-grid">
+            <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
+                <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">{FILTERED_CNT}</div></div><div style="font-size:1.1rem">📌</div>
+            </div>
+            <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
+                <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">{MADRUGADA_CNT}</div></div><div style="font-size:1.1rem">💤</div>
+            </div>
+            <div class="stat-card" id="card-manana" onclick="setFilter('manana')">
+                <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">{MANANA_CNT}</div></div><div style="font-size:1.1rem">☀️</div>
+            </div>
+            <div class="stat-card" id="card-tarde" onclick="setFilter('tarde')">
+                <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">{TARDE_CNT}</div></div><div style="font-size:1.1rem">🌇</div>
+            </div>
+            <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
+                <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">{NOCHE_CNT}</div></div><div style="font-size:1.1rem">🌙</div>
+            </div>
+            <div class="stat-card" id="card-proximamente" onclick="setFilter('proximamente')">
+                <div><div class="lbl">Próximamente</div><div class="val">{TOTAL_CNT}</div></div><div style="font-size:1.1rem">📅</div>
             </div>
         </div>
-        <div class="comp-filter-content" id="compFilterContent" style="display: none;">
-            <section class="comp-group football-group">
-                <div class="comp-section-title">⚽ FÚTBOL</div>
-                <div class="comp-checkboxes">
-                    <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
-                    <label><input type="checkbox" class="comp-chk" value="champions" checked onchange="applyFilters()"> Champions League</label>
-                    <label><input type="checkbox" class="comp-chk" value="copadelrey" checked onchange="applyFilters()"> Copa del Rey</label>
-                    <label><input type="checkbox" class="comp-chk" value="premier" checked onchange="applyFilters()"> Premier League</label>
-                    <label><input type="checkbox" class="comp-chk" value="bundesliga" checked onchange="applyFilters()"> Bundesliga</label>
-                    <label><input type="checkbox" class="comp-chk" value="seriea" checked onchange="applyFilters()"> Serie A</label>
-                    <label><input type="checkbox" class="comp-chk" value="ligue1" checked onchange="applyFilters()"> Ligue 1</label>
-                    <label><input type="checkbox" class="comp-chk" value="ligaportugal" checked onchange="applyFilters()"> Liga Portugal</label>
-                    <label><input type="checkbox" class="comp-chk" value="eredivisie" checked onchange="applyFilters()"> Eredivisie</label>
-                    <label><input type="checkbox" class="comp-chk" value="mundial" checked onchange="applyFilters()"> Copa Mundial</label>
-                    <label><input type="checkbox" class="comp-chk" value="eurocopa" checked onchange="applyFilters()"> Eurocopa</label>
-                    <label><input type="checkbox" class="comp-chk" value="nationsleague" checked onchange="applyFilters()"> Nations League</label>
+        
+        <div class="comp-filter-panel">
+            <div class="comp-filter-header" onclick="toggleCompPanel()">
+                <span>⚙️ Deportes y Competiciones</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn-toggle-chk" onclick="toggleAllCheckboxes(event)">Desmarcar todo / Marcar todo</button>
+                    <span id="compToggleIcon">▼</span>
                 </div>
-            </section>
-            <section class="comp-group">
-                <div class="comp-section-title">🏀 BALONCESTO</div>
-                <div class="comp-checkboxes">
-                    <label><input type="checkbox" class="comp-chk" value="ligaendesa" checked onchange="applyFilters()"> ACB</label>
-                    <label><input type="checkbox" class="comp-chk" value="euroliga" checked onchange="applyFilters()"> Euroliga</label>
-                    <label><input type="checkbox" class="comp-chk" value="nba" checked onchange="applyFilters()"> NBA</label>
-                </div>
-            </section>
-            <section class="comp-group">
-                <div class="comp-section-title">🎾 TENIS</div>
-                <div class="comp-checkboxes">
-                    <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> ATP / WTA</label>
-                </div>
-            </section>
-            <section class="comp-group">
-                <div class="comp-section-title">🏆 MOTOR</div>
-                <div class="comp-checkboxes">
-                    <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> F1 / MotoGP</label>
-                </div>
-            </section>
+            </div>
+            <div class="comp-filter-content" id="compFilterContent" style="display: none;">
+                <section class="comp-group football-group" style="grid-column: 1 / -1;">
+                    <div class="comp-section-title">⚽ FÚTBOL / 🏀 BALONCESTO / 🎾 TENIS / 🏆 MOTOR</div>
+                    <div class="comp-checkboxes" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+                        <label><input type="checkbox" class="comp-chk" value="laliga" checked onchange="applyFilters()"> LaLiga</label>
+                        <label><input type="checkbox" class="comp-chk" value="champions" checked onchange="applyFilters()"> Champions League</label>
+                        <label><input type="checkbox" class="comp-chk" value="copadelrey" checked onchange="applyFilters()"> Copa del Rey</label>
+                        <label><input type="checkbox" class="comp-chk" value="premier" checked onchange="applyFilters()"> Premier League</label>
+                        <label><input type="checkbox" class="comp-chk" value="bundesliga" checked onchange="applyFilters()"> Bundesliga</label>
+                        <label><input type="checkbox" class="comp-chk" value="seriea" checked onchange="applyFilters()"> Serie A</label>
+                        <label><input type="checkbox" class="comp-chk" value="ligue1" checked onchange="applyFilters()"> Ligue 1</label>
+                        <label><input type="checkbox" class="comp-chk" value="ligaportugal" checked onchange="applyFilters()"> Liga Portugal</label>
+                        <label><input type="checkbox" class="comp-chk" value="eredivisie" checked onchange="applyFilters()"> Eredivisie</label>
+                        <label><input type="checkbox" class="comp-chk" value="mundial" checked onchange="applyFilters()"> Copa Mundial</label>
+                        <label><input type="checkbox" class="comp-chk" value="eurocopa" checked onchange="applyFilters()"> Eurocopa</label>
+                        <label><input type="checkbox" class="comp-chk" value="nationsleague" checked onchange="applyFilters()"> Nations League</label>
+                        <label><input type="checkbox" class="comp-chk" value="ligaendesa" checked onchange="applyFilters()"> ACB</label>
+                        <label><input type="checkbox" class="comp-chk" value="euroliga" checked onchange="applyFilters()"> Euroliga</label>
+                        <label><input type="checkbox" class="comp-chk" value="nba" checked onchange="applyFilters()"> NBA</label>
+                        <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> ATP / WTA</label>
+                        <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> F1 / MotoGP</label>
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
+
+    <!-- Controles de la vista de canales (ocultos inicialmente) -->
+    <div id="channels-controls" style="display: none; margin-bottom: 12px;">
+        <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem;">
     </div>
-    <div class="table-card">
+    </div>
+
+    <!-- VISTA 1: AGENDA DEPORTIVA -->
+    <div class="table-card" id="sports-view-container">
         <table>
             <thead>
                 <tr>
@@ -1091,10 +859,41 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             </tbody>
         </table>
     </div>
+
+    <!-- VISTA 2: CATÁLOGO DE CANALES CDN LIVE TV -->
+    <div class="table-card" id="channels-view-container" style="display: none;">
+        <div id="channelsGrid" class="channels-grid">
+            <div class="empty-state">Cargando canales...</div>
+        </div>
+    </div>
 </div>
+
+<!-- MODAL REPRODUCTOR OFICIAL CDN LIVE TV -->
+<dialog id="player-dialog">
+    <div class="player-head">
+        <strong id="player-title" style="color: #38bdf8; font-size: 0.95rem;">Reproductor</strong>
+        <button onclick="closePlayerModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer;">✕</button>
+    </div>
+    <div class="player-body" id="player-content"></div>
+</dialog>
+
 <script>
 const TODAY_DATE_STR = "{TODAY_DATE_STR}";
 let currentFilter = 'favoritos';
+let allCatalogChannels = [];
+
+// Lista Blanca Exclusiva: Solo estos 7 canales tendrán enlace a CDN Live TV
+const AGENDA_CHANNEL_ALIASES = new Map([
+  ['tennis channel', 'Tennis Channel HD US'],
+  ['dazn laliga', 'DAZN La Liga HD'],
+  ['dazn la liga', 'DAZN La Liga HD'],
+  ['m+ laliga', 'LaLiga TV FHD UK'],
+  ['m+ la liga', 'LaLiga TV FHD UK'],
+  ['dazn motogp', 'Sport TV 4 HD PT'],
+  ['dazn f1', 'DAZN F1 FHD'],
+  ['teledeporte', 'Teledeporte FHD'],
+  ['m+ deportes', 'Movistar Deportes 1 FHD']
+]);
 
 function updateLiveClock() {
     const now = new Date();
@@ -1165,21 +964,163 @@ function setFilter(filterType) {
     applyFilters();
 }
 
-function filterTable() { applyFilters(); }
+function switchView(viewName) {
+    const btnSports = document.getElementById('btn-view-sports');
+    const btnChannels = document.getElementById('btn-view-channels');
+    const sportsContainer = document.getElementById('sports-view-container');
+    const channelsContainer = document.getElementById('channels-view-container');
+    const sportsControls = document.getElementById('sports-controls');
+    const channelsControls = document.getElementById('channels-controls');
+
+    if (viewName === 'channels') {
+        btnChannels.classList.add('active');
+        btnSports.classList.remove('active');
+        sportsContainer.style.display = 'none';
+        sportsControls.style.display = 'none';
+        channelsContainer.style.display = 'block';
+        channelsControls.style.display = 'block';
+        loadChannelsCatalog();
+    } else {
+        btnSports.classList.add('active');
+        btnChannels.classList.remove('active');
+        channelsContainer.style.display = 'none';
+        channelsControls.style.display = 'none';
+        sportsContainer.style.display = 'block';
+        sportsControls.style.display = 'block';
+    }
+    updateStickyHeadingOffset();
+}
+
+// Carga y gestión robusta de canales CDN Live TV
+async function loadChannelsCatalog() {
+    if (allCatalogChannels.length > 0) return;
+    try {
+        const response = await fetch('./channels.json');
+        const jsonResult = await response.json();
+        
+        if (Array.isArray(jsonResult)) {
+            allCatalogChannels = jsonResult;
+        } else {
+            allCatalogChannels = jsonResult.channels || jsonResult.data?.channels || jsonResult.data || [];
+        }
+
+        renderChannelsGrid(allCatalogChannels);
+        linkAgendaChannelsToCdn();
+    } catch (e) {
+        console.error("Error cargando canales:", e);
+        document.getElementById('channelsGrid').innerHTML = '<div class="empty-state">❌ No se pudo cargar el archivo channels.json. Comprueba que el archivo existe en el directorio.</div>';
+    }
+}
+
+function normalizeChannelName(name) {
+    return String(name || '').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function findCatalogChannel(channelName) {
+    const wanted = normalizeChannelName(channelName);
+    if (!wanted) return null;
+
+    // Solo busca si está explícitamente en nuestro mapa exclusivo
+    const aliasTarget = AGENDA_CHANNEL_ALIASES.get(wanted);
+    if (aliasTarget) {
+        return allCatalogChannels.find(ch => normalizeChannelName(ch.name) === normalizeChannelName(aliasTarget)) || null;
+    }
+
+    return null;
+}
+
+function safePlayerUrl(channel) {
+    const value = channel?.player_url || channel?.url;
+    if (!value) return null;
+    try {
+        const u = new URL(value);
+        if (u.protocol !== 'https:' || !['cdnlivetv.tv', 'www.cdnlivetv.tv'].includes(u.hostname)) return null;
+        return u.href;
+    } catch {
+        return null;
+    }
+}
+
+function linkAgendaChannelsToCdn() {
+    document.querySelectorAll('.tv-badge').forEach(badge => {
+        const channelName = badge.textContent.replace(' 🔗', '').replace(' ▶', '').trim();
+        const catalogCh = findCatalogChannel(channelName);
+        const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
+
+        if (playerUrl) {
+            badge.setAttribute('href', '#reproductor');
+            badge.classList.add('channel-chip-link');
+            badge.textContent = channelName + ' 🔗';
+            badge.onclick = (e) => {
+                e.preventDefault();
+                openPlayerModal(channelName, playerUrl);
+            };
+        } else {
+            badge.removeAttribute('href');
+            badge.classList.remove('channel-chip-link');
+            badge.onclick = null;
+        }
+    });
+}
+
+function renderChannelsGrid(channels) {
+    const grid = document.getElementById('channelsGrid');
+    if (!grid) return;
+
+    if (channels.length === 0) {
+        grid.innerHTML = '<div class="empty-state">😴 No hay canales disponibles.</div>';
+        return;
+    }
+
+    grid.innerHTML = channels.map(ch => {
+        const playable = Boolean(safePlayerUrl(ch));
+        const url = safePlayerUrl(ch);
+        const img = ch.image ? `<img src="${ch.image}" class="channel-logo" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="channel-logo"></div>`;
+        
+        return `
+            <div class="channel-card">
+                <div class="channel-info">
+                    ${img}
+                    <div class="channel-name" title="${ch.name}">${ch.name}</div>
+                </div>
+                <div>
+                    ${playable ? `<a href="#reproductor" class="channel-action" onclick="openPlayerModal('${ch.name.replace(/'/g, "\\'")}', '${url}')">▶ Ver</a>` : '<span style="font-size:0.7rem; color:var(--text-muted)">No disponible</span>'}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterChannels() {
+    const query = document.getElementById('channelSearch').value.toLowerCase();
+    const filtered = allCatalogChannels.filter(ch => (ch.name || '').toLowerCase().includes(query));
+    renderChannelsGrid(filtered);
+}
+
+function openPlayerModal(name, url) {
+    document.getElementById('player-title').textContent = `Reproduciendo: ${name}`;
+    document.getElementById('player-content').innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>`;
+    document.getElementById('player-dialog').showModal();
+}
+
+function closePlayerModal() {
+    const dialog = document.getElementById('player-dialog');
+    document.getElementById('player-content').innerHTML = '';
+    dialog.close();
+}
 
 function highlightPreviousEvents() {
     const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
     rows.forEach(row => row.classList.remove('previous-event'));
-
     const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
     let previousTimestamp = null;
 
     rows.forEach(row => {
         if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
-
         const timestamp = Number(row.getAttribute('data-ts'));
         if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
-
         if (previousTimestamp === null || timestamp > previousTimestamp) {
             previousTimestamp = timestamp;
         }
@@ -1188,10 +1129,7 @@ function highlightPreviousEvents() {
     if (previousTimestamp === null) return;
 
     rows.forEach(row => {
-        if (
-            row.getAttribute('data-date') === TODAY_DATE_STR &&
-            Number(row.getAttribute('data-ts')) === previousTimestamp
-        ) {
+        if (row.getAttribute('data-date') === TODAY_DATE_STR && Number(row.getAttribute('data-ts')) === previousTimestamp) {
             row.classList.add('previous-event');
         }
     });
@@ -1200,7 +1138,6 @@ function highlightPreviousEvents() {
 function scheduleNextEventRefresh() {
     const now = Date.now();
     const rows = Array.from(document.querySelectorAll('#agendaTable tr.event-row[data-ts]'));
-    
     let nextTimestamp = null;
 
     rows.forEach(row => {
@@ -1215,12 +1152,7 @@ function scheduleNextEventRefresh() {
     if (nextTimestamp !== null) {
         const targetTime = nextTimestamp + 61000;
         const timeToWait = Math.max(0, targetTime - now);
-        
-        console.log(`Próxima recarga programada en ${Math.round(timeToWait / 1000)} segundos (61s tras el inicio del evento).`);
-        
-        setTimeout(() => {
-            location.reload();
-        }, timeToWait);
+        setTimeout(() => { location.reload(); }, timeToWait);
     }
 }
 
@@ -1239,11 +1171,10 @@ window.addEventListener('load', () => {
     setFilter(initialSlot);
     updateStickyHeadingOffset();
     scheduleNextEventRefresh();
+    loadChannelsCatalog();
 });
 
-window.addEventListener('resize', () => {
-    updateStickyHeadingOffset();
-});
+window.addEventListener('resize', () => { updateStickyHeadingOffset(); });
 
 if ('ResizeObserver' in window) {
     const stickyPanel = document.getElementById('stickyPanel');
@@ -1255,9 +1186,7 @@ if ('ResizeObserver' in window) {
 
 function applyFilters() {
     const checkedComps = new Set();
-    document.querySelectorAll('.comp-chk:checked').forEach(chk => {
-        checkedComps.add(chk.value);
-    });
+    document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedComps.add(chk.value); });
 
     const table = document.getElementById('agendaTable');
     if (!table) return;
@@ -1278,15 +1207,10 @@ function applyFilters() {
 
         if (currentFilter === 'proximamente') {
             matchesFilter = (rowDate > TODAY_DATE_STR);
-            if (sport === 'tenis') {
-                matchesComp = checkedComps.has('tenis');
-            } else if (sport === 'motor') {
-                matchesComp = checkedComps.has('motor');
-            } else if (sport === 'futbol' || sport === 'baloncesto') {
-                matchesComp = compKey ? checkedComps.has(compKey) : false;
-            } else {
-                matchesComp = true; // Permite canales Movistar u otros sin compKey restringida
-            }
+            if (sport === 'tenis') matchesComp = checkedComps.has('tenis');
+            else if (sport === 'motor') matchesComp = checkedComps.has('motor');
+            else if (sport === 'futbol' || sport === 'baloncesto') matchesComp = compKey ? checkedComps.has(compKey) : false;
+            else matchesComp = true;
         } else if (currentFilter === 'favoritos') {
             matchesFilter = isFiltered;
             matchesComp = true;
@@ -1294,15 +1218,10 @@ function applyFilters() {
             const isToday = (rowDate === TODAY_DATE_STR);
             matchesFilter = isToday && (rowSlot === currentFilter);
 
-            if (sport === 'tenis') {
-                matchesComp = checkedComps.has('tenis');
-            } else if (sport === 'motor') {
-                matchesComp = checkedComps.has('motor');
-            } else if (sport === 'futbol' || sport === 'baloncesto') {
-                matchesComp = compKey ? checkedComps.has(compKey) : false;
-            } else {
-                matchesComp = true;
-            }
+            if (sport === 'tenis') matchesComp = checkedComps.has('tenis');
+            else if (sport === 'motor') matchesComp = checkedComps.has('motor');
+            else if (sport === 'futbol' || sport === 'baloncesto') matchesComp = compKey ? checkedComps.has(compKey) : false;
+            else matchesComp = true;
         }
 
         if (matchesFilter && matchesComp) {
@@ -1325,7 +1244,8 @@ function applyFilters() {
 }
 </script>
 </body>
-</html>"""
+</html>
+"""
 
 
 def generate_html(events):
@@ -1349,23 +1269,9 @@ def generate_html(events):
             tv_badges_list = []
             for channel in ev["tv_list"]:
                 safe_channel = escape(str(channel), quote=True)
-                app_key = get_channel_app(channel)
-                app_intent = escape(get_firetv_intent(channel), quote=True)
-                app_label = {
-                    "movistar": "Movistar Plus+",
-                    "dazn": "DAZN",
-                    "prime": "Prime Video",
-                    "kodi": "Kodi",
-                }[app_key]
-
-                if app_key == "kodi":
-                    tv_badges_list.append(
-                        f'<span class="tv-badge tv-badge-no-link" title="Canal {safe_channel}">{safe_channel}</span>'
-                    )
-                else:
-                    tv_badges_list.append(
-                        f'<a href="{app_intent}" class="tv-badge" title="Abrir {app_label} en Fire TV para el canal {safe_channel}">{safe_channel} 🔗</a>'
-                    )
+                tv_badges_list.append(
+                    f'<span class="tv-badge" title="Canal {safe_channel}">{safe_channel}</span>'
+                )
 
             tv_badges = "".join(tv_badges_list)
             
@@ -1427,6 +1333,8 @@ def generate_html(events):
 
 
 if __name__ == "__main__":
+    update_channels_json_from_api()
+    
     events = fetch_and_parse_agenda()
     html_content = generate_html(events)
     with open("index.html", "w", encoding="utf-8") as f:
