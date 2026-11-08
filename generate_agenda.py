@@ -9,7 +9,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from zoneinfo import ZoneInfoNotFoundError
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 
 # ============================================================================
@@ -59,8 +59,9 @@ def create_http_session() -> requests.Session:
 
 
 def get_dynamic_domain() -> str:
-    """Obtiene dinámicamente el dominio actual siguiendo la nueva URL de Taplink con html.parser nativo."""
-    default_domain = "www.fctv33go.pics"
+    """Obtiene dinámicamente el dominio actual resolviendo las rutas de Taplink."""
+    default_domain = "www.fctv33go.autos"
+    taplink_url = "https://taplink.cc/fctvlink"
     try:
         from html.parser import HTMLParser
         
@@ -75,31 +76,28 @@ def get_dynamic_domain() -> str:
                         self.links.append(href)
                         
         with create_http_session() as session:
-            resp1 = session.get("https://taplink.cc/fctvlink", headers=REQUEST_HEADERS, timeout=10)
+            resp1 = session.get(taplink_url, headers=REQUEST_HEADERS, timeout=10)
             parser = TaplinkParser()
             parser.feed(resp1.text)
             
             target_url = None
             for href in parser.links:
-                if "taplink.cc" not in href and "telegram" not in href and "whatsapp" not in href and "instagram" not in href:
-                    target_url = href
+                lower_href = href.lower()
+                if not any(x in lower_href for x in ["taplink.cc", "telegram", "whatsapp", "instagram", "twitter", "facebook"]):
+                    target_url = urljoin(taplink_url, href)
                     break
             
             if not target_url and parser.links:
                 for href in parser.links:
-                    if href.startswith("http") and "taplink.cc" not in href:
-                        target_url = href
+                    if "taplink.cc" not in href.lower():
+                        target_url = urljoin(taplink_url, href)
                         break
                         
             if target_url:
-                if target_url.startswith("http"):
-                    r_final = session.get(target_url, headers=REQUEST_HEADERS, allow_redirects=True, timeout=10)
-                    parsed = urlparse(r_final.url)
-                    if parsed.netloc and "taplink.cc" not in parsed.netloc:
-                        return parsed.netloc
-                    parsed_target = urlparse(target_url)
-                    if parsed_target.netloc:
-                        return parsed_target.netloc
+                r_final = session.get(target_url, headers=REQUEST_HEADERS, allow_redirects=True, timeout=10)
+                parsed = urlparse(r_final.url)
+                if parsed.netloc and "taplink.cc" not in parsed.netloc:
+                    return parsed.netloc
     except Exception as e:
         print(f"Error obteniendo dominio dinámico: {e}")
     return default_domain
