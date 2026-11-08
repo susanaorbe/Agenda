@@ -33,12 +33,14 @@ jobs:
         run: |
           python generate_agenda.py
 
-      - name: Commit y push de cambios
+	- name: Commit y push de cambios
         run: |
-          git add index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html channels.json
           if git diff --staged --quiet; then
-            echo "No hay cambios en index.html, se omite el commit."
+            echo "No hay cambios en los ficheros, se omite el commit."
           else
-            git commit -m "Actualización automática de agenda"
+            git commit -m "Actualización automática de agenda y canales CDN"
             git push
           fi
