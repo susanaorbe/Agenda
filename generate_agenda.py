@@ -4,6 +4,7 @@ from html import escape
 import zoneinfo
 import re
 import json
+import os
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -62,6 +63,7 @@ def create_http_session() -> requests.Session:
 def update_channels_json_from_api():
     """Consulta la API oficial de CDN Live TV y actualiza channels.json correctamente."""
     api_url = "https://api.cdnlivetv.tv/api/v1/channels/?user=cdnlivetv&plan=free"
+    success = False
     try:
         with create_http_session() as session:
             response = session.get(api_url, headers=REQUEST_HEADERS, timeout=10)
@@ -70,8 +72,13 @@ def update_channels_json_from_api():
                 with open("channels.json", "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 print("Catálogo de canales actualizado desde la API correctamente.")
+                success = True
     except Exception as e:
-        print(f"Aviso: No se pudo actualizar channels.json desde la API ({e}). Usando versión local.")
+        print(f"Aviso: No se pudo actualizar channels.json desde la API ({e}).")
+    
+    if not success and not os.path.exists("channels.json"):
+        with open("channels.json", "w", encoding="utf-8") as f:
+            json.dump([], f)
 
 
 def get_dynamic_domain() -> str:
@@ -119,6 +126,19 @@ def get_dynamic_domain() -> str:
     return default_domain
 
 
+def get_fctv_event_url(domain: str, sport: str) -> str:
+    """Devuelve la URL general del listado del deporte correspondiente en FCTV."""
+    base_url = f"https://{domain}"
+    sport_path_map = {
+        "Fútbol": "football",
+        "Baloncesto": "basketball",
+        "Tenis": "tennis",
+        "Motor": "motorsport"
+    }
+    sport_dir = sport_path_map.get(sport, "football")
+    return f"{base_url}/es/{sport_dir}.html?icg=RVM&ilang=es"
+
+
 def get_time_slot(time_str: str) -> str:
     """Clasifica una hora en su franja horaria correspondiente."""
     try:
@@ -159,13 +179,6 @@ def clean_time(time_str: str) -> str:
     if not (0 <= hours <= 23 and 0 <= minutes <= 59):
         return ""
     return f"{hours:02d}:{minutes:02d}"
-
-
-def normalize_channel_name(channel_name: str) -> str:
-    normalized = normalize_search_text(channel_name)
-    normalized = re.sub(r"\([^)]*\)", "", normalized)
-    normalized = re.sub(r"\s+", " ", normalized).strip()
-    return normalized
 
 
 def clean_channel_display_name(channel_name: str) -> str:
@@ -250,7 +263,8 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r" brasil\s*[-–—]?\s*serie\s+a ",
     r" argentina ", r" torneo clausura ", r" torneo apertura ",
     r" liga profesional ", r" primera division argentina ",
-    r" international cup ", r" eurocup "
+    r" international cup ", r" eurocup ",
+    r" liga futve ", r" futve ", r" portuguesa fc ", r" metropolitanos "
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -414,7 +428,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if EREDIVISIE_RE.search(blob):
         return ("Fútbol", "⚽", "Eredivisie", False, True, "", "eredivisie")
 
-    if LIGA_PORTUGAL_RE.search(blob):
+    if LIGA_PORTUGAL_RE.search(blob) and not any(k in blob for k in ["portuguesa fc", "futve", "metropolitanos"]):
         return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
 
     if WORLD_CUP_RE.search(blob):
@@ -553,6 +567,8 @@ def fetch_and_parse_agenda() -> list[dict]:
     today_date = datetime.now(spain_tz).date()
     current_date_obj = today_date
 
+    dynamic_domain = get_dynamic_domain()
+
     try:
         with create_http_session() as session:
             response = session.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
@@ -592,14 +608,18 @@ def fetch_and_parse_agenda() -> list[dict]:
                     continue
                 seen_events.add(event_key)
 
+                final_motor_title = motor_event_title
+                matched_fctv_url = get_fctv_event_url(dynamic_domain, "Motor")
+
                 results.append({
                     "date_obj": current_date_obj,
                     "hora": time_clean,
                     "deporte": "Motor",
                     "icono": "🏆",
                     "competicion": comp_name,
-                    "evento": motor_event_title,
+                    "evento": final_motor_title,
                     "tv_list": channels,
+                    "fctv_url": matched_fctv_url,
                     "is_filtered": is_fav,
                     "is_configured": True,
                     "comp_key": "motor"
@@ -642,6 +662,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                 continue
             seen_events.add(event_key)
 
+            matched_fctv_url = get_fctv_event_url(dynamic_domain, sport)
+
             results.append({
                 "date_obj": current_date_obj,
                 "hora": time_clean,
@@ -650,6 +672,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 "competicion": competition,
                 "evento": final_event,
                 "tv_list": channels,
+                "fctv_url": matched_fctv_url,
                 "is_filtered": is_favorite,
                 "is_configured": is_configured,
                 "comp_key": comp_key
@@ -683,10 +706,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .icon-link { text-decoration: none; display: inline-flex; align-items: center; cursor: pointer; transition: transform 0.2s; }
         .icon-link:hover { transform: scale(1.15); }
         .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .btn-update { background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
-        .btn-alt { background: #6366f1; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
-        .btn-alt:hover { background: #4f46e5; }
         .nav-tab-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
+        .nav-tab-btn:hover { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.05); }
         .nav-tab-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
         .btn-toggle-chk { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
@@ -747,9 +768,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .channel-card:hover { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.05); }
         .channel-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
         .channel-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: #111827; flex-shrink: 0; }
-        .channel-name { font-size: 0.85rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .channel-name { font-size: 0.85rem; font-weight: 600; color: var(--text-main); line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
         .channel-action { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
         .channel-action:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
+
+        /* Barra de botones alfabéticos para canales */
+        .alphabet-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; align-items: center; }
+        .alpha-btn { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-width: 28px; text-align: center; }
+        .alpha-btn:hover { border-color: var(--accent-blue); color: var(--text-main); background: rgba(59, 130, 246, 0.05); }
+        .alpha-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
 
         /* Estilos del reproductor modal */
         #player-dialog { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 0; width: 90%; max-width: 900px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); margin: auto; }
@@ -766,11 +793,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div class="header-controls">
             <button class="nav-tab-btn active" id="btn-view-sports" onclick="switchView('sports')">📅 Agenda</button>
             <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">📺 Canales</button>
-            <a href="https://{DOMAIN}/es/football.html" target="_blank" class="btn-alt">⚽ Fútbol</a>
-            <a href="https://{DOMAIN}/es/basketball.html" target="_blank" class="btn-alt">🏀 Baloncesto</a>
-            <a href="https://{DOMAIN}/es/tennis.html" target="_blank" class="btn-alt">🎾 Tenis</a>
-            <a href="https://{DOMAIN}/es/motorsport.html" target="_blank" class="btn-alt">🏆 Motor</a>
-            <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
+            <button class="nav-tab-btn" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
@@ -837,7 +860,38 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     <!-- Controles de la vista de canales (ocultos inicialmente) -->
     <div id="channels-controls" style="display: none; margin-bottom: 12px;">
-        <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem;">
+        <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
+        <div class="alphabet-bar" id="alphabetBar">
+            <button class="alpha-btn active" onclick="filterByLetter('TODOS')">Todos</button>
+            <button class="alpha-btn" onclick="filterByLetter('#')">#</button>
+            <button class="alpha-btn" onclick="filterByLetter('A')">A</button>
+            <button class="alpha-btn" onclick="filterByLetter('B')">B</button>
+            <button class="alpha-btn" onclick="filterByLetter('C')">C</button>
+            <button class="alpha-btn" onclick="filterByLetter('D')">D</button>
+            <button class="alpha-btn" onclick="filterByLetter('E')">E</button>
+            <button class="alpha-btn" onclick="filterByLetter('F')">F</button>
+            <button class="alpha-btn" onclick="filterByLetter('G')">G</button>
+            <button class="alpha-btn" onclick="filterByLetter('H')">H</button>
+            <button class="alpha-btn" onclick="filterByLetter('I')">I</button>
+            <button class="alpha-btn" onclick="filterByLetter('J')">J</button>
+            <button class="alpha-btn" onclick="filterByLetter('K')">K</button>
+            <button class="alpha-btn" onclick="filterByLetter('L')">L</button>
+            <button class="alpha-btn" onclick="filterByLetter('M')">M</button>
+            <button class="alpha-btn" onclick="filterByLetter('N')">N</button>
+            <button class="alpha-btn" onclick="filterByLetter('Ñ')">Ñ</button>
+            <button class="alpha-btn" onclick="filterByLetter('O')">O</button>
+            <button class="alpha-btn" onclick="filterByLetter('P')">P</button>
+            <button class="alpha-btn" onclick="filterByLetter('Q')">Q</button>
+            <button class="alpha-btn" onclick="filterByLetter('R')">R</button>
+            <button class="alpha-btn" onclick="filterByLetter('S')">S</button>
+            <button class="alpha-btn" onclick="filterByLetter('T')">T</button>
+            <button class="alpha-btn" onclick="filterByLetter('U')">U</button>
+            <button class="alpha-btn" onclick="filterByLetter('V')">V</button>
+            <button class="alpha-btn" onclick="filterByLetter('W')">W</button>
+            <button class="alpha-btn" onclick="filterByLetter('X')">X</button>
+            <button class="alpha-btn" onclick="filterByLetter('Y')">Y</button>
+            <button class="alpha-btn" onclick="filterByLetter('Z')">Z</button>
+        </div>
     </div>
     </div>
 
@@ -880,20 +934,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <script>
 const TODAY_DATE_STR = "{TODAY_DATE_STR}";
 let currentFilter = 'favoritos';
+let currentLetterFilter = 'TODOS';
 let allCatalogChannels = [];
 
-// Lista Blanca Exclusiva: Solo estos 7 canales tendrán enlace a CDN Live TV
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
   ['dazn laliga', 'DAZN La Liga HD'],
   ['dazn la liga', 'DAZN La Liga HD'],
   ['m+ laliga', 'LaLiga TV FHD UK'],
   ['m+ la liga', 'LaLiga TV FHD UK'],
-  ['dazn motogp', 'Sport TV 4 HD PT'],
   ['dazn f1', 'DAZN F1 FHD'],
   ['teledeporte', 'Teledeporte FHD'],
   ['m+ deportes', 'Movistar Deportes 1 FHD']
 ]);
+
+function isPlayerOpen() {
+    const dialog = document.getElementById('player-dialog');
+    return dialog && dialog.open;
+}
 
 function updateLiveClock() {
     const now = new Date();
@@ -991,7 +1049,6 @@ function switchView(viewName) {
     updateStickyHeadingOffset();
 }
 
-// Carga y gestión robusta de canales CDN Live TV
 async function loadChannelsCatalog() {
     if (allCatalogChannels.length > 0) return;
     try {
@@ -1004,11 +1061,17 @@ async function loadChannelsCatalog() {
             allCatalogChannels = jsonResult.channels || jsonResult.data?.channels || jsonResult.data || [];
         }
 
-        renderChannelsGrid(allCatalogChannels);
+        allCatalogChannels.sort((a, b) => {
+            const nameA = (a.name || '').trim();
+            const nameB = (b.name || '').trim();
+            return nameA.localeCompare(nameB, 'es', { sensitivity: 'accent', numeric: true });
+        });
+
+        filterChannels();
         linkAgendaChannelsToCdn();
     } catch (e) {
         console.error("Error cargando canales:", e);
-        document.getElementById('channelsGrid').innerHTML = '<div class="empty-state">❌ No se pudo cargar el archivo channels.json. Comprueba que el archivo existe en el directorio.</div>';
+        document.getElementById('channelsGrid').innerHTML = '<div class="empty-state">❌ No se pudo cargar el archivo channels.json. Asegúrate de abrir la página mediante el servidor local (ej. http://localhost:8000).</div>';
     }
 }
 
@@ -1022,7 +1085,6 @@ function findCatalogChannel(channelName) {
     const wanted = normalizeChannelName(channelName);
     if (!wanted) return null;
 
-    // Solo busca si está explícitamente en nuestro mapa exclusivo
     const aliasTarget = AGENDA_CHANNEL_ALIASES.get(wanted);
     if (aliasTarget) {
         return allCatalogChannels.find(ch => normalizeChannelName(ch.name) === normalizeChannelName(aliasTarget)) || null;
@@ -1045,7 +1107,10 @@ function safePlayerUrl(channel) {
 
 function linkAgendaChannelsToCdn() {
     document.querySelectorAll('.tv-badge').forEach(badge => {
-        const channelName = badge.textContent.replace(' 🔗', '').replace(' ▶', '').trim();
+        const textContent = badge.textContent.trim();
+        if (textContent.startsWith('FCTV33')) return;
+
+        const channelName = textContent.replace(' 🔗', '').replace(' ▶', '').trim();
         const catalogCh = findCatalogChannel(channelName);
         const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
 
@@ -1093,9 +1158,46 @@ function renderChannelsGrid(channels) {
     }).join('');
 }
 
+function filterByLetter(letter) {
+    currentLetterFilter = letter;
+    document.querySelectorAll('.alpha-btn').forEach(btn => {
+        if (btn.textContent.trim().toUpperCase() === letter.toUpperCase()) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    filterChannels();
+}
+
 function filterChannels() {
     const query = document.getElementById('channelSearch').value.toLowerCase();
-    const filtered = allCatalogChannels.filter(ch => (ch.name || '').toLowerCase().includes(query));
+    
+    const filtered = allCatalogChannels.filter(ch => {
+        const name = (ch.name || '').trim();
+        const nameLower = name.toLowerCase();
+        
+        if (query && !nameLower.includes(query)) return false;
+
+        if (currentLetterFilter !== 'TODOS') {
+            const firstChar = name.charAt(0);
+            if (currentLetterFilter === '#') {
+                if (!/^[0-9]/.test(firstChar)) return false;
+            } else {
+                const normFirst = firstChar.toUpperCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                if (normFirst !== currentLetterFilter.toUpperCase()) return false;
+            }
+        }
+        return true;
+    });
+    
+    filtered.sort((a, b) => {
+        const nameA = (a.name || '').trim();
+        const nameB = (b.name || '').trim();
+        return nameA.localeCompare(nameB, 'es', { sensitivity: 'accent', numeric: true });
+    });
+
     renderChannelsGrid(filtered);
 }
 
@@ -1109,6 +1211,8 @@ function closePlayerModal() {
     const dialog = document.getElementById('player-dialog');
     document.getElementById('player-content').innerHTML = '';
     dialog.close();
+    // Al cerrar manualmente el reproductor, recargar inmediatamente la página
+    location.reload();
 }
 
 function highlightPreviousEvents() {
@@ -1152,7 +1256,14 @@ function scheduleNextEventRefresh() {
     if (nextTimestamp !== null) {
         const targetTime = nextTimestamp + 61000;
         const timeToWait = Math.max(0, targetTime - now);
-        setTimeout(() => { location.reload(); }, timeToWait);
+        setTimeout(() => {
+            // Evitar recargar si el reproductor CDN está abierto
+            if (isPlayerOpen()) {
+                console.log("Reproductor activo. Recarga programada omitida temporalmente.");
+            } else {
+                location.reload();
+            }
+        }, timeToWait);
     }
 }
 
@@ -1271,6 +1382,13 @@ def generate_html(events):
                 safe_channel = escape(str(channel), quote=True)
                 tv_badges_list.append(
                     f'<span class="tv-badge" title="Canal {safe_channel}">{safe_channel}</span>'
+                )
+
+            if ev.get("fctv_url"):
+                fctv_safe_url = escape(ev["fctv_url"], quote=True)
+                sport_name = ev.get("deporte", "Fútbol")
+                tv_badges_list.append(
+                    f'<a href="{fctv_safe_url}" target="_blank" class="tv-badge channel-chip-link" title="Ver sección de {sport_name} en FCTV33">FCTV33 🔗</a>'
                 )
 
             tv_badges = "".join(tv_badges_list)
