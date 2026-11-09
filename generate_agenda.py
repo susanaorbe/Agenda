@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila eventos estructurados y detallados de FCTV33 por deporte."""
+    """Recopila estrictamente y por separado los eventos de FCTV33 para Fútbol, Baloncesto, Tenis y Motor."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -130,19 +130,12 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     }
     base_url = f"https://{domain}"
 
-    sports_paths = [
-        ("/es/football/", "football"),
-        ("/es/basketball/", "basketball"),
-        ("/es/tennis/", "tennis"),
-        ("/es/motorsport/", "motorsport")
+    sports_config = [
+        ("football", "Fútbol", "⚽", "football", ["/es/football/", "/football/"]),
+        ("basketball", "Baloncesto", "🏀", "basketball", ["/es/basketball/", "/basketball/"]),
+        ("tennis", "Tenis", "🎾", "tennis", ["/es/tennis/", "/tennis/"]),
+        ("motorsport", "Motor", "🏆", "motorsport", ["/es/motorsport/", "/motorsport/"])
     ]
-
-    sport_map = {
-        "football": ("Fútbol", "⚽", "football"),
-        "basketball": ("Baloncesto", "🏀", "basketball"),
-        "tennis": ("Tenis", "🎾", "tennis"),
-        "motorsport": ("Motor", "🏆", "motorsport")
-    }
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -154,111 +147,106 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         )
         page = context.new_page()
 
-        for path, sport_name in sports_paths:
-            url = urljoin(base_url, path)
-            parsed_items = []
+        for sport_key, sport_label, icon, comp_key, paths in sports_config:
+            sport_events = []
+            seen_urls = set()
 
-            for attempt in range(3):
-                try:
-                    print(f"\n--- [FCTV] Conectando a: {url} (Intento {attempt+1}) ---")
-                    page.goto(url, timeout=30000, wait_until="domcontentloaded")
+            for path in paths:
+                url = urljoin(base_url, path)
+                parsed_items = []
+
+                for attempt in range(3):
                     try:
-                        page.wait_for_selector("a[href]", timeout=10000)
-                    except Exception:
-                        page.wait_for_timeout(4000)
-                    
-                    # Extraer enlaces y textos descriptivos de cada tarjeta o contenedor de evento
-                    parsed_items = page.evaluate("""() => {
-                        const items = [];
-                        // Buscar enlaces de partidos o contenedores comunes en fctv33
-                        const links = document.querySelectorAll('a[href*="-match-"]');
-                        if (links.length > 0) {
-                            links.forEach(a => {
-                                items.push({
+                        print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt+1}) ---")
+                        page.goto(url, timeout=30000, wait_until="domcontentloaded")
+                        try:
+                            page.wait_for_selector("a[href]", timeout=10000)
+                        except Exception:
+                            page.wait_for_timeout(4000)
+                        
+                        parsed_items = page.evaluate(f"""() => {{
+                            const items = [];
+                            // Buscar enlaces que correspondan estrictamente al deporte actual
+                            const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
+                            links.forEach(a => {{
+                                items.push({{
                                     href: a.getAttribute('href'),
                                     text: a.innerText || a.textContent || ''
-                                });
-                            });
-                        } else {
-                            // Alternativa genérica si no usa la nomenclatura -match-
-                            document.querySelectorAll('a[href]').forEach(a => {
-                                const h = a.getAttribute('href');
-                                if (h && (h.includes('/es/football/') || h.includes('/es/basketball/') || h.includes('/es/tennis/') || h.includes('/es/motorsport/'))) {
-                                    items.push({ href: h, text: a.innerText || a.textContent || '' });
-                                }
-                            });
-                        }
-                        return items;
-                    }""")
+                                }});
+                            }});
+                            return items;
+                        }}""")
 
-                    if parsed_items:
-                        print(f"   -> Elementos extraídos para '{sport_name}': {len(parsed_items)}")
-                        break
-                except Exception as e:
-                    print(f"   -> Error en intento {attempt+1}: {e}")
-                    page.wait_for_timeout(3000)
+                        if parsed_items:
+                            print(f"   -> Enlaces extraídos para '{sport_label}': {len(parsed_items)}")
+                            break
+                    except Exception as e:
+                        print(f"   -> Error en intento {attempt+1}: {e}")
+                        page.wait_for_timeout(3000)
 
-            seen_urls = set()
-            sport_label, icon, comp_key = sport_map.get(sport_name, ("Deporte", "🏆", "other"))
+                for item in parsed_items:
+                    href = item.get("href", "")
+                    if not href or f"/{sport_key}/" not in href:
+                        continue
+                    full_url = urljoin(base_url, href)
+                    if full_url in seen_urls:
+                        continue
+                    seen_urls.add(full_url)
 
-            for item in parsed_items:
-                href = item.get("href", "")
-                if not href:
-                    continue
-                full_url = urljoin(base_url, href)
-                if full_url in seen_urls:
-                    continue
-                seen_urls.add(full_url)
-
-                parsed_url = urlparse(full_url)
-                path_parts = parsed_url.path.strip("/").split("/")
-                
-                comp_str = sport_label
-                event_str = "Evento FCTV33"
-
-                if len(path_parts) >= 4:
-                    comp_part = path_parts[2]
-                    if "-match-" in comp_part:
-                        comp_name = comp_part.split("-match-")[0].replace("-", " ").title()
-                    else:
-                        comp_name = comp_part.replace("-", " ").title()
-                    if comp_name and comp_name.lower() != sport_name:
-                        comp_str = comp_name
+                    parsed_url = urlparse(full_url)
+                    path_parts = parsed_url.path.strip("/").split("/")
                     
-                    slug_file = path_parts[3]
-                    if slug_file.endswith(".html"):
-                        slug = slug_file[:-5]
-                        slug = re.sub(r"-\d{1,2}-\d{4}$", "", slug)
-                        event_str = slug.replace("-", " ").title()
+                    comp_str = sport_label
+                    event_str = "Evento FCTV33"
 
-                # Si el texto interno del enlace aporta información más limpia, usarlo
-                raw_txt = item.get("text", "").strip()
-                if raw_txt:
-                    clean_lines = [l.strip() for l in raw_txt.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv"])]
-                    if clean_lines:
-                        event_str = " - ".join(clean_lines[:2])
+                    if len(path_parts) >= 3:
+                        for part in path_parts:
+                            if "-match-" in part:
+                                comp_name = part.split("-match-")[0].replace("-", " ").title()
+                                if comp_name.lower() != sport_key:
+                                    comp_str = comp_name
+                                    break
 
-                query = parsed_url.query
-                if "icg=" not in query:
-                    query = f"{query}&" if query else ""
-                    query += "icg=RVM&ilang=es"
-                elif "ilang=" not in query:
-                    query += "&ilang=es"
-                normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+                        slug_file = path_parts[-1]
+                        if slug_file.endswith(".html"):
+                            slug = slug_file[:-5]
+                            slug = re.sub(r"-\d{1,2}-\d{4}$", "", slug)
+                            # Limpiar sufijos de fecha/hora o códigos del slug
+                            slug = re.sub(r"-\d{1,2}-\d{4}-\d{2}-\d{2}$", "", slug)
+                            event_str = slug.replace("-", " ").title()
 
-                fctv_events_by_sport[sport_name].append({
-                    "date_obj": today_date,
-                    "hora": "LIVE",
-                    "deporte": sport_label,
-                    "icono": icon,
-                    "competicion": comp_str,
-                    "evento": event_str,
-                    "tv_list": [],
-                    "fctv_url": normalized_url,
-                    "is_filtered": True,
-                    "is_configured": True,
-                    "comp_key": comp_key
-                })
+                    raw_txt = item.get("text", "").strip()
+                    if raw_txt:
+                        clean_lines = [l.strip() for l in raw_txt.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv"])]
+                        if len(clean_lines) >= 2:
+                            comp_str = clean_lines[0].title()
+                            event_str = clean_lines[1].title()
+                        elif len(clean_lines) == 1 and clean_lines[0].lower() != event_str.lower():
+                            event_str = clean_lines[0].title()
+
+                    query = parsed_url.query
+                    if "icg=" not in query:
+                        query = f"{query}&" if query else ""
+                        query += "icg=RVM&ilang=es"
+                    elif "ilang=" not in query:
+                        query += "&ilang=es"
+                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+
+                    sport_events.append({
+                        "date_obj": today_date,
+                        "hora": "LIVE",
+                        "deporte": sport_label,
+                        "icono": icon,
+                        "competicion": comp_str,
+                        "evento": event_str,
+                        "tv_list": [],
+                        "fctv_url": normalized_url,
+                        "is_filtered": True,
+                        "is_configured": True,
+                        "comp_key": comp_key
+                    })
+
+            fctv_events_by_sport[sport_key] = sport_events
 
         browser.close()
 
@@ -706,9 +694,9 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
 
     dynamic_domain = get_dynamic_domain()
     
-    # Recopilar eventos estructurados de FCTV33
+    # Recopilar eventos estrictamente separados por deporte en FCTV33
     fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
-    for sport_name, events_list in fctv_events_by_sport.items():
+    for sport_key, events_list in fctv_events_by_sport.items():
         for ev in events_list:
             fctv33_results.append(ev)
 
