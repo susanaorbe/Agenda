@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila estrictamente y por separado los eventos de FCTV33 extrayendo sus horas reales y títulos."""
+    """Recopila estrictamente y por separado los eventos de FCTV33 extrayendo la hora local exacta de la tarjeta."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -145,7 +145,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
             args=["--disable-blink-features=AutomationControlled"]
         )
         context = browser.new_context(
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            timezone_id="Europe/Madrid"
         )
         page = context.new_page()
 
@@ -168,10 +169,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         
                         parsed_items = page.evaluate(f"""() => {{
                             const items = [];
-                            // Extraer filas o tarjetas de eventos que contengan enlaces del deporte
                             const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
                             links.forEach(a => {{
-                                // Buscar el contenedor superior (tarjeta o fila) para capturar la hora y texto completo
                                 const card = a.closest('div, li, tr') || a.parentElement;
                                 items.push({{
                                     href: a.getAttribute('href'),
@@ -199,7 +198,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                     card_text = item.get("cardText", "").strip()
                     
-                    # Extraer hora si está presente en el texto de la tarjeta
                     extracted_time = "LIVE"
                     time_match = time_re.search(card_text)
                     if time_match:
@@ -229,7 +227,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                     if card_text:
                         clean_lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet"])]
-                        # Filtrar la línea de la hora si existe
                         clean_lines = [l for l in clean_lines if not time_re.fullmatch(l)]
                         if len(clean_lines) >= 2:
                             comp_str = clean_lines[0].title()
@@ -707,7 +704,6 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
 
     dynamic_domain = get_dynamic_domain()
     
-    # Recopilar eventos estrictamente separados por deporte en FCTV33
     fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
     for sport_key, events_list in fctv_events_by_sport.items():
         for ev in events_list:
