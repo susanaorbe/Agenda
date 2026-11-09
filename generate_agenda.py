@@ -1333,8 +1333,7 @@ function switchView(viewName) {
     updateStickyHeadingOffset();
 }
 
-async function loadChannelsCatalog() {
-    if (allCatalogChannels.length > 0) return;
+async function initApp() {
     try {
         const response = await fetch('./channels.json');
         const jsonResult = await response.json();
@@ -1355,8 +1354,12 @@ async function loadChannelsCatalog() {
         linkAgendaChannelsToCdn();
     } catch (e) {
         console.error("Error cargando canales:", e);
-        document.getElementById('channelsGrid').innerHTML = '<div class="empty-state">❌ No se pudo cargar channels.json.</div>';
     }
+}
+
+async function loadChannelsCatalog() {
+    if (allCatalogChannels.length > 0) return;
+    await initApp();
 }
 
 function normalizeChannelName(name) {
@@ -1528,7 +1531,7 @@ function highlightPreviousEvents() {
     });
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
     const nowMadrid = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
     const h = nowMadrid.getHours();
     const m = nowMadrid.getMinutes();
@@ -1539,6 +1542,7 @@ window.addEventListener('load', () => {
     else if (totalMins <= 1229) initialSlot = 'tarde';
     else initialSlot = 'noche';
 
+    await initApp();
     highlightPreviousEvents();
     updateStatsForActiveView();
     setFilter(initialSlot);
