@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila estrictamente y por separado los eventos de FCTV33 para Fútbol, Baloncesto, Tenis y Motor."""
+    """Recopila estrictamente y por separado los eventos de FCTV33 extrayendo sus horas reales y títulos."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -136,6 +136,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         ("tennis", "Tenis", "🎾", "tennis", ["/es/tennis/", "/tennis/"]),
         ("motorsport", "Motor", "🏆", "motorsport", ["/es/motorsport/", "/motorsport/"])
     ]
+
+    time_re = re.compile(r"\b(\d{1,2}):(\d{2})\b")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -166,12 +168,14 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         
                         parsed_items = page.evaluate(f"""() => {{
                             const items = [];
-                            // Buscar enlaces que correspondan estrictamente al deporte actual
+                            // Extraer filas o tarjetas de eventos que contengan enlaces del deporte
                             const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
                             links.forEach(a => {{
+                                // Buscar el contenedor superior (tarjeta o fila) para capturar la hora y texto completo
+                                const card = a.closest('div, li, tr') || a.parentElement;
                                 items.push({{
                                     href: a.getAttribute('href'),
-                                    text: a.innerText || a.textContent || ''
+                                    cardText: card ? (card.innerText || card.textContent || '') : (a.innerText || a.textContent || '')
                                 }});
                             }});
                             return items;
@@ -193,6 +197,15 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         continue
                     seen_urls.add(full_url)
 
+                    card_text = item.get("cardText", "").strip()
+                    
+                    # Extraer hora si está presente en el texto de la tarjeta
+                    extracted_time = "LIVE"
+                    time_match = time_re.search(card_text)
+                    if time_match:
+                        h, m = time_match.groups()
+                        extracted_time = f"{int(h):02d}:{m}"
+
                     parsed_url = urlparse(full_url)
                     path_parts = parsed_url.path.strip("/").split("/")
                     
@@ -211,13 +224,13 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if slug_file.endswith(".html"):
                             slug = slug_file[:-5]
                             slug = re.sub(r"-\d{1,2}-\d{4}$", "", slug)
-                            # Limpiar sufijos de fecha/hora o códigos del slug
                             slug = re.sub(r"-\d{1,2}-\d{4}-\d{2}-\d{2}$", "", slug)
                             event_str = slug.replace("-", " ").title()
 
-                    raw_txt = item.get("text", "").strip()
-                    if raw_txt:
-                        clean_lines = [l.strip() for l in raw_txt.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv"])]
+                    if card_text:
+                        clean_lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet"])]
+                        # Filtrar la línea de la hora si existe
+                        clean_lines = [l for l in clean_lines if not time_re.fullmatch(l)]
                         if len(clean_lines) >= 2:
                             comp_str = clean_lines[0].title()
                             event_str = clean_lines[1].title()
@@ -234,7 +247,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                     sport_events.append({
                         "date_obj": today_date,
-                        "hora": "LIVE",
+                        "hora": extracted_time,
                         "deporte": sport_label,
                         "icono": icon,
                         "competicion": comp_str,
