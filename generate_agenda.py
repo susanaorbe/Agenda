@@ -120,9 +120,9 @@ def get_dynamic_domain() -> str:
     return default_domain
 
 
-def fetch_fctv_links(domain: str) -> dict:
-    """Recopila estrictamente URLs de eventos de FCTV33 por deporte, descartando otros."""
-    fctv_links_by_sport = {
+def fetch_fctv_events(domain: str, today_date: date) -> dict:
+    """Recopila eventos estructurados y detallados de FCTV33 por deporte."""
+    fctv_events_by_sport = {
         "football": [],
         "basketball": [],
         "tennis": [],
@@ -137,11 +137,12 @@ def fetch_fctv_links(domain: str) -> dict:
         ("/es/motorsport/", "motorsport")
     ]
 
-    event_path_re = re.compile(
-        r"^/es/(football|basketball|tennis|motorsport)/.+-match-\d+/[^/]+\.html$",
-        re.IGNORECASE
-    )
-    collected_by_sport = {sport: set() for _, sport in sports_paths}
+    sport_map = {
+        "football": ("Fútbol", "⚽", "football"),
+        "basketball": ("Baloncesto", "🏀", "basketball"),
+        "tennis": ("Tenis", "🎾", "tennis"),
+        "motorsport": ("Motor", "🏆", "motorsport")
+    }
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -155,114 +156,115 @@ def fetch_fctv_links(domain: str) -> dict:
 
         for path, sport_name in sports_paths:
             url = urljoin(base_url, path)
-            elements = []
+            parsed_items = []
 
             for attempt in range(3):
                 try:
-                    print(f"\n--- [FCTV] Intentando conectar a: {url} (Intento {attempt+1}) ---")
+                    print(f"\n--- [FCTV] Conectando a: {url} (Intento {attempt+1}) ---")
                     page.goto(url, timeout=30000, wait_until="domcontentloaded")
                     try:
                         page.wait_for_selector("a[href]", timeout=10000)
                     except Exception:
                         page.wait_for_timeout(4000)
-                    elements = page.eval_on_selector_all(
-                        "a[href]",
-                        "els => els.map(e => e.getAttribute('href'))"
-                    )
-                    if elements:
-                        print(f"   -> Enlaces brutos extraídos: {len(elements)}")
+                    
+                    # Extraer enlaces y textos descriptivos de cada tarjeta o contenedor de evento
+                    parsed_items = page.evaluate("""() => {
+                        const items = [];
+                        // Buscar enlaces de partidos o contenedores comunes en fctv33
+                        const links = document.querySelectorAll('a[href*="-match-"]');
+                        if (links.length > 0) {
+                            links.forEach(a => {
+                                items.push({
+                                    href: a.getAttribute('href'),
+                                    text: a.innerText || a.textContent || ''
+                                });
+                            });
+                        } else {
+                            // Alternativa genérica si no usa la nomenclatura -match-
+                            document.querySelectorAll('a[href]').forEach(a => {
+                                const h = a.getAttribute('href');
+                                if (h && (h.includes('/es/football/') || h.includes('/es/basketball/') || h.includes('/es/tennis/') || h.includes('/es/motorsport/'))) {
+                                    items.push({ href: h, text: a.innerText || a.textContent || '' });
+                                }
+                            });
+                        }
+                        return items;
+                    }""")
+
+                    if parsed_items:
+                        print(f"   -> Elementos extraídos para '{sport_name}': {len(parsed_items)}")
                         break
                 except Exception as e:
                     print(f"   -> Error en intento {attempt+1}: {e}")
                     page.wait_for_timeout(3000)
 
-            for href in elements:
+            seen_urls = set()
+            sport_label, icon, comp_key = sport_map.get(sport_name, ("Deporte", "🏆", "other"))
+
+            for item in parsed_items:
+                href = item.get("href", "")
                 if not href:
                     continue
                 full_url = urljoin(base_url, href)
-                parsed = urlparse(full_url)
-                path_only = parsed.path
-                match = event_path_re.match(path_only)
-                if not match:
-                    # Intentar aceptar enlaces que contengan '-match-' dentro del deporte correspondiente
-                    if sport_name in path_only.lower() and "-match-" in path_only.lower():
-                        pass
-                    else:
-                        continue
-                
-                detected_sport = sport_name
-                for s in ["football", "basketball", "tennis", "motorsport"]:
-                    if s in path_only.lower():
-                        detected_sport = s
-                        break
-
-                if detected_sport != sport_name:
+                if full_url in seen_urls:
                     continue
+                seen_urls.add(full_url)
 
-                query = parsed.query
+                parsed_url = urlparse(full_url)
+                path_parts = parsed_url.path.strip("/").split("/")
+                
+                comp_str = sport_label
+                event_str = "Evento FCTV33"
+
+                if len(path_parts) >= 4:
+                    comp_part = path_parts[2]
+                    if "-match-" in comp_part:
+                        comp_name = comp_part.split("-match-")[0].replace("-", " ").title()
+                    else:
+                        comp_name = comp_part.replace("-", " ").title()
+                    if comp_name and comp_name.lower() != sport_name:
+                        comp_str = comp_name
+                    
+                    slug_file = path_parts[3]
+                    if slug_file.endswith(".html"):
+                        slug = slug_file[:-5]
+                        slug = re.sub(r"-\d{1,2}-\d{4}$", "", slug)
+                        event_str = slug.replace("-", " ").title()
+
+                # Si el texto interno del enlace aporta información más limpia, usarlo
+                raw_txt = item.get("text", "").strip()
+                if raw_txt:
+                    clean_lines = [l.strip() for l in raw_txt.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv"])]
+                    if clean_lines:
+                        event_str = " - ".join(clean_lines[:2])
+
+                query = parsed_url.query
                 if "icg=" not in query:
                     query = f"{query}&" if query else ""
                     query += "icg=RVM&ilang=es"
                 elif "ilang=" not in query:
                     query += "&ilang=es"
-                normalized_url = f"{parsed.scheme or 'https'}://{parsed.netloc}{parsed.path}?{query}"
-                collected_by_sport[sport_name].add(normalized_url)
+                normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+
+                fctv_events_by_sport[sport_name].append({
+                    "date_obj": today_date,
+                    "hora": "LIVE",
+                    "deporte": sport_label,
+                    "icono": icon,
+                    "competicion": comp_str,
+                    "evento": event_str,
+                    "tv_list": [],
+                    "fctv_url": normalized_url,
+                    "is_filtered": True,
+                    "is_configured": True,
+                    "comp_key": comp_key
+                })
 
         browser.close()
 
-    for sport_name in fctv_links_by_sport:
-        fctv_links_by_sport[sport_name] = sorted(list(collected_by_sport[sport_name]))
-        print(f"   -> URLs de eventos válidas para '{sport_name}': {len(fctv_links_by_sport[sport_name])}")
-
-    total = sum(len(urls) for urls in fctv_links_by_sport.values())
-    print(f"\n--- [FCTV] Total de URLs únicas de eventos válidas: {total} ---")
-    return fctv_links_by_sport
-
-
-def parse_fctv_url_to_event(url: str, sport_name: str, today_date: date) -> dict:
-    """Transforma una URL de FCTV33 en un evento para la agenda FCTV33."""
-    parsed = urlparse(url)
-    path = parsed.path
-    parts = path.strip("/").split("/")
-    
-    comp_str = "General FCTV33"
-    event_str = "Evento FCTV33"
-    
-    if len(parts) >= 4:
-        comp_part = parts[2]
-        if "-match-" in comp_part:
-            comp_name = comp_part.split("-match-")[0].replace("-", " ").title()
-        else:
-            comp_name = comp_part.replace("-", " ").title()
-        comp_str = comp_name
-        
-        slug_file = parts[3]
-        if slug_file.endswith(".html"):
-            slug = slug_file[:-5]
-            slug = re.sub(r"-\d{1,2}-\d{4}$", "", slug)
-            event_str = slug.replace("-", " ").title()
-
-    sport_map = {
-        "football": ("Fútbol", "⚽", "football"),
-        "basketball": ("Baloncesto", "🏀", "basketball"),
-        "tennis": ("Tenis", "🎾", "tennis"),
-        "motorsport": ("Motor", "🏆", "motorsport")
-    }
-    sport_label, icon, comp_key = sport_map.get(sport_name, ("Deporte", "🏆", "other"))
-
-    return {
-        "date_obj": today_date,
-        "hora": "LIVE",
-        "deporte": sport_label,
-        "icono": icon,
-        "competicion": comp_str,
-        "evento": event_str,
-        "tv_list": [],
-        "fctv_url": url,
-        "is_filtered": True,
-        "is_configured": True,
-        "comp_key": comp_key
-    }
+    total = sum(len(evs) for evs in fctv_events_by_sport.values())
+    print(f"\n--- [FCTV] Total de eventos estructurados recopilados: {total} ---")
+    return fctv_events_by_sport
 
 
 def get_time_slot(time_str: str) -> str:
@@ -703,12 +705,12 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
     current_date_obj = today_date
 
     dynamic_domain = get_dynamic_domain()
-    fctv_links_by_sport = fetch_fctv_links(dynamic_domain)
-
-    for sport_name, urls in fctv_links_by_sport.items():
-        for url in urls:
-            fctv_ev = parse_fctv_url_to_event(url, sport_name, today_date)
-            fctv33_results.append(fctv_ev)
+    
+    # Recopilar eventos estructurados de FCTV33
+    fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
+    for sport_name, events_list in fctv_events_by_sport.items():
+        for ev in events_list:
+            fctv33_results.append(ev)
 
     try:
         with create_http_session() as session:
@@ -750,8 +752,6 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
                 seen_events.add(event_key)
 
                 final_motor_title = motor_event_title
-                default_motor_url = f"https://{dynamic_domain}/es/motorsport.html?icg=RVM&ilang=es"
-
                 futbolenlatv_results.append({
                     "date_obj": current_date_obj,
                     "hora": time_clean,
@@ -803,16 +803,6 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
                 continue
             seen_events.add(event_key)
 
-            sport_lower = (sport or "").lower()
-            if "basket" in sport_lower or "baloncesto" in sport_lower:
-                sport_key = "basketball"
-            elif "tenis" in sport_lower:
-                sport_key = "tennis"
-            elif "motor" in sport_lower:
-                sport_key = "motorsport"
-            else:
-                sport_key = "football"
-
             futbolenlatv_results.append({
                 "date_obj": current_date_obj,
                 "hora": time_clean,
@@ -831,7 +821,6 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
         print(f"Error cargando la agenda general: {e}")
 
     futbolenlatv_results.sort(key=lambda x: (x["date_obj"], x["hora"]))
-    fctv33_results.sort(key=lambda x: (x["date_obj"], x["hora"]))
     return futbolenlatv_results, fctv33_results
 
 
