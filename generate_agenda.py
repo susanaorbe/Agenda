@@ -184,8 +184,18 @@ def fetch_fctv_links(domain: str) -> dict:
                 path_only = parsed.path
                 match = event_path_re.match(path_only)
                 if not match:
-                    continue
-                detected_sport = match.group(1).lower()
+                    # Intentar aceptar enlaces que contengan '-match-' dentro del deporte correspondiente
+                    if sport_name in path_only.lower() and "-match-" in path_only.lower():
+                        pass
+                    else:
+                        continue
+                
+                detected_sport = sport_name
+                for s in ["football", "basketball", "tennis", "motorsport"]:
+                    if s in path_only.lower():
+                        detected_sport = s
+                        break
+
                 if detected_sport != sport_name:
                     continue
 
@@ -1119,12 +1129,8 @@ let allCatalogChannels = [];
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
-  ['dazn laliga', 'DAZN La Liga HD'],
-  ['dazn la liga', 'DAZN La Liga HD'],
   ['m+ laliga', 'LaLiga TV FHD UK'],
   ['m+ la liga', 'LaLiga TV FHD UK'],
-  ['dazn motogp', 'Sport TV 4 HD PT'],
-  ['dazn f1', 'DAZN F1 FHD'],
   ['teledeporte', 'Teledeporte FHD'],
   ['m+ deportes', 'Movistar Deportes 1 FHD']
 ]);
@@ -1410,6 +1416,15 @@ function linkAgendaChannelsToCdn() {
         if (textContent.startsWith('FCTV33')) return;
 
         const channelName = textContent.replace(' 🔗', '').replace(' ▶', '').trim();
+        
+        // REGLA: Los canales DAZN no deben tener enlace
+        if (/dazn/i.test(channelName)) {
+            badge.removeAttribute('href');
+            badge.classList.remove('channel-chip-link');
+            badge.onclick = null;
+            return;
+        }
+
         const catalogCh = findCatalogChannel(channelName);
         const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
 
