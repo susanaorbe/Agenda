@@ -1362,14 +1362,16 @@ async function loadChannelsCatalog() {
 function normalizeChannelName(name) {
     return String(name || '').toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
+        .replace(/\b(hd|fhd|sd|hevc|4k|us|uk|pt|es)\b/g, '')
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
 }
 
 function findCatalogChannel(channelName) {
     const wanted = normalizeChannelName(channelName);
     if (!wanted) return null;
 
-    const aliasTarget = AGENDA_CHANNEL_ALIASES.get(wanted);
+    const aliasTarget = AGENDA_CHANNEL_ALIASES.get(cleanStr(channelName));
     if (aliasTarget) {
         const found = allCatalogChannels.find(ch => normalizeChannelName(ch.name) === normalizeChannelName(aliasTarget));
         if (found) return found;
