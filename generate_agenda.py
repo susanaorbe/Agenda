@@ -220,7 +220,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     if any(pattern in href_lower for pattern in excluded_url_patterns):
                         continue
 
-                    # Filtro específico para la UEFA Women's Champions League: solo partidos del Real Madrid Femenino
                     if "uefa-womens-champions-league-match" in href_lower and "real-madrid-women" not in href_lower:
                         continue
 
@@ -952,6 +951,82 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         #player-dialog::backdrop { background: rgba(0, 0, 0, 0.8); }
         .player-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: #111827; }
         .player-body { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; }
+
+        /* ================================================================= */
+        /* MEDIA QUERIES PARA OPTIMIZACIÓN MÓVIL (< 768px)                   */
+        /* ================================================================= */
+        @media (max-width: 768px) {
+            body { padding: 8px 4px; }
+            .container { max-width: 100%; }
+            header { flex-direction: column; align-items: stretch; gap: 8px; }
+            .header-controls { justify-content: center; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .stat-card { padding: 6px 8px; }
+            .stat-card .val { font-size: 0.95rem; }
+            .stat-card .lbl { font-size: 0.68rem; }
+            
+            .comp-filter-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .comp-checkboxes { width: 100%; display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8px !important; }
+            
+            /* Transformación de tabla a formato de tarjetas en móvil */
+            .table-card { background: transparent; border: none; box-shadow: none; margin-bottom: 60px; }
+            table, thead, tbody, tr, td { display: block; width: 100% !important; }
+            thead { display: none; }
+            
+            tr.event-row {
+                background: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 10px;
+                margin-bottom: 10px;
+                padding: 10px 12px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+            }
+            tr.event-row td {
+                padding: 3px 0;
+                border: none;
+                background: transparent !important;
+            }
+            
+            /* Distribución interna de celdas en la tarjeta móvil */
+            .cell-date, .cell-time {
+                display: inline-block;
+                margin-right: 6px;
+                margin-bottom: 4px;
+            }
+            .cell-sport {
+                float: right;
+                font-weight: 600;
+                color: #38bdf8;
+                font-size: 0.82rem;
+            }
+            .cell-comp {
+                clear: both;
+                font-size: 0.78rem;
+                color: var(--text-muted);
+                margin-bottom: 2px;
+            }
+            .cell-event {
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: #fff;
+                margin-bottom: 8px;
+            }
+            .cell-tv {
+                border-top: 1px solid var(--border-color);
+                padding-top: 6px;
+                margin-top: 4px;
+            }
+            .tv-container {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
+            .channels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                padding: 8px;
+                gap: 6px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1170,7 +1245,6 @@ function setFilter(filterType) {
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
 
-    // Gestión de checkboxes al entrar a Favoritos
     const compCheckboxes = document.querySelectorAll('.comp-chk');
     compCheckboxes.forEach(chk => {
         if (isFavView) {
@@ -1581,7 +1655,6 @@ function applyFilters() {
             const rowDate = tr.getAttribute('data-date');
 
             let matchesFilter = false;
-            // Los checkboxes de deportes priorizan sobre cualquier vista salvo en Favoritos (donde están bloqueados)
             let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
 
             if (currentFilter === 'favoritos') {
@@ -1728,12 +1801,12 @@ def generate_html(futbolenlatv_events, fctv33_events):
                 )
                 rows_list.append(
                     f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
-                    f'<td class="date-col">{date_badge_html}</td>'
-                    f'<td class="time-col">{safe_time}</td>'
-                    f'<td class="sport-col"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
-                    f'<td class="comp-col"><div class="comp-title">{favorite_pin_html}{safe_competition}</div></td>'
-                    f'<td class="event-col"><div class="event-title">{safe_event}</div></td>'
-                    f'<td class="tv-col"><div class="tv-container">{tv_badges}</div></td>'
+                    f'<td class="date-col cell-date">{date_badge_html}</td>'
+                    f'<td class="time-col cell-time">{safe_time}</td>'
+                    f'<td class="sport-col cell-sport"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
+                    f'<td class="comp-col cell-comp"><div class="comp-title">{favorite_pin_html}{safe_competition}</div></td>'
+                    f'<td class="event-col cell-event"><div class="event-title">{safe_event}</div></td>'
+                    f'<td class="tv-col cell-tv"><div class="tv-container">{tv_badges}</div></td>'
                     f'</tr>'
                 )
         return "".join(rows_list)
