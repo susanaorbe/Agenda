@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila exhaustivamente todos los eventos de FCTV33 extrayendo horas, competiciones y enfrentamientos correctos."""
+    """Recopila exhaustivamente todos los eventos de FCTV33 garantizando la lectura sin bloqueos ni descartes."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -142,10 +142,15 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--disable-blink-features=AutomationControlled"]
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-setuid-sandbox"
+            ]
         )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            locale="es-ES",
             timezone_id="Europe/Madrid"
         )
         page = context.new_page()
@@ -161,37 +166,31 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 for attempt in range(3):
                     try:
                         print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt+1}) ---")
-                        page.goto(url, timeout=30000, wait_until="domcontentloaded")
-                        try:
-                            page.wait_for_selector("a[href]", timeout=10000)
-                        except Exception:
-                            page.wait_for_timeout(3000)
+                        page.goto(url, timeout=35000, wait_until="domcontentloaded")
+                        page.wait_for_timeout(2000)
                         
-                        # Realizar scroll con pausas de espera para cargar todo el lazy-loading
-                        for scroll_step in range(6):
+                        # Scroll progresivo para hacer saltar el lazy-loading
+                        for _ in range(4):
                             page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-                            page.wait_for_timeout(1200)
+                            page.wait_for_timeout(1000)
 
                         raw_cards = page.evaluate(f"""() => {{
                             const results = [];
-                            // Buscar contenedores de eventos principales
-                            const eventElements = document.querySelectorAll('a[href*="/{sport_key}/"]');
-                            eventElements.forEach(a => {{
+                            const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
+                            links.forEach(a => {{
                                 const href = a.getAttribute('href') || '';
-                                // Para fútbol exigir formato de partido directo
-                                if ('{sport_key}' === 'football' && !href.includes('-match-')) return;
+                                if (!href || href === '#' || href.endsWith('/{sport_key}/')) return;
 
                                 const card = a.closest('div, li, tr') || a.parentElement;
                                 let compHeader = "";
                                 
-                                // Subir en el DOM para buscar la cabecera de la liga/competición
                                 let curr = card;
-                                for (let i = 0; i < 5 && curr; i++) {{
+                                for (let i = 0; i < 4 && curr; i++) {{
                                     let prev = curr.previousElementSibling;
                                     while (prev) {{
-                                        const text = prev.innerText || prev.textContent || '';
-                                        if (text && text.length > 2 && text.length < 100 && !text.includes(':') && !text.includes('1 X 2')) {{
-                                            compHeader = text.trim();
+                                        const text = (prev.innerText || prev.textContent || '').trim();
+                                        if (text && text.length > 2 && text.length < 90 && !text.includes(':') && !text.includes('1 X 2')) {{
+                                            compHeader = text;
                                             break;
                                         }}
                                         prev = prev.previousElementSibling;
@@ -215,7 +214,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             break
                     except Exception as e:
                         print(f"   -> Error en intento {attempt+1}: {e}")
-                        page.wait_for_timeout(3000)
+                        page.wait_for_timeout(2000)
 
                 for item in raw_cards:
                     href = item.get("href", "")
@@ -233,19 +232,16 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         h, m = time_match.groups()
                         extracted_time = f"{int(h):02d}:{m}"
 
-                    comp_str = sport_label
-                    if comp_header:
-                        comp_str = comp_header
+                    comp_str = comp_header if comp_header else sport_label
 
-                    # Limpieza estricta de líneas de evento
                     lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet", "1 x 2"])]
                     lines = [l for l in lines if not time_re.fullmatch(l) and not re.fullmatch(r"\d+\.\d+", l)]
 
                     event_str = ""
                     if len(lines) >= 2:
-                        # Si viene Local \n VS \n Visitante
-                        if "vs" in [x.lower() for x in lines]:
-                            vs_idx = [x.lower() for x in lines].index("vs")
+                        lower_lines = [x.lower() for x in lines]
+                        if "vs" in lower_lines:
+                            vs_idx = lower_lines.index("vs")
                             if vs_idx > 0 and vs_idx + 1 < len(lines):
                                 event_str = f"{lines[vs_idx-1]} vs {lines[vs_idx+1]}"
                         if not event_str:
@@ -253,9 +249,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     elif len(lines) == 1:
                         event_str = lines[0]
                     else:
-                        event_str = link_text if link_text else "Partido FCTV33"
+                        event_str = link_text if link_text else f"Partido {sport_label}"
 
-                    # Eliminar etiquetas secundarias adicionales
                     event_str = re.sub(r"\s+-\s+.*", "", event_str)
 
                     unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
@@ -270,12 +265,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         query += "icg=RVM&ilang=es"
                     elif "ilang=" not in query:
                         query += "&ilang=es"
-                    
-                    path_final = parsed_url.path
-                    if sport_key == "football" and not path_final.startswith("/es/"):
-                        path_final = f"/es{path_final}"
 
-                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{path_final}?{query}"
+                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
                     sport_events.append({
                         "date_obj": today_date,
