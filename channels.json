@@ -1150,7 +1150,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=MLB%20%7C%20San%20Diego%20Padres&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1302,7 +1302,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Monumental%20Sports%20Network%20US&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1478,7 +1478,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=VIP%20beIN%20SPORTS%208%20FHD&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1526,7 +1526,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Abu%20Dhabi%20Sports%201%20FHD&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1566,7 +1566,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=MatchTV%20RU&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -1582,7 +1582,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Univision%20CA&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1774,7 +1774,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Cinemax%20FHD%20PL&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1846,7 +1846,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Polsat%20Sport%203%20FHD%20PL&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -1966,7 +1966,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=ESPN%203%20FHD%20NL&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2022,7 +2022,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=RTP%201%20HD%20PT&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2390,7 +2390,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=beIN%20Sports%20Max%204%20HD%20FR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2398,7 +2398,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=beIN%20Sports%20Max%205%20HD%20FR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2414,7 +2414,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=beIN%20Sports%20Max%207%20HD%20FR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2422,7 +2422,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=beIN%20Sports%20Max%208%20HD%20FR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2430,7 +2430,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=beIN%20Sports%20Max%209%20HD%20FR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2438,7 +2438,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=beIN%20Sports%20Max%2010%20HD%20FR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2478,7 +2478,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=ESPN%202%20HD%20BR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2598,7 +2598,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=ESPN%20Premium%20FHD%20ARG&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2654,7 +2654,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Fox%20Sports%20501%20AU&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -2862,7 +2862,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Sky%20Sport%205%20NZ&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -2902,7 +2902,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Sky%20Sport%20Select%20NZ&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2918,7 +2918,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=bTV%20Action%20HD%20BG&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -2966,7 +2966,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Max%20Sport%201%20FHD%20BG&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -3078,7 +3078,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Nova%20Sport%20Start%20HD%20GR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -3102,7 +3102,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Nova%20Sports%20Prime%20FHD%20GR&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
@@ -3206,7 +3206,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Sport%204%20HD%20IL&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "online",
+      "status": "offline",
       "viewers": 0
     },
     {
@@ -3214,7 +3214,7 @@
       "code": "",
       "url": "https://cdnlivetv.tv/api/v1/channels/player/?name=Sport%205%20Gold%20IL&code=&user=cdnlivetv&plan=free",
       "image": "",
-      "status": "offline",
+      "status": "online",
       "viewers": 0
     },
     {
