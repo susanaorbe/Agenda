@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila exhaustivamente todos los eventos de FCTV33 escaneando tarjetas y clasificándolos por palabras clave."""
+    """Recopila exhaustivamente todos los eventos de FCTV33 buscando únicamente partidos reales (-match-)."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -129,11 +129,12 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "motorsport": []
     }
     base_url = f"https://{domain}"
-    
-    urls_to_try = [
-        base_url,
-        f"{base_url}/es/",
-        f"{base_url}/index.php",
+
+    sports_config = [
+        ("football", "Fútbol", "⚽", "football", "/es/football.html"),
+        ("basketball", "Baloncesto", "🏀", "basketball", "/es/basketball.html"),
+        ("tennis", "Tenis", "🎾", "tennis", "/es/tennis.html"),
+        ("motorsport", "Motor", "🏆", "motorsport", "/es/motorsport.html")
     ]
 
     time_re = re.compile(r"\b(\d{1,2}):(\d{2})\b")
@@ -154,117 +155,132 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         )
         page = context.new_page()
 
-        raw_cards = []
-        for url in urls_to_try:
-            try:
-                print(f"\n--- [FCTV] Conectando a {url} ---")
-                page.goto(url, timeout=30000, wait_until="domcontentloaded")
-                page.wait_for_timeout(3000)
-                
-                # Scroll progresivo para activar lazy-loading
-                for _ in range(5):
-                    page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-                    page.wait_for_timeout(1000)
+        for sport_key, sport_label, icon, comp_key, path in sports_config:
+            sport_events = []
+            seen_keys = set()
+            url = urljoin(base_url, path)
 
-                cards = page.evaluate("""() => {
-                    const results = [];
-                    const elements = document.querySelectorAll('a, .card, .event, .match, tr, li, div');
-                    elements.forEach(el => {
-                        const href = el.tagName === 'A' ? (el.getAttribute('href') || '') : (el.querySelector('a')?.getAttribute('href') || '');
-                        const text = el.innerText || el.textContent || '';
-                        if (text && text.length > 5 && text.length < 350) {
-                            results.push({
+            for attempt in range(3):
+                try:
+                    print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt+1}) ---")
+                    page.goto(url, timeout=35000, wait_until="domcontentloaded")
+                    page.wait_for_timeout(2000)
+                    
+                    # Scroll progresivo para cargar lazy-loading
+                    for _ in range(5):
+                        page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                        page.wait_for_timeout(1000)
+
+                    raw_cards = page.evaluate(f"""() => {{
+                        const results = [];
+                        // Seleccionar SOLO enlaces de partidos reales que contengan '-match-'
+                        const links = document.querySelectorAll('a[href*="-match-"]');
+                        links.forEach(a => {{
+                            const href = a.getAttribute('href') || '';
+                            const card = a.closest('div, li, tr') || a.parentElement;
+                            
+                            // Buscar la cabecera de la liga/competición en elementos superiores
+                            let compHeader = "";
+                            let curr = card;
+                            for (let i = 0; i < 5 && curr; i++) {{
+                                let prev = curr.previousElementSibling;
+                                while (prev) {{
+                                    const text = (prev.innerText || prev.textContent || '').trim();
+                                    if (text && text.length > 2 && text.length < 100 && !text.includes(':') && !text.includes('1 X 2')) {{
+                                        compHeader = text;
+                                        break;
+                                    }}
+                                    prev = prev.previousElementSibling;
+                                }}
+                                if (compHeader) break;
+                                curr = curr.parentElement;
+                            }}
+
+                            results.push({{
                                 href: href,
-                                text: text.trim()
-                            });
-                        }
-                    });
-                    return results;
-                }""")
+                                cardText: card ? (card.innerText || card.textContent || '') : (a.innerText || a.textContent || ''),
+                                linkText: a.innerText || a.textContent || '',
+                                compHeader: compHeader
+                            }});
+                        }});
+                        return results;
+                    }}""")
+
+                    if raw_cards:
+                        print(f"   -> Tarjetas de partido extraídas para '{sport_label}': {len(raw_cards)}")
+                        break
+                except Exception as e:
+                    print(f"   -> Error en intento {attempt+1}: {e}")
+                    page.wait_for_timeout(2000)
+
+            for item in raw_cards:
+                href = item.get("href", "")
+                if not href:
+                    continue
                 
-                if cards:
-                    raw_cards.extend(cards)
-                    print(f"   -> Encontrados {len(cards)} elementos en {url}")
-            except Exception as e:
-                print(f"   -> Error accediendo a {url}: {e}")
+                full_url = urljoin(base_url, href)
+                card_text = item.get("cardText", "").strip()
+                comp_header = item.get("compHeader", "").strip()
+                link_text = item.get("linkText", "").strip()
 
-        seen_keys = set()
-        for item in raw_cards:
-            text = item.get("text", "")
-            href = item.get("href", "")
-            
-            time_match = time_re.search(text)
-            if not time_match:
-                continue
-            
-            h, m = time_match.groups()
-            extracted_time = f"{int(h):02d}:{m}"
-            text_lower = text.lower()
-            
-            sport_key = None
-            sport_label = None
-            icon = None
-            comp_key = None
-            
-            if any(k in text_lower for k in ["fut", "soccer", "laliga", "champions", "premier", "serie a", "bundesliga", "vs", "copa", "partido"]):
-                sport_key = "football"
-                sport_label = "Fútbol"
-                icon = "⚽"
-                comp_key = "football"
-            elif any(k in text_lower for k in ["basket", "baloncesto", "nba", "acb", "euroliga"]):
-                sport_key = "basketball"
-                sport_label = "Baloncesto"
-                icon = "🏀"
-                comp_key = "basketball"
-            elif any(k in text_lower for k in ["tenis", "tennis", "atp", "wta"]):
-                sport_key = "tennis"
-                sport_label = "Tenis"
-                icon = "🎾"
-                comp_key = "tennis"
-            elif any(k in text_lower for k in ["motor", "f1", "formula", "motogp", "carrera"]):
-                sport_key = "motorsport"
-                sport_label = "Motor"
-                icon = "🏆"
-                comp_key = "motorsport"
-            else:
-                continue
+                extracted_time = "LIVE"
+                time_match = time_re.search(card_text)
+                if time_match:
+                    h, m = time_match.groups()
+                    extracted_time = f"{int(h):02d}:{m}"
 
-            lines = [l.strip() for l in text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet"])]
-            lines = [l for l in lines if not time_re.fullmatch(l)]
-            
-            comp_str = sport_label
-            event_str = " - ".join(lines[:2]) if lines else f"Evento {sport_label}"
-            if len(lines) >= 2:
-                comp_str = lines[0]
-                event_str = " ".join(lines[1:])
+                comp_str = comp_header if comp_header else sport_label
 
-            unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
-            if unique_key in seen_keys:
-                continue
-            seen_keys.add(unique_key)
+                # Limpieza de texto para obtener Local vs Visitante
+                lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet", "1 x 2"])]
+                lines = [l for l in lines if not time_re.fullmatch(l) and not re.fullmatch(r"\d+\.\d+", l)]
 
-            full_url = urljoin(base_url, href) if href else base_url
-            parsed_url = urlparse(full_url)
-            query = parsed_url.query
-            if "icg=" not in query:
-                query = f"{query}&" if query else ""
-                query += "icg=RVM&ilang=es"
+                event_str = ""
+                if len(lines) >= 2:
+                    lower_lines = [x.lower() for x in lines]
+                    if "vs" in lower_lines:
+                        vs_idx = lower_lines.index("vs")
+                        if vs_idx > 0 and vs_idx + 1 < len(lines):
+                            event_str = f"{lines[vs_idx-1]} vs {lines[vs_idx+1]}"
+                    if not event_str:
+                        event_str = f"{lines[0]} - {lines[1]}"
+                elif len(lines) == 1:
+                    event_str = lines[0]
+                else:
+                    event_str = link_text if link_text else f"Partido {sport_label}"
 
-            normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+                event_str = re.sub(r"\s+-\s+.*", "", event_str)
 
-            fctv_events_by_sport[sport_key].append({
-                "date_obj": today_date,
-                "hora": extracted_time,
-                "deporte": sport_label,
-                "icono": icon,
-                "competicion": comp_str.title(),
-                "evento": event_str.title(),
-                "tv_list": [],
-                "fctv_url": normalized_url,
-                "is_filtered": True,
-                "is_configured": True,
-                "comp_key": comp_key
-            })
+                unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
+                if unique_key in seen_keys:
+                    continue
+                seen_keys.add(unique_key)
+
+                parsed_url = urlparse(full_url)
+                query = parsed_url.query
+                if "icg=" not in query:
+                    query = f"{query}&" if query else ""
+                    query += "icg=RVM&ilang=es"
+                elif "ilang=" not in query:
+                    query += "&ilang=es"
+
+                normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+
+                sport_events.append({
+                    "date_obj": today_date,
+                    "hora": extracted_time,
+                    "deporte": sport_label,
+                    "icono": icon,
+                    "competicion": comp_str.title(),
+                    "evento": event_str.title(),
+                    "tv_list": [],
+                    "fctv_url": normalized_url,
+                    "is_filtered": True,
+                    "is_configured": True,
+                    "comp_key": comp_key
+                })
+
+            fctv_events_by_sport[sport_key] = sport_events
 
         browser.close()
 
