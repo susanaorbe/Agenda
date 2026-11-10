@@ -138,26 +138,29 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     ]
 
     excluded_url_patterns = [
-        "hunan-football-league",
-        "portuguese-u23-league",
-        "international-friendly",
-        "ftbol-sala-primera-divisin",
-        "egyptian-scores-cup",
-        "romanian-liga-ii",
         "argentine-reserve-league",
-        "philippine-basketball-governors-cup",
-        "fiba-africa-basketball-league",
-        "basketball-super-league-1",
+        "atp-challenger-orleans",
         "bahrain-premier-league",
-        "vtb-united-league",
         "basketball-champions-league",
+        "basketball-super-league-1",
+        "egyptian-scores-cup",
+	"english-football-league-trophy",
         "eurocup-basketball",
-        "slovenia-basketball-cup",
+        "fiba-africa-basketball-league",
+	"fiba-europe-cup",
+        "ftbol-sala-primera-divisin",
+        "hunan-football-league",
+        "international-friendly",
         "liga-nova-kbm",
         "national-basketball-association-g-league",
+        "philippine-basketball-governors-cup",
+        "portuguese-u23-league",
         "premier-padel",
-        "atp-challenger-orleans",
-        "svenska-basketligan"
+        "romanian-liga-ii",
+        "slovenia-basketball-cup",
+        "svenska-basketligan",
+	"uruguay-cup",
+        "vtb-united-league"
     ]
 
     time_re = re.compile(r"\b(\d{1,2}):(\d{2})\b")
