@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila exhaustivamente todos los eventos de FCTV33 buscando únicamente partidos reales (-match-)."""
+    """Recopila todos los eventos de FCTV33 manteniendo la extracción original y separando correctamente competición y evento."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -131,10 +131,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     base_url = f"https://{domain}"
 
     sports_config = [
-        ("football", "Fútbol", "⚽", "football", "/es/football.html"),
-        ("basketball", "Baloncesto", "🏀", "basketball", "/es/basketball.html"),
-        ("tennis", "Tenis", "🎾", "tennis", "/es/tennis.html"),
-        ("motorsport", "Motor", "🏆", "motorsport", "/es/motorsport.html")
+        ("football", "Fútbol", "⚽", "football", ["/es/football/", "/football/"]),
+        ("basketball", "Baloncesto", "🏀", "basketball", ["/es/basketball/", "/basketball/"]),
+        ("tennis", "Tenis", "🎾", "tennis", ["/es/tennis/", "/tennis/"]),
+        ("motorsport", "Motor", "🏆", "motorsport", ["/es/motorsport/", "/motorsport/"])
     ]
 
     time_re = re.compile(r"\b(\d{1,2}):(\d{2})\b")
@@ -142,150 +142,135 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-setuid-sandbox"
-            ]
+            args=["--disable-blink-features=AutomationControlled", "--no-sandbox"]
         )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            locale="es-ES",
             timezone_id="Europe/Madrid"
         )
         page = context.new_page()
 
-        for sport_key, sport_label, icon, comp_key, path in sports_config:
+        for sport_key, sport_label, icon, comp_key, paths in sports_config:
             sport_events = []
             seen_keys = set()
-            url = urljoin(base_url, path)
 
-            for attempt in range(3):
-                try:
-                    print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt+1}) ---")
-                    page.goto(url, timeout=35000, wait_until="domcontentloaded")
-                    page.wait_for_timeout(2000)
-                    
-                    # Scroll progresivo para cargar lazy-loading
-                    for _ in range(5):
-                        page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-                        page.wait_for_timeout(1000)
+            for path in paths:
+                url = urljoin(base_url, path)
+                raw_cards = []
 
-                    raw_cards = page.evaluate(f"""() => {{
-                        const results = [];
-                        // Seleccionar SOLO enlaces de partidos reales que contengan '-match-'
-                        const links = document.querySelectorAll('a[href*="-match-"]');
-                        links.forEach(a => {{
-                            const href = a.getAttribute('href') || '';
-                            const card = a.closest('div, li, tr') || a.parentElement;
-                            
-                            // Buscar la cabecera de la liga/competición en elementos superiores
-                            let compHeader = "";
-                            let curr = card;
-                            for (let i = 0; i < 5 && curr; i++) {{
-                                let prev = curr.previousElementSibling;
-                                while (prev) {{
-                                    const text = (prev.innerText || prev.textContent || '').trim();
-                                    if (text && text.length > 2 && text.length < 100 && !text.includes(':') && !text.includes('1 X 2')) {{
-                                        compHeader = text;
+                for attempt in range(3):
+                    try:
+                        page.goto(url, timeout=30000, wait_until="domcontentloaded")
+                        page.wait_for_timeout(2000)
+                        
+                        # Realizar scroll para asegurar carga completa
+                        for _ in range(4):
+                            page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+                            page.wait_for_timeout(800)
+
+                        raw_cards = page.evaluate(f"""() => {{
+                            const results = [];
+                            const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
+                            links.forEach(a => {{
+                                const card = a.closest('div, li, tr') || a.parentElement;
+                                let compHeader = "";
+                                let parent = card ? card.parentElement : null;
+                                for (let i = 0; i < 3 && parent; i++) {{
+                                    const prevElem = parent.previousElementSibling;
+                                    if (prevElem && prevElem.innerText && prevElem.innerText.length < 120 && !prevElem.innerText.includes(':')) {{
+                                        compHeader = prevElem.innerText.trim();
                                         break;
                                     }}
-                                    prev = prev.previousElementSibling;
+                                    parent = parent.parentElement;
                                 }}
-                                if (compHeader) break;
-                                curr = curr.parentElement;
-                            }}
-
-                            results.push({{
-                                href: href,
-                                cardText: card ? (card.innerText || card.textContent || '') : (a.innerText || a.textContent || ''),
-                                linkText: a.innerText || a.textContent || '',
-                                compHeader: compHeader
+                                results.push({{
+                                    href: a.getAttribute('href'),
+                                    cardText: card ? (card.innerText || card.textContent || '') : (a.innerText || a.textContent || ''),
+                                    linkText: a.innerText || a.textContent || '',
+                                    compHeader: compHeader
+                                }});
                             }});
-                        }});
-                        return results;
-                    }}""")
+                            return results;
+                        }}""")
 
-                    if raw_cards:
-                        print(f"   -> Tarjetas de partido extraídas para '{sport_label}': {len(raw_cards)}")
-                        break
-                except Exception as e:
-                    print(f"   -> Error en intento {attempt+1}: {e}")
-                    page.wait_for_timeout(2000)
+                        if raw_cards:
+                            break
+                    except Exception:
+                        page.wait_for_timeout(2000)
 
-            for item in raw_cards:
-                href = item.get("href", "")
-                if not href:
-                    continue
-                
-                full_url = urljoin(base_url, href)
-                card_text = item.get("cardText", "").strip()
-                comp_header = item.get("compHeader", "").strip()
-                link_text = item.get("linkText", "").strip()
+                for item in raw_cards:
+                    href = item.get("href", "")
+                    if not href or f"/{sport_key}/" not in href:
+                        continue
+                    full_url = urljoin(base_url, href)
 
-                extracted_time = "LIVE"
-                time_match = time_re.search(card_text)
-                if time_match:
-                    h, m = time_match.groups()
-                    extracted_time = f"{int(h):02d}:{m}"
+                    card_text = item.get("cardText", "").strip()
+                    comp_header = item.get("compHeader", "").strip()
+                    link_text = item.get("linkText", "").strip()
 
-                comp_str = comp_header if comp_header else sport_label
+                    extracted_time = "LIVE"
+                    time_match = time_re.search(card_text)
+                    if time_match:
+                        h, m = time_match.groups()
+                        extracted_time = f"{int(h):02d}:{m}"
 
-                # Limpieza de texto para obtener Local vs Visitante
-                lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet", "1 x 2"])]
-                lines = [l for l in lines if not time_re.fullmatch(l) and not re.fullmatch(r"\d+\.\d+", l)]
+                    # Asignar competición y limpiar evento correctamente
+                    comp_str = comp_header if comp_header else sport_label
+                    event_str = link_text if link_text else "Evento FCTV33"
 
-                event_str = ""
-                if len(lines) >= 2:
-                    lower_lines = [x.lower() for x in lines]
-                    if "vs" in lower_lines:
-                        vs_idx = lower_lines.index("vs")
-                        if vs_idx > 0 and vs_idx + 1 < len(lines):
-                            event_str = f"{lines[vs_idx-1]} vs {lines[vs_idx+1]}"
-                    if not event_str:
-                        event_str = f"{lines[0]} - {lines[1]}"
-                elif len(lines) == 1:
-                    event_str = lines[0]
-                else:
-                    event_str = link_text if link_text else f"Partido {sport_label}"
+                    if card_text:
+                        lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet", "1 x 2"])]
+                        lines = [l for l in lines if not time_re.fullmatch(l) and not re.fullmatch(r"\d+\.\d+", l)]
+                        
+                        if len(lines) >= 2:
+                            if not comp_header:
+                                comp_str = lines[0].title()
+                                event_str = " - ".join(lines[1:]).title()
+                            else:
+                                event_str = " - ".join(lines).title()
+                        elif len(lines) == 1:
+                            event_str = lines[0].title()
 
-                event_str = re.sub(r"\s+-\s+.*", "", event_str)
+                    # Eliminar la información secundaria sobrante del evento
+                    event_str = re.sub(r"\s*-\s*(orange|movistar|dazn|bet).*$", "", event_str, flags=re.IGNORECASE).strip()
 
-                unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
-                if unique_key in seen_keys:
-                    continue
-                seen_keys.add(unique_key)
+                    unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
+                    if unique_key in seen_keys:
+                        continue
+                    seen_keys.add(unique_key)
 
-                parsed_url = urlparse(full_url)
-                query = parsed_url.query
-                if "icg=" not in query:
-                    query = f"{query}&" if query else ""
-                    query += "icg=RVM&ilang=es"
-                elif "ilang=" not in query:
-                    query += "&ilang=es"
+                    parsed_url = urlparse(full_url)
+                    query = parsed_url.query
+                    if "icg=" not in query:
+                        query = f"{query}&" if query else ""
+                        query += "icg=RVM&ilang=es"
+                    elif "ilang=" not in query:
+                        query += "&ilang=es"
+                    
+                    path_final = parsed_url.path
+                    if sport_key == "football" and not path_final.startswith("/es/"):
+                        path_final = f"/es{path_final}"
 
-                normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{path_final}?{query}"
 
-                sport_events.append({
-                    "date_obj": today_date,
-                    "hora": extracted_time,
-                    "deporte": sport_label,
-                    "icono": icon,
-                    "competicion": comp_str.title(),
-                    "evento": event_str.title(),
-                    "tv_list": [],
-                    "fctv_url": normalized_url,
-                    "is_filtered": True,
-                    "is_configured": True,
-                    "comp_key": comp_key
-                })
+                    sport_events.append({
+                        "date_obj": today_date,
+                        "hora": extracted_time,
+                        "deporte": sport_label,
+                        "icono": icon,
+                        "competicion": comp_str,
+                        "evento": event_str,
+                        "tv_list": [],
+                        "fctv_url": normalized_url,
+                        "is_filtered": True,
+                        "is_configured": True,
+                        "comp_key": comp_key
+                    })
 
             fctv_events_by_sport[sport_key] = sport_events
 
         browser.close()
 
-    total = sum(len(evs) for evs in fctv_events_by_sport.values())
-    print(f"\n--- [FCTV] Total de eventos estructurados recopilados: {total} ---")
     return fctv_events_by_sport
 
 
