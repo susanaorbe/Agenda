@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila exhaustivamente todos los eventos de FCTV33 buscando de forma flexible por deporte."""
+    """Recopila exhaustivamente todos los eventos de FCTV33 extrayendo enlaces directos y horas correctas."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -169,10 +169,11 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                         raw_cards = page.evaluate(f"""() => {{
                             const results = [];
-                            // Búsqueda flexible de enlaces que contengan la clave del deporte
-                            const links = document.querySelectorAll('a[href*="{sport_key}"]');
+                            const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
                             links.forEach(a => {{
                                 const href = a.getAttribute('href') || '';
+                                if (!href || href === '#' || href.endsWith('/{sport_key}/')) return;
+
                                 const card = a.closest('div, li, tr') || a.parentElement;
                                 let compHeader = "";
                                 let parent = card ? card.parentElement : null;
@@ -201,7 +202,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                 for item in raw_cards:
                     href = item.get("href", "")
-                    if not href or sport_key not in href.lower():
+                    if not href:
                         continue
                     full_url = urljoin(base_url, href)
 
