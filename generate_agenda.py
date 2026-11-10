@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila todos los eventos de FCTV33 manteniendo la extracción original y separando correctamente competición y evento."""
+    """Recopila exhaustivamente todos los eventos de FCTV33 buscando de forma flexible por deporte."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -163,15 +163,16 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         page.goto(url, timeout=30000, wait_until="domcontentloaded")
                         page.wait_for_timeout(2000)
                         
-                        # Realizar scroll para asegurar carga completa
                         for _ in range(4):
                             page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                             page.wait_for_timeout(800)
 
                         raw_cards = page.evaluate(f"""() => {{
                             const results = [];
-                            const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
+                            // Búsqueda flexible de enlaces que contengan la clave del deporte
+                            const links = document.querySelectorAll('a[href*="{sport_key}"]');
                             links.forEach(a => {{
+                                const href = a.getAttribute('href') || '';
                                 const card = a.closest('div, li, tr') || a.parentElement;
                                 let compHeader = "";
                                 let parent = card ? card.parentElement : null;
@@ -184,7 +185,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                     parent = parent.parentElement;
                                 }}
                                 results.push({{
-                                    href: a.getAttribute('href'),
+                                    href: href,
                                     cardText: card ? (card.innerText || card.textContent || '') : (a.innerText || a.textContent || ''),
                                     linkText: a.innerText || a.textContent || '',
                                     compHeader: compHeader
@@ -200,7 +201,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                 for item in raw_cards:
                     href = item.get("href", "")
-                    if not href or f"/{sport_key}/" not in href:
+                    if not href or sport_key not in href.lower():
                         continue
                     full_url = urljoin(base_url, href)
 
@@ -214,9 +215,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         h, m = time_match.groups()
                         extracted_time = f"{int(h):02d}:{m}"
 
-                    # Asignar competición y limpiar evento correctamente
                     comp_str = comp_header if comp_header else sport_label
-                    event_str = link_text if link_text else "Evento FCTV33"
+                    event_str = link_text if link_text else f"Partido {sport_label}"
 
                     if card_text:
                         lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet", "1 x 2"])]
@@ -231,7 +231,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         elif len(lines) == 1:
                             event_str = lines[0].title()
 
-                    # Eliminar la información secundaria sobrante del evento
                     event_str = re.sub(r"\s*-\s*(orange|movistar|dazn|bet).*$", "", event_str, flags=re.IGNORECASE).strip()
 
                     unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
