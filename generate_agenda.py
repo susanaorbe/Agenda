@@ -121,7 +121,7 @@ def get_dynamic_domain() -> str:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila exhaustivamente todos los eventos de FCTV33 extrayendo enlaces directos y horas correctas."""
+    """Recopila exhaustivamente todos los eventos de FCTV33 extrayendo horas, competiciones y enfrentamientos correctos."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -142,7 +142,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=["--disable-blink-features=AutomationControlled", "--no-sandbox"]
+            args=["--disable-blink-features=AutomationControlled"]
         )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -160,33 +160,33 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                 for attempt in range(3):
                     try:
+                        print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt+1}) ---")
                         page.goto(url, timeout=30000, wait_until="domcontentloaded")
-                        page.wait_for_timeout(2000)
+                        try:
+                            page.wait_for_selector("a[href]", timeout=10000)
+                        except Exception:
+                            page.wait_for_timeout(4000)
                         
-                        for _ in range(4):
-                            page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
-                            page.wait_for_timeout(800)
-
                         raw_cards = page.evaluate(f"""() => {{
                             const results = [];
+                            // Seleccionar todos los enlaces del deporte correspondiente
                             const links = document.querySelectorAll('a[href*="/{sport_key}/"]');
                             links.forEach(a => {{
-                                const href = a.getAttribute('href') || '';
-                                if (!href || href === '#' || href.endsWith('/{sport_key}/')) return;
-
+                                // Buscar el contenedor de la tarjeta o fila del evento
                                 const card = a.closest('div, li, tr') || a.parentElement;
+                                // Buscar la cabecera de competición (suele estar en un contenedor superior inmediato con texto de categoría)
                                 let compHeader = "";
                                 let parent = card ? card.parentElement : null;
                                 for (let i = 0; i < 3 && parent; i++) {{
                                     const prevElem = parent.previousElementSibling;
-                                    if (prevElem && prevElem.innerText && prevElem.innerText.length < 120 && !prevElem.innerText.includes(':')) {{
+                                    if (prevElem && prevElem.innerText && prevElem.innerText.length < 100 && !prevElem.innerText.includes(':')) {{
                                         compHeader = prevElem.innerText.trim();
                                         break;
                                     }}
                                     parent = parent.parentElement;
                                 }}
                                 results.push({{
-                                    href: href,
+                                    href: a.getAttribute('href'),
                                     cardText: card ? (card.innerText || card.textContent || '') : (a.innerText || a.textContent || ''),
                                     linkText: a.innerText || a.textContent || '',
                                     compHeader: compHeader
@@ -196,13 +196,15 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         }}""")
 
                         if raw_cards:
+                            print(f"   -> Tarjetas extraídas para '{sport_label}': {len(raw_cards)}")
                             break
-                    except Exception:
-                        page.wait_for_timeout(2000)
+                    except Exception as e:
+                        print(f"   -> Error en intento {attempt+1}: {e}")
+                        page.wait_for_timeout(3000)
 
                 for item in raw_cards:
                     href = item.get("href", "")
-                    if not href:
+                    if not href or f"/{sport_key}/" not in href:
                         continue
                     full_url = urljoin(base_url, href)
 
@@ -210,30 +212,31 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     comp_header = item.get("compHeader", "").strip()
                     link_text = item.get("linkText", "").strip()
 
+                    # Extraer hora exacta de la tarjeta
                     extracted_time = "LIVE"
                     time_match = time_re.search(card_text)
                     if time_match:
                         h, m = time_match.groups()
                         extracted_time = f"{int(h):02d}:{m}"
 
-                    comp_str = comp_header if comp_header else sport_label
-                    event_str = link_text if link_text else f"Partido {sport_label}"
+                    # Limpiar y determinar competición y evento
+                    comp_str = sport_label
+                    event_str = link_text if link_text else "Evento FCTV33"
+
+                    if comp_header:
+                        comp_str = comp_header
 
                     if card_text:
                         lines = [l.strip() for l in card_text.split("\n") if l.strip() and not any(x in l.lower() for x in ["ver", "directo", "live", "fctv", "bet", "1 x 2"])]
-                        lines = [l for l in lines if not time_re.fullmatch(l) and not re.fullmatch(r"\d+\.\d+", l)]
-                        
-                        if len(lines) >= 2:
-                            if not comp_header:
+                        lines = [l for l in lines if not time_re.fullmatch(l)]
+                        if lines:
+                            if len(lines) >= 2 and not comp_header:
                                 comp_str = lines[0].title()
                                 event_str = " - ".join(lines[1:]).title()
-                            else:
-                                event_str = " - ".join(lines).title()
-                        elif len(lines) == 1:
-                            event_str = lines[0].title()
+                            elif len(lines) == 1:
+                                event_str = lines[0].title()
 
-                    event_str = re.sub(r"\s*-\s*(orange|movistar|dazn|bet).*$", "", event_str, flags=re.IGNORECASE).strip()
-
+                    # Clave única para evitar duplicados en la misma sección
                     unique_key = (extracted_time, normalize_search_text(comp_str), normalize_search_text(event_str))
                     if unique_key in seen_keys:
                         continue
@@ -246,12 +249,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         query += "icg=RVM&ilang=es"
                     elif "ilang=" not in query:
                         query += "&ilang=es"
-                    
-                    path_final = parsed_url.path
-                    if sport_key == "football" and not path_final.startswith("/es/"):
-                        path_final = f"/es{path_final}"
-
-                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{path_final}?{query}"
+                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
                     sport_events.append({
                         "date_obj": today_date,
@@ -271,6 +269,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
         browser.close()
 
+    total = sum(len(evs) for evs in fctv_events_by_sport.values())
+    print(f"\n--- [FCTV] Total de eventos estructurados recopilados: {total} ---")
     return fctv_events_by_sport
 
 
@@ -390,8 +390,7 @@ def rx(*patterns: str) -> re.Pattern:
 REAL_MADRID_RE = rx(r" real madrid ", r" rm castilla ", r" r\.?\s*madrid ")
 CASTILLA_RE = rx(r" real madrid castilla ", r" rm castilla ", r" castilla ")
 YOUTH_BASKET_RE = rx(r" sub\s*[-]?\d+ ", r" junior ", r" cadete ", r" infantil ")
-# Incluye la versión normalizada 'espana' para búsquedas sobre texto limpio sin eñe
-SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
+SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b")
 
 EXCLUDED_SPORTS_RE = rx(
     r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
@@ -577,12 +576,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
 
     if WORLD_CUP_RE.search(blob):
-        is_fav = bool(SPAIN_SELECTION_RE.search(blob))
-        return ("Fútbol", "⚽", "Copa Mundial de la FIFA", is_fav, True, "", "mundial")
+        return ("Fútbol", "⚽", "Copa Mundial de la FIFA", False, True, "", "mundial")
 
     if EURO_FINAL_RE.search(blob) and not EUROCUP_RE.search(blob):
-        is_fav = bool(SPAIN_SELECTION_RE.search(blob))
-        return ("Fútbol", "⚽", "Eurocopa", is_fav, True, "", "eurocopa")
+        return ("Fútbol", "⚽", "Eurocopa", False, True, "", "eurocopa")
 
     if NATIONS_LEAGUE_RE.search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob))
@@ -1241,14 +1238,12 @@ function updateStatsForActiveView() {
             const rowDate = tr.getAttribute('data-date');
             const isToday = (rowDate === TODAY_DATE_STR);
 
-            // Favoritos cuenta de forma global e incondicional
-            if (isFiltered) favCount++;
-
             let matchesComp = true;
             if (sport === 'tenis') matchesComp = checkedComps.has('tenis');
             else if (sport === 'motor') matchesComp = checkedComps.has('motor');
             else if (sport === 'futbol' || sport === 'baloncesto') matchesComp = compKey ? checkedComps.has(compKey) : false;
 
+            if (isFiltered && matchesComp) favCount++;
             if (rowDate > TODAY_DATE_STR && matchesComp) proxCount++;
 
             if (isToday && matchesComp) {
@@ -1775,6 +1770,13 @@ def generate_html(futbolenlatv_events, fctv33_events):
     futbolenlatv_rows_html = build_rows(futbolenlatv_events, is_fctv=False)
     fctv33_rows_html = build_rows(fctv33_events, is_fctv=True)
 
+    html = HTML_TEMPLATE.replace("{DOMAIN}", domain)
+    html = html.replace("{FECHA_ACT}", fecha_act)
+    html = html.replace("{FILTERED_CNT}", str(filtered_cnt))
+    html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
+    html = html.replace("{MANANA_CNT}", str(slot_counts["manana"]))
+    html = html.replace("{TARDE_CNT}", str(slot_counts["tarde"]))
+    html = html.reset() if hasattr(html, 'reset') else html
     html = HTML_TEMPLATE.replace("{DOMAIN}", domain)
     html = html.replace("{FECHA_ACT}", fecha_act)
     html = html.replace("{FILTERED_CNT}", str(filtered_cnt))
