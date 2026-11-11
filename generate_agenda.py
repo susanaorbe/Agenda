@@ -156,6 +156,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "english-football-league-trophy",
         "eurocup-basketball",
         "europe-womens-basketball-championship-qualifier",
+		"fa-womens-league-cup",
         "fiba-africa-basketball-league",
         "fiba-europe-cup",
 	    "french-division-1-feminine",
