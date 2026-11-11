@@ -165,7 +165,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "liga-nova-kbm",
         "mexico-liga-mx-femenil",
         "national-basketball-association-g-league",
-	"national-basketball-league",
+        "national-basketball-league",
         "panda-cup",
         "philippine-basketball-governors-cup",
         "philippines-mpbl",
@@ -1208,22 +1208,25 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <!-- VISTA 3: CATÁLOGO DE CANALES CDN LIVE TV -->
     <div class="table-card" id="channels-view-container" style="display: none;">
         <div class="guides-banner">
-            <a href="#" class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</a>
-            <a href="#" class="guide-btn" onclick="openGuideView('🏀 Guía de Baloncesto', 'https://sport-tv-guide.live/es/live/baloncesto')">🏀 Guía Baloncesto</a>
-            <a href="#" class="guide-btn" onclick="openGuideView('🎾 Guía de Tenis', 'https://sport-tv-guide.live/es/live/tenis')">🎾 Guía Tenis</a>
-            <a href="#" class="guide-btn" onclick="openGuideView('🏆 Guía de Motor', 'https://sport-tv-guide.live/es/live/deportes-de-motor')">🏆 Guía Motor</a>
+            <button class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</button>
+            <button class="guide-btn" onclick="openGuideView('🏀 Guía de Baloncesto', 'https://sport-tv-guide.live/es/live/baloncesto')">🏀 Guía Baloncesto</button>
+            <button class="guide-btn" onclick="openGuideView('🎾 Guía de Tenis', 'https://sport-tv-guide.live/es/live/tenis')">🎾 Guía Tenis</button>
+            <button class="guide-btn" onclick="openGuideView('🏆 Guía de Motor', 'https://sport-tv-guide.live/es/live/deportes-de-motor')">🏆 Guía Motor</button>
         </div>
         <div id="channelsGrid" class="channels-grid">
             <div class="empty-state">Cargando canales...</div>
         </div>
     </div>
 
-    <!-- VISTA 4: VISTA DE GUÍAS CON LOGIN PERSISTENTE INTEGRADO -->
+    <!-- VISTA 4: VISTA DE GUÍAS CON SOPORTE DE LOGIN INTEGRADO -->
     <div class="table-card" id="guide-view-container" style="display: none; padding: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <button onclick="switchView('channels')" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">← Volver a Canales</button>
             <strong id="guide-title" style="color: #38bdf8; font-size: 1rem;">Guía</strong>
-            <a id="guide-login-btn" href="https://sport-tv-guide.live/es/user/login" target="_blank" class="btn-update" style="text-decoration: none; background: #8b5cf6;">🔐 Iniciar Sesión / Login</a>
+            <div style="display: flex; gap: 8px;">
+                <a id="guide-login-link" href="https://sport-tv-guide.live/es/user/login" target="_blank" class="btn-update" style="text-decoration: none; background: #8b5cf6;">🔐 Loguearse en Web Original</a>
+                <button onclick="reloadGuideIframe()" class="btn-update" style="background: #3b82f6;">🔄 Refrescar Guía</button>
+            </div>
         </div>
         <div style="width: 100%; height: 75vh; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
             <iframe id="guide-iframe" src="" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
@@ -1451,8 +1454,11 @@ function switchView(viewName) {
     updateStickyHeadingOffset();
 }
 
+let currentGuideUrl = '';
+
 function openGuideView(title, url) {
     currentActiveView = 'guide';
+    currentGuideUrl = url;
     const btnFutbolenlatv = document.getElementById('btn-view-futbolenlatv');
     const btnFctv33 = document.getElementById('btn-view-fctv33');
     const btnChannels = document.getElementById('btn-view-channels');
@@ -1476,6 +1482,13 @@ function openGuideView(title, url) {
         iframe.src = url;
     }
     updateStickyHeadingOffset();
+}
+
+function reloadGuideIframe() {
+    const iframe = document.getElementById('guide-iframe');
+    if (iframe && currentGuideUrl) {
+        iframe.src = currentGuideUrl;
+    }
 }
 
 async function initApp() {
@@ -1727,7 +1740,7 @@ function applyFilters() {
             if (tr.id === 'dynamicEmptyState') continue;
 
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-            const isFiltered = tr.getAttribute('data-filtered') === 'true';
+            const isFiltered = tr.getAttribute('data-filtered'] === 'true';
             const sport = cleanStr(tr.getAttribute('data-sport')); 
             const rowDate = tr.getAttribute('data-date');
 
