@@ -138,11 +138,16 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     ]
 
     excluded_url_patterns = [
-        "argentine-reserve-league",
+        "afc-u17-asian-cup",
+	"argentine-reserve-league",
+	"argentinian-liga-nacional-de-bosquetbol",
         "atp-challenger-orleans",
         "bahrain-premier-league",
         "basketball-champions-league",
         "basketball-super-league-1",
+	"b1-league",
+	"chinese-football-assorciation-u-20-league",
+	"colombian-copa-betplay-dimayor",
         "egyptian-scores-cup",
 	"english-football-league-trophy",
         "eurocup-basketball",
@@ -150,15 +155,24 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 	"fiba-europe-cup",
         "ftbol-sala-primera-divisin",
         "hunan-football-league",
+	"indian-bangalore-super-division",
         "international-friendly",
+	"j-league-yamazaki-biscuit-levain-cup"
+	"korean-basketball-league",
         "liga-nova-kbm",
+	"mexico-liga-mx-femenil",
         "national-basketball-association-g-league",
+	"panda-cup",
         "philippine-basketball-governors-cup",
+	"philippines-university-athletic-association",
         "portuguese-u23-league",
         "premier-padel",
         "romanian-liga-ii",
+	"saff-championship",
         "slovenia-basketball-cup",
         "svenska-basketligan",
+	"thai-league-3",
+	"uefa-european-u17-football-championship",
 	"uruguay-cup",
         "vtb-united-league"
     ]
