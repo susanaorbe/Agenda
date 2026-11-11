@@ -139,48 +139,47 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
     excluded_url_patterns = [
         "afc-u17-asian-cup",
-		"argentine-reserve-league",
-		"argentinian-liga-nacional-de-bosquetbol",
+        "argentine-reserve-league",
+        "argentinian-liga-nacional-de-bosquetbol",
         "atp-challenger-orleans",
         "bahrain-premier-league",
         "basketball-champions-league",
         "basketball-super-league-1",
-		"b1-league",
-		"chinese-football-assorciation-u-20-league",
-		"colombian-copa-betplay-dimayor",
-		"east-asia-super-league",
+        "b1-league",
+        "chinese-football-assorciation-u-20-league",
+        "colombian-copa-betplay-dimayor",
+        "east-asia-super-league",
         "egyptian-scores-cup",
-		"english-football-league-trophy",
+        "english-football-league-trophy",
         "eurocup-basketball",
-		"europe-womens-basketball-championship-qualifier",
+        "europe-womens-basketball-championship-qualifier",
         "fiba-africa-basketball-league",
-		"fiba-europe-cup",
+        "fiba-europe-cup",
         "ftbol-sala-primera-divisin",
         "hunan-football-league",
-		"indian-bangalore-super-division",
+        "indian-bangalore-super-division",
         "international-friendly",
-		"j-league-yamazaki-biscuit-levain-cup"
-		"korean-basketball-league",
-		"korean-womens-basketball-league",
-		"korean-basketball-league",
+        "j-league-yamazaki-biscuit-levain-cup",
+        "korean-basketball-league",
+        "korean-womens-basketball-league",
         "liga-nova-kbm",
-		"mexico-liga-mx-femenil",
+        "mexico-liga-mx-femenil",
         "national-basketball-association-g-league",
-		"panda-cup",
+        "panda-cup",
         "philippine-basketball-governors-cup",
-		"philippines-mpbl",
-		"philippines-university-athletic-association",
+        "philippines-mpbl",
+        "philippines-university-athletic-association",
         "portuguese-u23-league",
         "premier-padel",
         "romanian-liga-ii",
-		"saff-championship",
+        "saff-championship",
         "slovenia-basketball-cup",
         "svenska-basketligan",
-		"thai-league-3",
-		"uefa-european-u17-football-championship",
-		"uefa-european-u17-womens-championship",
-		"uefa-european-u19-football-championship",
-		"uruguay-cup",
+        "thai-league-3",
+        "uefa-european-u17-football-championship",
+        "uefa-european-u17-womens-championship",
+        "uefa-european-u19-football-championship",
+        "uruguay-cup",
         "vtb-united-league"
     ]
 
@@ -965,6 +964,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .channel-action { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
         .channel-action:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
 
+        /* Accesos directos a Sport TV Guide */
+        .guides-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; padding: 16px 16px 0 16px; }
+        .guide-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(167, 139, 250, 0.2)); border: 1px solid rgba(59, 130, 246, 0.4); color: #f8fafc; padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; text-decoration: none; text-align: center; }
+        .guide-btn:hover { background: rgba(59, 130, 246, 0.35); border-color: var(--accent-blue); transform: translateY(-1px); }
+
         /* Estilos para los botones alfabéticos de canales */
         .letter-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-width: 28px; text-align: center; }
         .letter-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
@@ -1050,6 +1054,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 padding: 8px;
                 gap: 6px;
             }
+            .guides-banner { grid-template-columns: repeat(2, 1fr); padding: 8px 8px 0 8px; }
         }
     </style>
 </head>
@@ -1201,8 +1206,25 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     <!-- VISTA 3: CATÁLOGO DE CANALES CDN LIVE TV -->
     <div class="table-card" id="channels-view-container" style="display: none;">
+        <div class="guides-banner">
+            <a href="#" class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</a>
+            <a href="#" class="guide-btn" onclick="openGuideView('🏀 Guía de Baloncesto', 'https://sport-tv-guide.live/es/live/baloncesto')">🏀 Guía Baloncesto</a>
+            <a href="#" class="guide-btn" onclick="openGuideView('🎾 Guía de Tenis', 'https://sport-tv-guide.live/es/live/tenis')">🎾 Guía Tenis</a>
+            <a href="#" class="guide-btn" onclick="openGuideView('🏆 Guía de Motor', 'https://sport-tv-guide.live/es/live/deportes-de-motor')">🏆 Guía Motor</a>
+        </div>
         <div id="channelsGrid" class="channels-grid">
             <div class="empty-state">Cargando canales...</div>
+        </div>
+    </div>
+
+    <!-- VISTA 4: VISTA DE GUÍAS EXTERNAS EMBRIDADAS (SPORT TV GUIDE) -->
+    <div class="table-card" id="guide-view-container" style="display: none; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <button onclick="switchView('channels')" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">← Volver a Canales</button>
+            <strong id="guide-title" style="color: #38bdf8; font-size: 1rem;">Guía</strong>
+        </div>
+        <div style="width: 100%; height: 75vh; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
+            <iframe id="guide-iframe" src="" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
         </div>
     </div>
 </div>
@@ -1387,6 +1409,7 @@ function switchView(viewName) {
     const futbolenlatvContainer = document.getElementById('futbolenlatv-view-container');
     const fctv33Container = document.getElementById('fctv33-view-container');
     const channelsContainer = document.getElementById('channels-view-container');
+    const guideContainer = document.getElementById('guide-view-container');
     
     const futbolenlatvControls = document.getElementById('futbolenlatv-controls');
     const fctv33Controls = document.getElementById('fctv33-controls');
@@ -1399,6 +1422,7 @@ function switchView(viewName) {
     futbolenlatvContainer.style.display = 'none';
     fctv33Container.style.display = 'none';
     channelsContainer.style.display = 'none';
+    guideContainer.style.display = 'none';
     futbolenlatvControls.style.display = 'none';
     fctv33Controls.style.display = 'none';
     channelsControls.style.display = 'none';
@@ -1421,6 +1445,33 @@ function switchView(viewName) {
         channelsContainer.style.display = 'block';
         channelsControls.style.display = 'block';
         loadChannelsCatalog();
+    }
+    updateStickyHeadingOffset();
+}
+
+function openGuideView(title, url) {
+    currentActiveView = 'guide';
+    const btnFutbolenlatv = document.getElementById('btn-view-futbolenlatv');
+    const btnFctv33 = document.getElementById('btn-view-fctv33');
+    const btnChannels = document.getElementById('btn-view-channels');
+    
+    btnFutbolenlatv.classList.remove('active');
+    btnFctv33.classList.remove('active');
+    btnChannels.classList.remove('active');
+
+    document.getElementById('futbolenlatv-view-container').style.display = 'none';
+    document.getElementById('fctv33-view-container').style.display = 'none';
+    document.getElementById('channels-view-container').style.display = 'none';
+    document.getElementById('guide-view-container').style.display = 'block';
+    
+    document.getElementById('futbolenlatv-controls').style.display = 'none';
+    document.getElementById('fctv33-controls').style.display = 'none';
+    document.getElementById('channels-controls').style.display = 'none';
+
+    document.getElementById('guide-title').textContent = title;
+    const iframe = document.getElementById('guide-iframe');
+    if (iframe.src !== url) {
+        iframe.src = url;
     }
     updateStickyHeadingOffset();
 }
