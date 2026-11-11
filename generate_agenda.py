@@ -160,8 +160,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 	"indian-bangalore-super-division",
         "international-friendly",
 	"j-league-yamazaki-biscuit-levain-cup"
+	"j-league-yamazaki-biscuit-levain-cup-match-",
 	"korean-basketball-league",
 	"korean-womens-basketball-league",
+	"korean-basketball-league-match-",
         "liga-nova-kbm",
 	"mexico-liga-mx-femenil",
         "national-basketball-association-g-league",
