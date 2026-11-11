@@ -140,6 +140,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     excluded_url_patterns = [
         "afc-u17-asian-cup",
         "argentine-reserve-league",
+	"argentine-womens-league",
         "argentinian-liga-nacional-de-bosquetbol",
         "atp-challenger-orleans",
         "bahrain-premier-league",
@@ -156,6 +157,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "europe-womens-basketball-championship-qualifier",
         "fiba-africa-basketball-league",
         "fiba-europe-cup",
+	"french-division-1-feminine",
         "ftbol-sala-primera-divisin",
         "hunan-football-league",
         "indian-bangalore-super-division",
@@ -164,6 +166,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "korean-basketball-league",
         "korean-womens-basketball-league",
         "liga-nova-kbm",
+	"mali-premiere-division",
         "mexico-liga-mx-femenil",
         "national-basketball-association-g-league",
         "national-basketball-league",
@@ -178,6 +181,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "slovenia-basketball-cup",
         "svenska-basketligan",
         "thai-league-3",
+	"uefa-el-w",
         "uefa-european-u17-football-championship",
         "uefa-european-u17-womens-championship",
         "uefa-european-u19-football-championship",
@@ -240,88 +244,87 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         print(f"   -> Error en intento {attempt} para {path}: {e}")
                         page.wait_for_timeout(3000)
 
-                if cards_extracted:
-                    break
+                if cards_extracted and raw_cards:
+                    for item in raw_cards:
+                        href = item.get("href", "")
+                        if not href or f"/{sport_key}/" not in href or "-match-" not in href:
+                            continue
+                        
+                        href_lower = href.lower()
+                        if any(pattern in href_lower for pattern in excluded_url_patterns):
+                            continue
 
-                for item in raw_cards:
-                    href = item.get("href", "")
-                    if not href or f"/{sport_key}/" not in href or "-match-" not in href:
-                        continue
-                    
-                    href_lower = href.lower()
-                    if any(pattern in href_lower for pattern in excluded_url_patterns):
-                        continue
+                        if "uefa-womens-champions-league-match" in href_lower and "real-madrid-women" not in href_lower:
+                            continue
 
-                    if "uefa-womens-champions-league-match" in href_lower and "real-madrid-women" not in href_lower:
-                        continue
+                        full_url = urljoin(base_url, href)
+                        if full_url in seen_urls:
+                            continue
+                        seen_urls.add(full_url)
 
-                    full_url = urljoin(base_url, href)
-                    if full_url in seen_urls:
-                        continue
-                    seen_urls.add(full_url)
+                        card_text = item.get("cardText", "").strip()
 
-                    card_text = item.get("cardText", "").strip()
+                        extracted_time = "LIVE"
+                        time_match = time_re.search(card_text)
+                        if time_match:
+                            h, m = time_match.groups()
+                            extracted_time = f"{int(h):02d}:{m}"
 
-                    extracted_time = "LIVE"
-                    time_match = time_re.search(card_text)
-                    if time_match:
-                        h, m = time_match.groups()
-                        extracted_time = f"{int(h):02d}:{m}"
-
-                    parsed_path = urlparse(full_url).path
-                    path_parts = [p for p in parsed_path.split("/") if p]
-                    
-                    comp_str = sport_label
-                    event_str = "EVENTO FCTV33"
-
-                    try:
-                        match_segment_idx = -1
-                        for idx, part in enumerate(path_parts):
-                            if "-match-" in part:
-                                match_segment_idx = idx
-                                break
-
-                        if match_segment_idx != -1:
-                            raw_comp_slug = path_parts[match_segment_idx].split("-match-")[0]
-                            comp_str = raw_comp_slug.replace("-", " ").upper()
-
-                            if match_segment_idx + 1 < len(path_parts):
-                                filename = path_parts[match_segment_idx + 1]
-                                if filename.endswith(".html"):
-                                    filename = filename[:-5]
-                                
-                                clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
-                                clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
-                                event_str = clean_slug.replace("-", " ").replace("@VS_SEP@", "-").upper()
-                                event_str = re.sub(r"\s+", " ", event_str).strip()
-                    except Exception as e:
-                        print(f"Error parseando URL {full_url}: {e}")
-
-                    if normalize_search_text(comp_str) == normalize_search_text(event_str):
+                        parsed_path = urlparse(full_url).path
+                        path_parts = [p for p in parsed_path.split("/") if p]
+                        
                         comp_str = sport_label
+                        event_str = "EVENTO FCTV33"
 
-                    parsed_url = urlparse(full_url)
-                    query = parsed_url.query
-                    if "icg=" not in query:
-                        query = f"{query}&" if query else ""
-                        query += "icg=RVM&ilang=es"
-                    elif "ilang=" not in query:
-                        query += "&ilang=es"
-                    normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+                        try:
+                            match_segment_idx = -1
+                            for idx, part in enumerate(path_parts):
+                                if "-match-" in part:
+                                    match_segment_idx = idx
+                                    break
 
-                    sport_events.append({
-                        "date_obj": today_date,
-                        "hora": extracted_time,
-                        "deporte": sport_label,
-                        "icono": icon,
-                        "competicion": comp_str,
-                        "evento": event_str,
-                        "tv_list": [],
-                        "fctv_url": normalized_url,
-                        "is_filtered": False,
-                        "is_configured": True,
-                        "comp_key": comp_key
-                    })
+                            if match_segment_idx != -1:
+                                raw_comp_slug = path_parts[match_segment_idx].split("-match-")[0]
+                                comp_str = raw_comp_slug.replace("-", " ").upper()
+
+                                if match_segment_idx + 1 < len(path_parts):
+                                    filename = path_parts[match_segment_idx + 1]
+                                    if filename.endswith(".html"):
+                                        filename = filename[:-5]
+                                    
+                                    clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
+                                    clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
+                                    event_str = clean_slug.replace("-", " ").replace("@VS_SEP@", "-").upper()
+                                    event_str = re.sub(r"\s+", " ", event_str).strip()
+                        except Exception as e:
+                            print(f"Error parseando URL {full_url}: {e}")
+
+                        if normalize_search_text(comp_str) == normalize_search_text(event_str):
+                            comp_str = sport_label
+
+                        parsed_url = urlparse(full_url)
+                        query = parsed_url.query
+                        if "icg=" not in query:
+                            query = f"{query}&" if query else ""
+                            query += "icg=RVM&ilang=es"
+                        elif "ilang=" not in query:
+                            query += "&ilang=es"
+                        normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+
+                        sport_events.append({
+                            "date_obj": today_date,
+                            "hora": extracted_time,
+                            "deporte": sport_label,
+                            "icono": icon,
+                            "competicion": comp_str,
+                            "evento": event_str,
+                            "tv_list": [],
+                            "fctv_url": normalized_url,
+                            "is_filtered": False,
+                            "is_configured": True,
+                            "comp_key": comp_key
+                        })
+                    break
 
             fctv_events_by_sport[sport_key] = sport_events
 
