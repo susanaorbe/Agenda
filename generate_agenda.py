@@ -131,10 +131,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     base_url = f"https://{domain}"
 
     sports_config = [
-        ("football", "FÚTBOL", "⚽", "football", ["/es/football/", "/football/"]),
-        ("basketball", "BALONCESTO", "🏀", "basketball", ["/es/basketball/", "/basketball/"]),
-        ("tennis", "TENIS", "🎾", "tennis", ["/es/tennis/", "/tennis/"]),
-        ("motorsport", "MOTOR", "🏆", "motorsport", ["/es/motorsport/", "/motorsport/"])
+        ("football", "FÚTBOL", "⚽", "futbol", ["/es/football/", "/football/"]),
+        ("basketball", "BALONCESTO", "🏀", "baloncesto", ["/es/basketball/", "/basketball/"]),
+        ("tennis", "TENIS", "🎾", "tenis", ["/es/tennis/", "/tennis/"]),
+        ("motorsport", "MOTOR", "🏆", "motor", ["/es/motorsport/", "/motorsport/"])
     ]
 
     excluded_url_patterns = [
@@ -146,6 +146,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "basketball-champions-league",
         "basketball-super-league-1",
         "b1-league",
+        "caf-wc",
         "chinese-football-assorciation-u-20-league",
         "colombian-copa-betplay-dimayor",
         "east-asia-super-league",
@@ -200,14 +201,17 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         for sport_key, sport_label, icon, comp_key, paths in sports_config:
             sport_events = []
             seen_urls = set()
+            cards_extracted = False
 
             for path in paths:
+                if cards_extracted:
+                    break
                 url = urljoin(base_url, path)
                 raw_cards = []
 
-                for attempt in range(1, 3):
+                for attempt in range(1, 4):  # Hasta 3 intentos por ruta (6 intentos totales por deporte)
                     try:
-                        print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt}/2) ---")
+                        print(f"\n--- [FCTV] Conectando a {sport_label}: {url} (Intento {attempt}/3) ---")
                         page.goto(url, timeout=30000, wait_until="domcontentloaded")
                         
                         try:
@@ -230,10 +234,14 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                         if raw_cards and len(raw_cards) > 0:
                             print(f"   -> Tarjetas extraídas con éxito para '{sport_label}' en {path}: {len(raw_cards)}")
+                            cards_extracted = True
                             break
                     except Exception as e:
                         print(f"   -> Error en intento {attempt} para {path}: {e}")
                         page.wait_for_timeout(3000)
+
+                if cards_extracted:
+                    break
 
                 for item in raw_cards:
                     href = item.get("href", "")
@@ -310,7 +318,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         "evento": event_str,
                         "tv_list": [],
                         "fctv_url": normalized_url,
-                        "is_filtered": True,
+                        "is_filtered": False,
                         "is_configured": True,
                         "comp_key": comp_key
                     })
@@ -759,9 +767,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     return time_clean, matchup, channels, tournament, text_lines
 
 
-def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
+def fetch_and_parse_agenda() -> list[dict]:
     futbolenlatv_results = []
-    fctv33_results = []
     seen_events = set()
     spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
@@ -769,11 +776,16 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
 
     dynamic_domain = get_dynamic_domain()
     
+    # 1. Recopilar y fusionar eventos de FCTV33 directamente en la agenda principal
     fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
     for sport_key, events_list in fctv_events_by_sport.items():
         for ev in events_list:
-            fctv33_results.append(ev)
+            event_key = (ev["date_obj"], ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+            if event_key not in seen_events:
+                seen_events.add(event_key)
+                futbolenlatv_results.append(ev)
 
+    # 2. Recopilar eventos de Futbolenlatv
     try:
         with create_http_session() as session:
             response = session.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
@@ -887,7 +899,7 @@ def fetch_and_parse_agenda() -> tuple[list[dict], list[dict]]:
         print(f"Error cargando la agenda general: {e}")
 
     futbolenlatv_results.sort(key=lambda x: (x["date_obj"], x["hora"]))
-    return futbolenlatv_results, fctv33_results
+    return futbolenlatv_results
 
 
 # ============================================================================
@@ -915,8 +927,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .nav-tab-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
         .nav-tab-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
-        .btn-toggle-chk { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); padding: 2px 8px; border-radius: 5px; font-size: 0.75rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
-        .btn-toggle-chk:hover { background: rgba(59, 130, 246, 0.4); color: #ffffff; }
         
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
         .stat-card { background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
@@ -1065,8 +1075,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <button class="nav-tab-btn active" id="btn-view-futbolenlatv" onclick="switchView('futbolenlatv')">FUTBOLENLATV</button>
-            <button class="nav-tab-btn" id="btn-view-fctv33" onclick="switchView('fctv33')">FCTV33</button>
+            <button class="nav-tab-btn active" id="btn-view-futbolenlatv" onclick="switchView('futbolenlatv')">AGENDA</button>
             <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">CANALES</button>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
@@ -1076,7 +1085,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
     </header>
     
-    <!-- Controles específicos para FUTBOLENLATV -->
+    <!-- Controles de la Agenda Unificada -->
     <div id="futbolenlatv-controls">
         <div class="stats-grid">
             <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
@@ -1108,24 +1117,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                     <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> 🎾 TENIS</label>
                     <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> 🏆 MOTOR</label>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Controles específicos para FCTV33 (4 pestañas de deportes) -->
-    <div id="fctv33-controls" style="display: none;">
-        <div class="stats-grid" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
-            <div class="stat-card" id="card-fctv-futbol" onclick="setFctvSportFilter('football')">
-                <div><div class="lbl">Fútbol</div><div class="val" style="color:#60a5fa" id="cnt-fctv-futbol">0</div></div><div style="font-size:1.1rem">⚽</div>
-            </div>
-            <div class="stat-card" id="card-fctv-baloncesto" onclick="setFctvSportFilter('basketball')">
-                <div><div class="lbl">Baloncesto</div><div class="val" style="color:#fbbf24" id="cnt-fctv-baloncesto">0</div></div><div style="font-size:1.1rem">🏀</div>
-            </div>
-            <div class="stat-card" id="card-fctv-tenis" onclick="setFctvSportFilter('tennis')">
-                <div><div class="lbl">Tenis</div><div class="val" style="color:#34d399" id="cnt-fctv-tenis">0</div></div><div style="font-size:1.1rem">🎾</div>
-            </div>
-            <div class="stat-card" id="card-fctv-motor" onclick="setFctvSportFilter('motorsport')">
-                <div><div class="lbl">Motor</div><div class="val" style="color:#f43f5e" id="cnt-fctv-motor">0</div></div><div style="font-size:1.1rem">🏆</div>
             </div>
         </div>
     </div>
@@ -1167,7 +1158,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
     </div>
 
-    <!-- VISTA 1: AGENDA FUTBOLENLATV -->
+    <!-- VISTA 1: AGENDA UNIFICADA -->
     <div class="table-card" id="futbolenlatv-view-container">
         <table>
             <thead>
@@ -1186,26 +1177,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </table>
     </div>
 
-    <!-- VISTA 2: AGENDA FCTV33 -->
-    <div class="table-card" id="fctv33-view-container" style="display: none;">
-        <table>
-            <thead>
-                <tr>
-                    <th class="date-col" style="width: 70px;">Fecha</th>
-                    <th class="time-col" style="width: 70px;">Hora</th>
-                    <th class="sport-col" style="width: 155px;">Deporte</th>
-                    <th class="comp-col" style="width: 140px;">Competición</th>
-                    <th>Evento</th>
-                    <th style="width: 250px;">Canal TV</th>
-                </tr>
-            </thead>
-            <tbody id="fctv33Table">
-                {FCTV33_ROWS_HTML}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- VISTA 3: CATÁLOGO DE CANALES CDN LIVE TV -->
+    <!-- VISTA 2: CATÁLOGO DE CANALES CDN LIVE TV -->
     <div class="table-card" id="channels-view-container" style="display: none;">
         <div class="guides-banner">
             <button class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</button>
@@ -1218,7 +1190,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- VISTA 4: VISTA DE GUÍAS A PANTALLA COMPLETA (SIN IFRAME) -->
+    <!-- VISTA 3: VISTA DE GUÍAS A PANTALLA COMPLETA -->
     <div class="table-card" id="guide-view-container" style="display: none; padding: 20px; text-align: center;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <button onclick="switchView('channels')" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">← Volver a Canales</button>
@@ -1248,7 +1220,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 const TODAY_DATE_STR = "{TODAY_DATE_STR}";
 let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
-let currentFctvSport = 'football';
 let currentLetterFilter = 'TODOS';
 let allCatalogChannels = [];
 
@@ -1314,16 +1285,6 @@ function setFilter(filterType) {
     applyFilters();
 }
 
-function setFctvSportFilter(sportKey) {
-    currentFctvSport = sportKey;
-    document.querySelectorAll('#fctv33-controls .stat-card').forEach(card => card.classList.remove('active-card'));
-    const mapping = { 'football': 'futbol', 'basketball': 'baloncesto', 'tennis': 'tenis', 'motorsport': 'motor' };
-    const activeCard = document.getElementById('card-fctv-' + mapping[sportKey]);
-    if (activeCard) activeCard.classList.add('active-card');
-
-    applyFilters();
-}
-
 function updateStatsForActiveView() {
     if (currentActiveView === 'futbolenlatv') {
         const table = document.getElementById('futbolenlatvTable');
@@ -1374,80 +1335,38 @@ function updateStatsForActiveView() {
         if (cardTar) cardTar.textContent = tarCount;
         if (cardNoc) cardNoc.textContent = nocCount;
         if (cardProx) cardProx.textContent = proxCount;
-
-    } else if (currentActiveView === 'fctv33') {
-        const table = document.getElementById('fctv33Table');
-        if (!table) return;
-        const trs = table.getElementsByClassName('event-row');
-
-        let footCount = 0;
-        let baskCount = 0;
-        let tenCount = 0;
-        let motCount = 0;
-
-        for (let i = 0; i < trs.length; i++) {
-            const tr = trs[i];
-            const compKey = tr.getAttribute('data-comp-key');
-            if (compKey === 'football') footCount++;
-            else if (compKey === 'basketball') baskCount++;
-            else if (compKey === 'tennis') tenCount++;
-            else if (compKey === 'motorsport') motCount++;
-        }
-
-        const cFoot = document.getElementById('cnt-fctv-futbol');
-        const cBask = document.getElementById('cnt-fctv-baloncesto');
-        const cTen = document.getElementById('cnt-fctv-tenis');
-        const cMot = document.getElementById('cnt-fctv-motor');
-
-        if (cFoot) cFoot.textContent = footCount;
-        if (cBask) cBask.textContent = baskCount;
-        if (cTen) cTen.textContent = tenCount;
-        if (cMot) cMot.textContent = motCount;
     }
 }
 
 function switchView(viewName) {
     currentActiveView = viewName;
     const btnFutbolenlatv = document.getElementById('btn-view-futbolenlatv');
-    const btnFctv33 = document.getElementById('btn-view-fctv33');
     const btnChannels = document.getElementById('btn-view-channels');
     
     const futbolenlatvContainer = document.getElementById('futbolenlatv-view-container');
-    const fctv33Container = document.getElementById('fctv33-view-container');
     const channelsContainer = document.getElementById('channels-view-container');
     const guideContainer = document.getElementById('guide-view-container');
     
     const futbolenlatvControls = document.getElementById('futbolenlatv-controls');
-    const fctv33Controls = document.getElementById('fctv33-controls');
     const channelsControls = document.getElementById('channels-controls');
 
-    btnFutbolenlatv.classList.remove('active');
-    btnFctv33.classList.remove('active');
-    btnChannels.classList.remove('active');
+    if (btnFutbolenlatv) btnFutbolenlatv.classList.remove('active');
+    if (btnChannels) btnChannels.classList.remove('active');
 
     futbolenlatvContainer.style.display = 'none';
-    fctv33Container.style.display = 'none';
     channelsContainer.style.display = 'none';
     guideContainer.style.display = 'none';
     futbolenlatvControls.style.display = 'none';
-    fctv33Controls.style.display = 'none';
     channelsControls.style.display = 'none';
 
     if (viewName === 'futbolenlatv') {
-        btnFutbolenlatv.classList.add('active');
+        if (btnFutbolenlatv) btnFutbolenlatv.classList.add('active');
         futbolenlatvContainer.style.display = 'block';
         futbolenlatvControls.style.display = 'block';
         updateStatsForActiveView();
         applyFilters();
-    } else if (viewName === 'fctv33') {
-        btnFctv33.classList.add('active');
-        fctv33Container.style.display = 'block';
-        fctv33Controls.style.display = 'block';
-        setFctvSportFilter('football');
-        updateStatsForActiveView();
-        applyFilters();
     } else if (viewName === 'channels') {
-        btnChannels.classList.add('active');
+        if (btnChannels) btnChannels.classList.add('active');
         channelsContainer.style.display = 'block';
         channelsControls.style.display = 'block';
         loadChannelsCatalog();
@@ -1458,25 +1377,20 @@ function switchView(viewName) {
 function openGuideView(title, url) {
     currentActiveView = 'guide';
     const btnFutbolenlatv = document.getElementById('btn-view-futbolenlatv');
-    const btnFctv33 = document.getElementById('btn-view-fctv33');
     const btnChannels = document.getElementById('btn-view-channels');
     
-    btnFutbolenlatv.classList.remove('active');
-    btnFctv33.classList.remove('active');
-    btnChannels.classList.remove('active');
+    if (btnFutbolenlatv) btnFutbolenlatv.classList.remove('active');
+    if (btnChannels) btnChannels.classList.remove('active');
 
     document.getElementById('futbolenlatv-view-container').style.display = 'none';
-    document.getElementById('fctv33-view-container').style.display = 'none';
     document.getElementById('channels-view-container').style.display = 'none';
     document.getElementById('guide-view-container').style.display = 'block';
     
     document.getElementById('futbolenlatv-controls').style.display = 'none';
-    document.getElementById('fctv33-controls').style.display = 'none';
     document.getElementById('channels-controls').style.display = 'none';
 
     document.getElementById('guide-title').textContent = title;
     
-    // Al pulsar este botón, se abre la web externa en la misma pestaña actual
     const externalLinkBtn = document.getElementById('guide-external-link');
     externalLinkBtn.href = url;
     externalLinkBtn.target = '_self';
@@ -1768,37 +1682,6 @@ function applyFilters() {
                 table.appendChild(emptyRow);
             } else { emptyRow.style.display = ''; }
         } else { if (emptyRow) emptyRow.style.display = 'none'; }
-
-    } else if (currentActiveView === 'fctv33') {
-        const table = document.getElementById('fctv33Table');
-        if (!table) return;
-        const trs = table.getElementsByClassName('event-row');
-        let visibleCount = 0;
-
-        for (let i = 0; i < trs.length; i++) {
-            const tr = trs[i];
-            if (tr.id === 'dynamicEmptyState') continue;
-
-            const compKey = tr.getAttribute('data-comp-key');
-            if (compKey === currentFctvSport) {
-                tr.style.display = '';
-                visibleCount++;
-            } else {
-                tr.style.display = 'none';
-            }
-        }
-
-        updateStatsForActiveView();
-
-        let emptyRow = table.querySelector('#dynamicEmptyState');
-        if (visibleCount === 0) {
-            if (!emptyRow) {
-                emptyRow = document.createElement('tr');
-                emptyRow.id = 'dynamicEmptyState';
-                emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos disponibles para este deporte.</td>';
-                table.appendChild(emptyRow);
-            } else { emptyRow.style.display = ''; }
-        } else { if (emptyRow) emptyRow.style.display = 'none'; }
     }
 }
 </script>
@@ -1807,7 +1690,7 @@ function applyFilters() {
 """
 
 
-def generate_html(futbolenlatv_events, fctv33_events):
+def generate_html(futbolenlatv_events):
     spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
@@ -1820,82 +1703,81 @@ def generate_html(futbolenlatv_events, fctv33_events):
     def clean_key(s):
         return normalize_search_text(s)
 
-    def build_rows(events, is_fctv=False):
-        rows_list = []
-        if not events:
-            rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
-        else:
-            for ev in events:
-                tv_badges_list = []
-                for channel in ev["tv_list"]:
-                    safe_channel = escape(str(channel), quote=True)
-                    tv_badges_list.append(
-                        f'<span class="tv-badge" title="Canal {safe_channel}">{safe_channel}</span>'
-                    )
-
-                if ev.get("fctv_url"):
-                    fctv_safe_url = escape(ev["fctv_url"], quote=True)
-                    tv_badges_list.append(
-                        f'<a href="{fctv_safe_url}" target="_blank" class="tv-badge channel-chip-link" title="Ver en FCTV33">FCTV33 🔗</a>'
-                    )
-
-                tv_badges = "".join(tv_badges_list)
-                
-                ev_date = ev["date_obj"]
-                if ev_date == today_date:
-                    date_badge_html = '<span class="date-badge today">Hoy</span>'
-                else:
-                    date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
-
-                slot = get_time_slot(ev["hora"])
-                safe_slot = escape(clean_key(slot), quote=True)
-
-                search_text = normalize_search_text(" ".join(
-                    [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
-                ))
-                safe_search = escape(search_text, quote=True)
-                
-                if ev["hora"] == "LIVE":
-                    safe_time = '<span class="time-badge" style="background:#10b981;">LIVE</span>'
-                    event_timestamp = int(datetime.now(spain_tz).timestamp() * 1000)
-                else:
-                    try:
-                        time_obj = datetime.strptime(ev["hora"], "%H:%M").time()
-                    except ValueError:
-                        time_obj = datetime.strptime("00:00", "%H:%M").time()
-                    event_datetime = datetime.combine(ev_date, time_obj).replace(tzinfo=spain_tz)
-                    event_timestamp = int(event_datetime.timestamp() * 1000)
-                    safe_time = f'<span class="time-badge">{escape(str(ev["hora"]))}</span>'
-
-                safe_timestamp = str(event_timestamp)
-                safe_date_str = escape(ev_date.isoformat(), quote=True)
-                safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
-                safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
-                safe_icon = escape(str(ev["icono"]))
-                safe_sport = escape(str(ev["deporte"]))
-                safe_competition = escape(str(ev["competicion"]))
-                safe_event = escape(str(ev["evento"]))
-
-                is_filtered_str = str(ev["is_filtered"]).lower()
-                is_configured_str = str(ev["is_configured"]).lower()
-                favorite_pin_html = (
-                    '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
-                    if ev["is_filtered"] and not is_fctv else ""
+    rows_list = []
+    if not futbolenlatv_events:
+        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
+    else:
+        for ev in futbolenlatv_events:
+            tv_badges_list = []
+            for channel in ev["tv_list"]:
+                safe_channel = escape(str(channel), quote=True)
+                tv_badges_list.append(
+                    f'<span class="tv-badge" title="Canal {safe_channel}">{safe_channel}</span>'
                 )
-                rows_list.append(
-                    f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
-                    f'<td class="date-col cell-date">{date_badge_html}</td>'
-                    f'<td class="time-col cell-time">{safe_time}</td>'
-                    f'<td class="sport-col cell-sport"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
-                    f'<td class="comp-col cell-comp"><div class="comp-title">{favorite_pin_html}{safe_competition}</div></td>'
-                    f'<td class="event-col cell-event"><div class="event-title">{safe_event}</div></td>'
-                    f'<td class="tv-col cell-tv"><div class="tv-container">{tv_badges}</div></td>'
-                    f'</tr>'
-                )
-        return "".join(rows_list)
 
-    futbolenlatv_rows_html = build_rows(futbolenlatv_events, is_fctv=False)
-    fctv33_rows_html = build_rows(fctv33_events, is_fctv=True)
+            if ev.get("fctv_url"):
+                fctv_safe_url = escape(ev["fctv_url"], quote=True)
+                tv_badges_list.append(
+                    f'<a href="{fctv_safe_url}" target="_blank" class="tv-badge channel-chip-link" title="Ver en FCTV33">FCTV33 🔗</a>'
+                )
+
+            tv_badges = "".join(tv_badges_list)
+            
+            ev_date = ev["date_obj"]
+            if ev_date == today_date:
+                date_badge_html = '<span class="date-badge today">Hoy</span>'
+            else:
+                date_badge_html = f'<span class="date-badge">{ev_date.strftime("%d/%m")}</span>'
+
+            slot = get_time_slot(ev["hora"])
+            safe_slot = escape(clean_key(slot), quote=True)
+
+            search_text = normalize_search_text(" ".join(
+                [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+            ))
+            safe_search = escape(search_text, quote=True)
+            
+            if ev["hora"] == "LIVE":
+                safe_time = '<span class="time-badge" style="background:#10b981;">LIVE</span>'
+                event_timestamp = int(datetime.now(spain_tz).timestamp() * 1000)
+            else:
+                try:
+                    time_obj = datetime.strptime(ev["hora"], "%H:%M").time()
+                except ValueError:
+                    time_obj = datetime.strptime("00:00", "%H:%M").time()
+                event_datetime = datetime.combine(ev_date, time_obj).replace(tzinfo=spain_tz)
+                event_timestamp = int(event_datetime.timestamp() * 1000)
+                safe_time = f'<span class="time-badge">{escape(str(ev["hora"]))}</span>'
+
+            safe_timestamp = str(event_timestamp)
+            safe_date_str = escape(ev_date.isoformat(), quote=True)
+            safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
+            safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
+            safe_icon = escape(str(ev["icono"]))
+            safe_sport = escape(str(ev["deporte"]))
+            safe_competition = escape(str(ev["competicion"]))
+            safe_event = escape(str(ev["evento"]))
+
+            is_filtered_str = str(ev["is_filtered"]).lower()
+            is_configured_str = str(ev["is_configured"]).lower()
+            
+            is_fctv_event = bool(ev.get("fctv_url"))
+            favorite_pin_html = (
+                '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
+                if ev["is_filtered"] and not is_fctv_event else ""
+            )
+            rows_list.append(
+                f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
+                f'<td class="date-col cell-date">{date_badge_html}</td>'
+                f'<td class="time-col cell-time">{safe_time}</td>'
+                f'<td class="sport-col cell-sport"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
+                f'<td class="comp-col cell-comp"><div class="comp-title">{favorite_pin_html}{safe_competition}</div></td>'
+                f'<td class="event-col cell-event"><div class="event-title">{safe_event}</div></td>'
+                f'<td class="tv-col cell-tv"><div class="tv-container">{tv_badges}</div></td>'
+                f'</tr>'
+            )
+            
+    futbolenlatv_rows_html = "".join(rows_list)
 
     html = HTML_TEMPLATE.replace("{DOMAIN}", domain)
     html = html.replace("{FECHA_ACT}", fecha_act)
@@ -1907,18 +1789,17 @@ def generate_html(futbolenlatv_events, fctv33_events):
     html = html.replace("{TOTAL_CNT}", str(total_cnt))
     html = html.replace("{TODAY_DATE_STR}", today_date.isoformat())
     html = html.replace("{FUTBOLENLATV_ROWS_HTML}", futbolenlatv_rows_html)
-    html = html.replace("{FCTV33_ROWS_HTML}", fctv33_rows_html)
     return html
 
 
 if __name__ == "__main__":
     update_channels_json_from_api()
     
-    futbolenlatv_events, fctv33_events = fetch_and_parse_agenda()
-    html_content = generate_html(futbolenlatv_events, fctv33_events)
+    futbolenlatv_events = fetch_and_parse_agenda()
+    html_content = generate_html(futbolenlatv_events)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
     print(
         "Archivo index.html generado con éxito. "
-        f"Eventos Futbolenlatv: {len(futbolenlatv_events)} | Eventos FCTV33: {len(fctv33_events)}"
+        f"Eventos totales en la agenda unificada: {len(futbolenlatv_events)}"
     )
