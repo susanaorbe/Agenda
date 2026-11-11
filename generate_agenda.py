@@ -1223,7 +1223,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <button onclick="switchView('channels')" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">← Volver a Canales</button>
             <strong id="guide-title" style="color: #38bdf8; font-size: 1rem;">Guía</strong>
-            <a id="guide-login-btn" href="https://sport-tv-guide.live/es/login" target="_blank" class="btn-update" style="text-decoration: none; background: #8b5cf6;">🔐 Iniciar Sesión / Login</a>
+            <a id="guide-login-btn" href="https://sport-tv-guide.live/es/user/login" target="_blank" class="btn-update" style="text-decoration: none; background: #8b5cf6;">🔐 Iniciar Sesión / Login</a>
         </div>
         <div style="width: 100%; height: 75vh; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
             <iframe id="guide-iframe" src="" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
