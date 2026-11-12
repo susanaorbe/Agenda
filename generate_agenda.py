@@ -138,7 +138,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
 
     # Patrones de exclusión evaluados directamente sobre la URL/ruta
     excluded_url_patterns = [
-        "/american-football/", "/aussie-rules/", "/badminton/", "/fighting/", "/handball/", "es/others/",
+        "/american-football/", "/aussie-rules/", "/badminton/", "/fighting/", "/handball/", "/others/",
         "afc-u17-asian-cup", "argentina-supercopa", "argentine-reserve-league", "argentine-womens-league",
         "argentinian-liga-nacional-de-bosquetbol", "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", 
         "bahrain-premier-league", "basketball-champions-league", "basketball-super-league-1", "b1-league", 
