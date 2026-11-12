@@ -362,7 +362,7 @@ def get_time_slot(time_str: str) -> str:
         total_mins = h * 60 + m
         if total_mins <= 419:
             return "madrugada"
-        elif total_mins <= 839:
+        elif total_mins <= 779:
             return "manana"
         elif total_mins <= 1229:
             return "tarde"
@@ -1600,15 +1600,30 @@ function closePlayerModal() {
 }
 
 function highlightPreviousEvents() {
+    const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+    const nowMs = Date.now();
+    const currentMinuteTimestamp = Math.floor(nowMs / 60000) * 60000;
     const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
+
+    // Si algún evento marcado como EN JUEGO supera las 3 horas desde su inicio, recarga la página
+    const currentlyLiveRows = rows.filter(row => row.classList.contains('previous-event'));
+    for (const row of currentlyLiveRows) {
+        const ts = Number(row.getAttribute('data-ts'));
+        if (Number.isFinite(ts) && (nowMs - ts) > THREE_HOURS_MS) {
+            location.reload();
+            return;
+        }
+    }
+
     rows.forEach(row => row.classList.remove('previous-event'));
-    const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
     let previousTimestamp = null;
 
     rows.forEach(row => {
         if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
         const timestamp = Number(row.getAttribute('data-ts'));
         if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
+        // Ignorar eventos que lleven más de 3 horas desde su inicio
+        if ((nowMs - timestamp) > THREE_HOURS_MS) return;
         if (previousTimestamp === null || timestamp > previousTimestamp) {
             previousTimestamp = timestamp;
         }
@@ -1630,12 +1645,13 @@ window.addEventListener('load', async () => {
     const totalMins = h * 60 + m;
     let initialSlot = 'noche';
     if (totalMins <= 419) initialSlot = 'madrugada';
-    else if (totalMins <= 839) initialSlot = 'manana';
+    else if (totalMins <= 779) initialSlot = 'manana';
     else if (totalMins <= 1229) initialSlot = 'tarde';
     else initialSlot = 'noche';
 
     await initApp();
     highlightPreviousEvents();
+    setInterval(highlightPreviousEvents, 60000);
     updateStatsForActiveView();
     setFilter(initialSlot);
     updateStickyHeadingOffset();
