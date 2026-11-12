@@ -118,7 +118,7 @@ def get_dynamic_domain() -> str:
     with create_http_session() as session:
         for dom in candidate_domains:
             try:
-                test_url = f"https://{dom}/?ptst=1"
+                test_url = f"https://{dom}/es?ptst=1"
                 resp = session.get(test_url, headers=REQUEST_HEADERS, timeout=5)
                 if resp.status_code < 500:
                     print(f"   -> Dominio FCTV activo validado: {dom}")
@@ -128,49 +128,52 @@ def get_dynamic_domain() -> str:
 
     return "www.fctv33go.autos"
 
-def is_fctv_event_allowed(comp_str: str, event_str: str, sport_key: str) -> bool:
-    """Filtra estrictamente los eventos de FCTV33 para permitir solo Fútbol, Baloncesto, Tenis y Motor."""
+def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
+    """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
     allowed_sports = {"football", "basketball", "tennis", "motorsport"}
     if sport_key not in allowed_sports:
         return False
 
+    path_lower = parsed_url_path.lower()
+
+    # Patrones de exclusión evaluados directamente sobre la URL/ruta
     excluded_url_patterns = [
         "/es/american-football/", "/es/aussie-rules/", "/es/badminton/", "/es/fighting/", "/es/handball/", "/es/others/",
-        "afc-u17-asian-cup-match-", "argentina-supercopa-match-", "argentine-reserve-league-match-", "argentine-womens-league-match-",
-        "argentinian-liga-nacional-de-bosquetbol-match-", "asian-le-mans-series-match-", "atp-challenger-orleans-match-", "aus-champ-match-", 
-        "bahrain-premier-league-match-", "basketball-champions-league-match-", "basketball-super-league-1-match-", "b1-league-match-", 
-        "b2-league-match-", "bolivian-copa-lfpb-match-", "brazilian-campeonato-paulista-youth-match-", "brazilian-serie-b-match-", 
-        "caf-africa-cup-of-nations-match-", "caf-wc-match-", "categoria-primera-a-match-", "college-soccer-match-",
-        "colombian-torneo-betplay-dimayor-match-", "concacaf-nations-league-match-", "czech-cup-match-", "china-hong-kong-basketball-league-match-",
-        "chinese-football-assorciation-u-20-league-match-", "colombian-copa-betplay-dimayor-match-",
-        "east-asia-super-league-match-", "egyptian-scores-cup-match-", "el-salvador-reserves-league-match-", "elite-league-u20-match-", 
-        "english-football-league-trophy-match-", "eurocup-basketball-match-", "europe-womens-basketball-championship-qualifier-match-",
-        "fa-womens-league-cup-match-", "fiba-africa-basketball-league-match-", "fiba-europe-cup-match-", "fiba-u16-womens-americup-2027-south-american-qualifiers-match-", 
-        "french-division-1-feminine-match-", "ftbol-sala-primera-divisin-match-", 
-        "hunan-football-league-match-",
-        "indian-bangalore-super-division-match-", "international-friendly-match-", "indian-league-division-1-match-",
-        "j-league-yamazaki-biscuit-levain-cup-match-", "jamaica-premier-league-match-", "japan-womens-basketball-league-match-",
-        "korean-basketball-league-match-", "korean-wk-league-match-", "korean-womens-basketball-league-match-", 
-        "liberian-second-division-match-", "liga-nacional-de-baloncesto-profesional-match-", "liga-nova-kbm-match-", "lithuania-cup-match-",
-        "mali-premiere-division-match-", "mexico-ascenso-mx-match-", "mexico-liga-mx-femenil-match-", "mongolia-premier-league-match-", 
-        "national-basketball-association-g-league-match-", "national-basketball-league-match-", "national-collegiate-athletic-association-match-", 
-        "new-zealand-basketball-league-womens-match-",
-        "oman-tamkeen-league-match-", 
-        "panda-cup-match-", "philippine-basketball-governors-cup-match-", "philippines-mpbl-match-",
-        "philippines-university-athletic-association-match-", "portuguese-u23-league-match-", "premier-padel-match-", 
-        "romanian-liga-ii-match-", 
-        "saff-championship-match-", "slovenia-basketball-cup-match-", "spanish-segunda-division-rfef-match-", "superettan-basket-match-", 
-        "svenska-basketligan-match-",
-        "thai-league-3-match-", 
-        "united-states-womens-premier-league-match-", "uefa-el-w-match-", "uefa-european-u17-football-championship-match-", "uefa-european-u17-womens-championship-match-",
-        "uefa-european-u19-football-championship-match-", "uefa-european-u21-championship-qualification-match-", "uim-e1-world-championship-presented-by-pif-match-", 
-        "ukrainian-basketball-super-league-match-", "ukrainian-first-league-match-", "ukrainian-second-league-match-", "uruguay-cup-match-", 
-        "venezuela-primera-division-match-", "vtb-united-league-match-"
+        "afc-u17-asian-cup", "argentina-supercopa", "argentine-reserve-league", "argentine-womens-league",
+        "argentinian-liga-nacional-de-bosquetbol", "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", 
+        "bahrain-premier-league", "basketball-champions-league", "basketball-super-league-1", "b1-league", 
+        "b2-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
+        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "college-soccer",
+        "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "czech-cup", "china-hong-kong-basketball-league",
+        "chinese-football-assorciation-u-20-league", "colombian-copa-betplay-dimayor",
+        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-reserves-league", "elite-league-u20", 
+        "english-football-league-trophy", "eurocup-basketball", "europe-womens-basketball-championship-qualifier",
+        "fa-womens-league-cup", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
+        "french-division-1-feminine", "ftbol-sala-primera-divisin", 
+        "hunan-football-league",
+        "indian-bangalore-super-division", "international-friendly", "indian-league-division-1",
+        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league",
+        "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
+        "liberian-second-division", "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", 
+        "lithuania-cup",
+        "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
+        "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
+        "new-zealand-basketball-league-womens",
+        "oman-tamkeen-league", 
+        "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl",
+        "philippines-university-athletic-association", "portuguese-u23-league", "premier-padel", 
+        "romanian-liga-ii", 
+        "saff-championship", "slovenia-basketball-cup", "spanish-segunda-division-rfef", "superettan-basket", 
+        "svenska-basketligan",
+        "thai-league-3", "turkey-basketball-league-2",
+        "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship",
+        "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", 
+        "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "uruguay-cup", 
+        "venezuela-primera-division", "vtb-united-league"
     ]
     
-    full_text = normalize_search_text(f"{comp_str} {event_str}")
     for pat in excluded_url_patterns:
-        if pat.replace("-", " ") in full_text:
+        if pat in path_lower:
             return False
             
     return True
@@ -337,6 +340,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             h, m = time_match.groups()
                             extracted_time = f"{int(h):02d}:{m}"
 
+                        # Descartar eventos de FCTV33 que se queden en LIVE para evitar duplicados y directos sin hora exacta
+                        if extracted_time == "LIVE":
+                            continue
+
                         path_parts = [part for part in parsed_url.path.split("/") if part]
                         comp_str = detected_sport_label
                         event_str = "EVENTO FCTV33"
@@ -365,8 +372,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if normalize_search_text(comp_str) == normalize_search_text(event_str):
                             comp_str = detected_sport_label
 
-                        # Aplicar filtro estricto de deportes permitidos
-                        if not is_fctv_event_allowed(comp_str, event_str, detected_sport_key):
+                        # Aplicar filtro estricto de deportes y exclusión de URL
+                        if not is_fctv_event_allowed(parsed_url.path, detected_sport_key):
                             continue
 
                         query = parsed_url.query
