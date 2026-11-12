@@ -174,7 +174,7 @@
         </div>
         <div class="last-update">
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
-            <span>Última actualización: <strong>12/11/2026 - 09:13</strong></span>
+            <span>Última actualización: <strong>12/11/2026 - 13:26</strong></span>
         </div>
     </header>
     
@@ -679,7 +679,6 @@ function highlightPreviousEvents() {
     const currentMinuteTimestamp = Math.floor(nowMs / 60000) * 60000;
     const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
 
-    // Si algún evento marcado como EN JUEGO supera las 3 horas desde su inicio, recarga la página
     const currentlyLiveRows = rows.filter(row => row.classList.contains('previous-event'));
     for (const row of currentlyLiveRows) {
         const ts = Number(row.getAttribute('data-ts'));
@@ -696,7 +695,6 @@ function highlightPreviousEvents() {
         if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
         const timestamp = Number(row.getAttribute('data-ts'));
         if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
-        // Ignorar eventos que lleven más de 3 horas desde su inicio
         if ((nowMs - timestamp) > THREE_HOURS_MS) return;
         if (previousTimestamp === null || timestamp > previousTimestamp) {
             previousTimestamp = timestamp;
