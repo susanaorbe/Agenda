@@ -169,7 +169,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship",
         "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", 
         "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "uruguay-cup", 
-        "venezuela-primera-division", "vtb-united-league"
+        "venezuela-primera-division", "vtb-united-league",
+        "liberia-first-division", "sierra-leone-premier-league", "slovenia-2-liga"
     ]
     
     for pat in excluded_url_patterns:
@@ -395,7 +396,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             "fctv_url": normalized_url,
                             "is_filtered": False,
                             "is_configured": True,
-                            "comp_key": detected_comp_key
+                            "comp_key": detected_comp_key,
+                            "source": "fctv33"
                         })
                 except Exception as e:
                     print(f"   Aviso escaneando categoría {cat}: {e}")
@@ -642,7 +644,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
-    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in tv_blob:
+    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in blob:
         return ("", "", "", False, False, "", "")
     competition_filter_blob = re.sub(r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", blob, flags=re.IGNORECASE)
     if EXCLUDED_COMPETITIONS_RE.search(competition_filter_blob):
@@ -914,7 +916,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "fctv_url": "",
                     "is_filtered": is_fav,
                     "is_configured": True,
-                    "comp_key": "motor"
+                    "comp_key": "motor",
+                    "source": "futbolenlatv"
                 })
                 continue
 
@@ -970,7 +973,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                 "fctv_url": "",
                 "is_filtered": is_favorite,
                 "is_configured": is_configured,
-                "comp_key": comp_key
+                "comp_key": comp_key,
+                "source": "futbolenlatv"
             })
 
     except Exception as e:
@@ -1165,6 +1169,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     
     <!-- Controles de la Agenda Unificada -->
     <div id="futbolenlatv-controls">
+        <input type="text" id="agendaSearch" placeholder="Buscar por competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
+
         <div class="stats-grid">
             <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
                 <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">📌</div>
@@ -1187,9 +1193,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
         
         <div class="comp-filter-panel">
-            <div class="comp-filter-header" style="cursor: default; display: flex; justify-content: space-between; align-items: center;">
-                <span>⚙️ Deportes</span>
-                <div class="comp-checkboxes" style="display: flex; gap: 20px; align-items: center;">
+            <div class="comp-filter-header" style="cursor: default; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <span>⚙️ Deportes</span>
+                    <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <label><input type="checkbox" class="source-chk" value="futbolenlatv" checked onchange="applyFilters()"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" value="fctv33" checked onchange="applyFilters()"> FCTV33</label>
+                    </div>
+                </div>
+                <div class="comp-checkboxes" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <label><input type="checkbox" class="comp-chk" value="futbol" checked onchange="applyFilters()"> ⚽ FÚTBOL</label>
                     <label><input type="checkbox" class="comp-chk" value="baloncesto" checked onchange="applyFilters()"> 🏀 BALONCESTO</label>
                     <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> 🎾 TENIS</label>
@@ -1346,8 +1358,8 @@ function setFilter(filterType) {
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
 
-    const compCheckboxes = document.querySelectorAll('.comp-chk');
-    compCheckboxes.forEach(chk => {
+    const checkboxes = document.querySelectorAll('.comp-chk, .source-chk');
+    checkboxes.forEach(chk => {
         if (isFavView) {
             chk.checked = true;
             chk.disabled = true;
@@ -1376,23 +1388,32 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
+        const checkedSources = new Set();
+        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
+
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
+
+        const searchQuery = cleanStr(document.getElementById('agendaSearch')?.value || '');
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
             const isFiltered = tr.getAttribute('data-filtered') === 'true';
+            const source = cleanStr(tr.getAttribute('data-source'));
             const sport = cleanStr(tr.getAttribute('data-sport'));
             const rowDate = tr.getAttribute('data-date');
+            const searchData = cleanStr(tr.getAttribute('data-search'));
             const isToday = (rowDate === TODAY_DATE_STR);
 
+            let matchesSource = checkedSources.has(source);
             let matchesSport = checkedSports.has(sport);
+            let matchesSearch = !searchQuery || searchData.includes(searchQuery);
 
-            if (isFiltered) favCount++;
-            if (rowDate > TODAY_DATE_STR && matchesSport) proxCount++;
+            if (isFiltered && matchesSource && matchesSport && matchesSearch) favCount++;
+            if (rowDate > TODAY_DATE_STR && matchesSport && matchesSource && matchesSearch) proxCount++;
 
-            if (isToday && matchesSport) {
+            if (isToday && matchesSport && matchesSource && matchesSearch) {
                 if (rowSlot === 'madrugada') madCount++;
                 else if (rowSlot === 'manana') manCount++;
                 else if (rowSlot === 'tarde') tarCount++;
@@ -1726,8 +1747,13 @@ if ('ResizeObserver' in window) {
 
 function applyFilters() {
     if (currentActiveView === 'futbolenlatv') {
+        const checkedSources = new Set();
+        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
+
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
+
+        const searchQuery = cleanStr(document.getElementById('agendaSearch')?.value || '');
 
         const table = document.getElementById('futbolenlatvTable');
         if (!table) return;
@@ -1740,11 +1766,15 @@ function applyFilters() {
 
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
             const isFiltered = tr.getAttribute('data-filtered') === 'true';
+            const source = cleanStr(tr.getAttribute('data-source'));
             const sport = cleanStr(tr.getAttribute('data-sport')); 
             const rowDate = tr.getAttribute('data-date');
+            const searchData = cleanStr(tr.getAttribute('data-search'));
 
             let matchesFilter = false;
+            let matchesSource = checkedSources.has(source);
             let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
+            let matchesSearch = !searchQuery || searchData.includes(searchQuery);
 
             if (currentFilter === 'favoritos') {
                 matchesFilter = isFiltered;
@@ -1755,7 +1785,7 @@ function applyFilters() {
                 matchesFilter = isToday && (rowSlot === currentFilter);
             }
 
-            if (matchesFilter && matchesSport) {
+            if (matchesFilter && matchesSport && matchesSource && matchesSearch) {
                 tr.style.display = '';
                 visibleCount++;
             } else {
@@ -1844,6 +1874,7 @@ def generate_html(futbolenlatv_events):
             safe_timestamp = str(event_timestamp)
             safe_date_str = escape(ev_date.isoformat(), quote=True)
             safe_sport_key = escape(clean_key(ev["deporte"]), quote=True)
+            safe_source = escape(clean_key(ev.get("source", "futbolenlatv")), quote=True)
             safe_comp_key = escape(str(ev.get("comp_key", "")), quote=True)
             safe_icon = escape(str(ev["icono"]))
             safe_sport = escape(str(ev["deporte"]))
@@ -1859,7 +1890,7 @@ def generate_html(futbolenlatv_events):
                 if ev["is_filtered"] and not is_fctv_event else ""
             )
             rows_list.append(
-                f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
+                f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-source="{safe_source}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
                 f'<td class="date-col cell-date">{date_badge_html}</td>'
                 f'<td class="time-col cell-time">{safe_time}</td>'
                 f'<td class="sport-col cell-sport"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
