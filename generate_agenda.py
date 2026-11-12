@@ -140,7 +140,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     excluded_url_patterns = [
         "/american-football/", "/aussie-rules/", "/badminton/", "/fighting/", "/handball/", "/others/",
         "afc-u17-asian-cup", "argentina-supercopa", "argentine-reserve-league", "argentine-womens-league",
-        "argentinian-liga-nacional-de-bosquetbol", "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", 
+        "argentinian-liga-nacional-de-bosquetbol", "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", "austrian-basketball-superliga",
         "bahrain-premier-league", "basketball-champions-league", "basketball-super-league-1", "b1-league", 
         "b2-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
         "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "college-soccer",
@@ -161,7 +161,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "new-zealand-basketball-league-womens",
         "oman-tamkeen-league", 
         "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl",
-        "philippines-university-athletic-association", "portuguese-u23-league", "premier-padel", 
+        "philippines-university-athletic-association", "poland-liga-2", "portuguese-u23-league", "premier-padel", 
         "romanian-liga-ii", 
         "saff-championship", "slovenia-basketball-cup", "spanish-segunda-division-rfef", "superettan-basket", 
         "svenska-basketligan",
