@@ -180,6 +180,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "national-basketball-league",
 		"national-collegiate-athletic-association",
 		"new-zealand-basketball-league-womens",
+		"oman-tamkeen-league",
         "panda-cup",
         "philippine-basketball-governors-cup",
         "philippines-mpbl",
@@ -198,6 +199,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "uefa-european-u17-football-championship",
         "uefa-european-u17-womens-championship",
         "uefa-european-u19-football-championship",
+		"uefa-european-u21-championship-qualification",
         "uruguay-cup",
         "vtb-united-league"
     ]
