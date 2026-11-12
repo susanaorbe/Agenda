@@ -60,25 +60,6 @@ def create_http_session() -> requests.Session:
     return session
 
 
-def resolve_doh(hostname: str) -> str | None:
-    """Resuelve una IP usando Cloudflare DNS-over-HTTPS saltándose bloqueos DNS del operador."""
-    try:
-        r = requests.get(
-            "https://cloudflare-dns.com/dns-query",
-            params={"name": hostname, "type": "A"},
-            headers={"Accept": "application/dns-json"},
-            timeout=5
-        )
-        if r.status_code == 200:
-            answers = r.json().get("Answer", [])
-            for ans in answers:
-                if ans.get("type") == 1:
-                    return ans.get("data")
-    except Exception:
-        pass
-    return None
-
-
 def update_channels_json_from_api():
     """Consulta la API oficial de CDN Live TV y actualiza channels.json correctamente."""
     api_url = "https://api.cdnlivetv.tv/api/v1/channels/?user=cdnlivetv&plan=free"
@@ -95,9 +76,10 @@ def update_channels_json_from_api():
 
 
 def get_dynamic_domain() -> str:
-    """Obtiene dinámicamente el dominio actual resolviendo las rutas de Taplink."""
-    default_domain = "www.fctv33go.autos"
+    """Obtiene dinámicamente el dominio actual resolviendo las rutas de Taplink y validando conectividad."""
+    candidate_domains = ["www.fctv33go.autos", "fctv33go.autos"]
     taplink_url = "https://taplink.cc/fctvlink"
+    
     try:
         from html.parser import HTMLParser
         
@@ -116,31 +98,86 @@ def get_dynamic_domain() -> str:
             parser = TaplinkParser()
             parser.feed(resp1.text)
             
-            target_url = None
             for href in parser.links:
                 lower_href = href.lower()
-                if not any(x in lower_href for x in ["taplink.cc", "telegram", "whatsapp", "instagram", "twitter", "facebook"]):
+                if not any(x in lower_href for x in ["taplink.cc", "telegram", "whatsapp", "instagram", "twitter", "facebook", "mailto:"]):
                     target_url = urljoin(taplink_url, href)
-                    break
-            
-            if not target_url and parser.links:
-                for href in parser.links:
-                    if "taplink.cc" not in href.lower():
-                        target_url = urljoin(taplink_url, href)
-                        break
-                        
-            if target_url:
-                r_final = session.get(target_url, headers=REQUEST_HEADERS, allow_redirects=True, timeout=10)
-                parsed = urlparse(r_final.url)
-                if parsed.netloc and "taplink.cc" not in parsed.netloc:
-                    return parsed.netloc
+                    try:
+                        r_final = session.get(target_url, headers=REQUEST_HEADERS, allow_redirects=True, timeout=6)
+                        parsed = urlparse(r_final.url)
+                        if parsed.netloc and "taplink.cc" not in parsed.netloc:
+                            domain = parsed.netloc
+                            if domain not in candidate_domains:
+                                candidate_domains.insert(0, domain)
+                    except Exception:
+                        continue
     except Exception as e:
-        print(f"Error obteniendo dominio dinámico: {e}")
-    return default_domain
+        print(f"Aviso obteniendo dominio dinámico por Taplink: {e}")
+
+    # Probar cuál de los dominios responde correctamente mediante HTTP GET
+    with create_http_session() as session:
+        for dom in candidate_domains:
+            try:
+                test_url = f"https://{dom}/?ptst=1"
+                resp = session.get(test_url, headers=REQUEST_HEADERS, timeout=5)
+                if resp.status_code < 500:
+                    print(f"   -> Dominio FCTV activo validado: {dom}")
+                    return dom
+            except Exception:
+                continue
+
+    return "www.fctv33go.autos"
+
+def is_fctv_event_allowed(comp_str: str, event_str: str, sport_key: str) -> bool:
+    """Filtra estrictamente los eventos de FCTV33 para permitir solo Fútbol, Baloncesto, Tenis y Motor."""
+    allowed_sports = {"football", "basketball", "tennis", "motorsport"}
+    if sport_key not in allowed_sports:
+        return False
+
+    excluded_url_patterns = [
+        "/es/american-football/", "/es/aussie-rules/", "/es/badminton/", "/es/fighting/", "/es/handball/", "/es/others/",
+        "afc-u17-asian-cup-match-", "argentina-supercopa-match-", "argentine-reserve-league-match-", "argentine-womens-league-match-",
+        "argentinian-liga-nacional-de-bosquetbol-match-", "asian-le-mans-series-match-", "atp-challenger-orleans-match-", "aus-champ-match-", 
+        "bahrain-premier-league-match-", "basketball-champions-league-match-", "basketball-super-league-1-match-", "b1-league-match-", 
+        "b2-league-match-", "bolivian-copa-lfpb-match-", "brazilian-campeonato-paulista-youth-match-", "brazilian-serie-b-match-", 
+        "caf-africa-cup-of-nations-match-", "caf-wc-match-", "categoria-primera-a-match-", "college-soccer-match-",
+        "colombian-torneo-betplay-dimayor-match-", "concacaf-nations-league-match-", "czech-cup-match-", "china-hong-kong-basketball-league-match-",
+        "chinese-football-assorciation-u-20-league-match-", "colombian-copa-betplay-dimayor-match-",
+        "east-asia-super-league-match-", "egyptian-scores-cup-match-", "el-salvador-reserves-league-match-", "elite-league-u20-match-", 
+        "english-football-league-trophy-match-", "eurocup-basketball-match-", "europe-womens-basketball-championship-qualifier-match-",
+        "fa-womens-league-cup-match-", "fiba-africa-basketball-league-match-", "fiba-europe-cup-match-", "fiba-u16-womens-americup-2027-south-american-qualifiers-match-", 
+        "french-division-1-feminine-match-", "ftbol-sala-primera-divisin-match-", 
+        "hunan-football-league-match-",
+        "indian-bangalore-super-division-match-", "international-friendly-match-", "indian-league-division-1-match-",
+        "j-league-yamazaki-biscuit-levain-cup-match-", "jamaica-premier-league-match-", "japan-womens-basketball-league-match-",
+        "korean-basketball-league-match-", "korean-wk-league-match-", "korean-womens-basketball-league-match-", 
+        "liberian-second-division-match-", "liga-nacional-de-baloncesto-profesional-match-", "liga-nova-kbm-match-", "lithuania-cup-match-",
+        "mali-premiere-division-match-", "mexico-ascenso-mx-match-", "mexico-liga-mx-femenil-match-", "mongolia-premier-league-match-", 
+        "national-basketball-association-g-league-match-", "national-basketball-league-match-", "national-collegiate-athletic-association-match-", 
+        "new-zealand-basketball-league-womens-match-",
+        "oman-tamkeen-league-match-", 
+        "panda-cup-match-", "philippine-basketball-governors-cup-match-", "philippines-mpbl-match-",
+        "philippines-university-athletic-association-match-", "portuguese-u23-league-match-", "premier-padel-match-", 
+        "romanian-liga-ii-match-", 
+        "saff-championship-match-", "slovenia-basketball-cup-match-", "spanish-segunda-division-rfef-match-", "superettan-basket-match-", 
+        "svenska-basketligan-match-",
+        "thai-league-3-match-", 
+        "united-states-womens-premier-league-match-", "uefa-el-w-match-", "uefa-european-u17-football-championship-match-", "uefa-european-u17-womens-championship-match-",
+        "uefa-european-u19-football-championship-match-", "uefa-european-u21-championship-qualification-match-", "uim-e1-world-championship-presented-by-pif-match-", 
+        "ukrainian-basketball-super-league-match-", "ukrainian-first-league-match-", "ukrainian-second-league-match-", "uruguay-cup-match-", 
+        "venezuela-primera-division-match-", "vtb-united-league-match-"
+    ]
+    
+    full_text = normalize_search_text(f"{comp_str} {event_str}")
+    for pat in excluded_url_patterns:
+        if pat.replace("-", " ") in full_text:
+            return False
+            
+    return True
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Recopila los eventos de FCTV33 sorteando bloqueos DNS mediante DoH y auto-clasifica cada evento según su URL."""
+    """Explora dinámicamente las categorías de la web de FCTV33 usando /es?ptst=1."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -148,40 +185,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "motorsport": []
     }
     base_url = f"https://{domain}"
-
-    sports_config = [
-        ("football", "FÚTBOL", "⚽", "futbol", ["/es/football.html", "/football.html", "/es/futbol.html", "/futbol.html", "/es/live.html", "/"]),
-        ("basketball", "BALONCESTO", "🏀", "baloncesto", ["/es/basketball.html", "/basketball.html", "/es/baloncesto.html", "/baloncesto.html", "/es/live.html", "/"]),
-        ("tennis", "TENIS", "🎾", "tenis", ["/es/tennis.html", "/tennis.html", "/es/tenis.html", "/tenis.html", "/es/live.html", "/"]),
-        ("motorsport", "MOTOR", "🏆", "motor", ["/es/motorsport.html", "/motorsport.html", "/es/motor.html", "/motor.html", "/es/motorsports.html", "/motorsports.html", "/es/live.html", "/"])
-    ]
-
-    excluded_url_patterns = [
-        "afc-u17-asian-cup", "argentina-supercopa", "argentine-reserve-league", "argentine-womens-league",
-        "argentinian-liga-nacional-de-bosquetbol", "atp-challenger-orleans", "aus-champ",
-        "bahrain-premier-league", "basketball-champions-league", "basketball-super-league-1",
-        "b1-league", "b2-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "college-soccer",
-        "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "czech-cup", "china-hong-kong-basketball-league",
-        "chinese-football-assorciation-u-20-league", "colombian-copa-betplay-dimayor",
-        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-reserves-league", "elite-league-u20", "english-football-league-trophy",
-        "eurocup-basketball", "europe-womens-basketball-championship-qualifier",
-        "fa-womens-league-cup", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers",
-        "french-division-1-feminine", "ftbol-sala-primera-divisin", "hunan-football-league",
-        "indian-bangalore-super-division", "international-friendly",
-        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "korean-basketball-league", "korean-wk-league",
-        "korean-womens-basketball-league", "liberian-second-division", "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "lithuania-cup",
-        "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
-        "national-basketball-association-g-league", "national-basketball-league",
-        "national-collegiate-athletic-association", "new-zealand-basketball-league-womens",
-        "oman-tamkeen-league", "panda-cup", "philippine-basketball-governors-cup",
-        "philippines-mpbl", "philippines-university-athletic-association", "portuguese-u23-league",
-        "premier-padel", "romanian-liga-ii", "saff-championship", "slovenia-basketball-cup",
-        "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan",
-        "thai-league-3", "united-states-womens-premier-league", "uefa-el-w",
-        "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship",
-        "uefa-european-u19-football-championship",
-        "uefa-european-u21-championship-qualification", "ukrainian-basketball-super-league", "ukrainian-first-league", "uruguay-cup", "venezuela-primera-division", "vtb-united-league"
-    ]
+    target_url = f"{base_url}/es?ptst=1"
 
     time_re = re.compile(r"\b(\d{1,2}):(\d{2})\b")
 
@@ -192,7 +196,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         forbidden_filenames = {
             "football.html", "basketball.html", "tennis.html", "motorsport.html",
             "motor.html", "motorsports.html", "futbol.html", "baloncesto.html",
-            "tenis.html", "live.html", "others.html"
+            "tenis.html", "live.html", "others.html", "index.html", ""
         }
         filename = path.split("/")[-1]
         if filename in forbidden_filenames or path in {"/", "/es", "/es/"}:
@@ -201,147 +205,100 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         if "-match-" not in path:
             return False
 
-        allowed_sport_segments = [
-            "/football/", "/es/football/", "/basketball/", "/es/basketball/", 
-            "/tennis/", "/es/tennis/", "/motorsport/", "/es/motorsport/",
-            "/futbol/", "/es/futbol/", "/baloncesto/", "/es/baloncesto/",
-            "/tenis/", "/es/tenis/", "/motor/", "/es/motor/"
-        ]
-        return any(seg in path for seg in allowed_sport_segments)
-
-    real_ip = resolve_doh(domain)
-    launch_args = [
-        "--disable-blink-features=AutomationControlled",
-        "--no-sandbox",
-        "--dns-over-https-mode=secure",
-        "--dns-over-https-templates=https://cloudflare-dns.com/dns-query"
-    ]
-    if real_ip:
-        launch_args.append(f"--host-resolver-rules=MAP {domain} {real_ip}")
-        print(f"Resolución DNS segura (DoH) aplicada: {domain} -> {real_ip}")
+        return True
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=True,
-            args=launch_args
+            args=["--disable-blink-features=AutomationControlled", "--no-sandbox"]
         )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            timezone_id="Europe/Madrid",
-            ignore_https_errors=True
+            timezone_id="Europe/Madrid"
         )
         page = context.new_page()
 
-        pending_sports = list(sports_config)
-        max_rounds = 3
-        round_idx = 0
-        global_seen_urls = set()
+        try:
+            print(f"   -> Explorando portada de FCTV33: {target_url}")
+            page.goto(target_url, timeout=35000, wait_until="domcontentloaded")
+            page.wait_for_timeout(2000)
 
-        while pending_sports and round_idx < max_rounds:
-            round_idx += 1
-            print(f"\n--- [FCTV] Iniciando ronda rotativa de exploración #{round_idx} ---")
-            next_pending = []
+            category_links = page.evaluate("""() => {
+                const links = [];
+                for (const a of document.querySelectorAll('a[href]')) {
+                    const href = a.getAttribute('href');
+                    if (href && !links.includes(href)) {
+                        links.push(href);
+                    }
+                }
+                return links;
+            }""")
 
-            for sport_tuple in pending_sports:
-                sport_key, sport_label, icon, comp_key, paths = sport_tuple
-                raw_cards = []
-                successful_path = None
+            valid_categories = set()
+            for link in category_links:
+                if link.startswith("mailto:") or "javascript:" in link or "taplink" in link:
+                    continue
+                parsed_l = urlparse(link)
+                path_l = parsed_l.path.strip("/")
+                if path_l and "." in path_l and not path_l.endswith(".html"):
+                    continue
+                if path_l and path_l not in valid_categories:
+                    valid_categories.add(path_l)
 
-                for path in paths:
-                    url = urljoin(base_url, path)
-                    nav_success = False
+            print(f"   [FCTV] Categorías descubiertas en la web: {list(valid_categories)[:10]}")
 
-                    page.wait_for_timeout(1500)
+            global_seen_urls = set()
+            
+            for cat in valid_categories:
+                cat_url = urljoin(base_url, f"/{cat}")
+                if "?" not in cat_url:
+                    cat_url += "?ptst=1"
+                
+                try:
+                    print(f"   -> Escaneando categoría FCTV: {cat_url}")
+                    page.goto(cat_url, timeout=25000, wait_until="domcontentloaded")
+                    page.wait_for_timeout(1000)
 
-                    for attempt in range(1, 3):
-                        try:
-                            print(f"   -> Probando {sport_label} en ruta: {url} (Intento {attempt})")
-                            page.goto(url, timeout=40000, wait_until="domcontentloaded")
-                            try:
-                                page.wait_for_load_state("load", timeout=4000)
-                            except Exception:
-                                pass
-                            page.wait_for_timeout(1500)
-                            nav_success = True
-                            break
-                        except Exception as e:
-                            print(f"      [Aviso conexión] Error en {path}: {e}")
-                            page.wait_for_timeout(3000)
+                    # Scroll para cargar lazy content
+                    for _ in range(3):
+                        page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
+                        page.wait_for_timeout(300)
+                    page.evaluate("window.scrollTo(0, 0)")
 
-                    if not nav_success:
-                        continue
-
-                    try:
-                        stable_rounds = 0
-                        previous_signature = None
-                        for _ in range(6):
-                            try:
-                                signature = page.evaluate("""() => ({
-                                    height: document.documentElement.scrollHeight,
-                                    count: document.querySelectorAll('a[href]').length
-                                })""")
-                                current_signature = (signature["height"], signature["count"])
-                                if current_signature == previous_signature:
-                                    stable_rounds += 1
-                                else:
-                                    stable_rounds = 0
-                                if stable_rounds >= 3:
-                                    break
-                                previous_signature = current_signature
-                                page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
-                                page.wait_for_timeout(300)
-                            except Exception:
-                                break
-                        page.evaluate("window.scrollTo(0, 0)")
-
-                        candidate_cards = page.evaluate("""() => {
-                            const out = [];
-                            const seen = new Set();
-                            const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
-                            for (const a of document.querySelectorAll('a[href]')) {
-                                const href = a.getAttribute('href') || '';
-                                if (!href) continue;
-                                const absolute = a.href;
-                                if (seen.has(absolute)) continue;
-                                seen.add(absolute);
-                                let node = a;
-                                let cardText = a.innerText || a.textContent || '';
-                                for (let level = 0; level < 9 && node; level++, node = node.parentElement) {
-                                    const candidate = (node.innerText || node.textContent || '').trim();
-                                    if (timePattern.test(candidate)) {
-                                        cardText = candidate;
-                                        break;
-                                    }
+                    candidate_cards = page.evaluate("""() => {
+                        const out = [];
+                        const seen = new Set();
+                        const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
+                        for (const a of document.querySelectorAll('a[href]')) {
+                            const href = a.getAttribute('href') || '';
+                            if (!href) continue;
+                            const absolute = a.href;
+                            if (seen.has(absolute)) continue;
+                            seen.add(absolute);
+                            let node = a;
+                            let cardText = a.innerText || a.textContent || '';
+                            for (let level = 0; level < 9 && node; level++, node = node.parentElement) {
+                                const candidate = (node.innerText || node.textContent || '').trim();
+                                if (timePattern.test(candidate)) {
+                                    cardText = candidate;
+                                    break;
                                 }
-                                out.push({href: absolute, cardText});
                             }
-                            return out;
-                        }""")
+                            out.push({href: absolute, cardText});
+                        }
+                        return out;
+                    }""")
 
-                        valid_candidates = [
-                            item for item in candidate_cards
-                            if is_event_detail_url(item.get("href", ""))
-                        ]
+                    valid_candidates = [
+                        item for item in candidate_cards
+                        if is_event_detail_url(item.get("href", ""))
+                    ]
 
-                        if valid_candidates:
-                            raw_cards = valid_candidates
-                            successful_path = path
-                            break
-                    except Exception as e:
-                        print(f"      Error extrayendo datos de {path}: {e}")
-
-                if raw_cards:
-                    added_count = 0
-                    for item in raw_cards:
+                    for item in valid_candidates:
                         href = item.get("href", "")
                         if not href:
                             continue
-                        href_lower = href.lower()
-                        if any(pattern in href_lower for pattern in excluded_url_patterns):
-                            continue
-                        if "uefa-womens-champions-league" in href_lower and "real-madrid-women" not in href_lower:
-                            continue
-
+                        
                         full_url = urljoin(base_url, href)
                         parsed_url = urlparse(full_url)
                         canonical_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
@@ -349,12 +306,12 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             continue
                         global_seen_urls.add(canonical_url)
 
+                        path_lower = parsed_url.path.lower()
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
                         detected_icon = "⚽"
                         detected_comp_key = "futbol"
 
-                        path_lower = parsed_url.path.lower()
                         if any(k in path_lower for k in ["/tennis/", "/es/tennis/", "/tenis/", "/es/tenis/"]):
                             detected_sport_key = "tennis"
                             detected_sport_label = "TENIS"
@@ -370,6 +327,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             detected_sport_label = "MOTOR"
                             detected_icon = "🏆"
                             detected_comp_key = "motor"
+                        elif any(k in path_lower for k in ["/rugby/", "/hockey/", "/cricket/", "/baseball/", "/volleyball/"]):
+                            detected_sport_key = "other"
 
                         card_text = item.get("cardText", "").strip()
                         extracted_time = "LIVE"
@@ -406,6 +365,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if normalize_search_text(comp_str) == normalize_search_text(event_str):
                             comp_str = detected_sport_label
 
+                        # Aplicar filtro estricto de deportes permitidos
+                        if not is_fctv_event_allowed(comp_str, event_str, detected_sport_key):
+                            continue
+
                         query = parsed_url.query
                         if "icg=" not in query:
                             query = f"{query}&" if query else ""
@@ -427,20 +390,16 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             "is_configured": True,
                             "comp_key": detected_comp_key
                         })
-                        added_count += 1
+                except Exception as e:
+                    print(f"   Aviso escaneando categoría {cat}: {e}")
 
-                    print(f"   -> Éxito en {sport_label} usando ({successful_path}): se extrajeron enlaces válidos.")
-                else:
-                    next_pending.append(sport_tuple)
+        except Exception as e:
+            print(f"Error general en exploración FCTV: {e}")
+        finally:
+            browser.close()
 
-            pending_sports = next_pending
-            if pending_sports:
-                page.wait_for_timeout(2000)
-
-        browser.close()
-
-    total = sum(len(evs) for evs in fctv_events_by_sport.values())
-    print(f"\n--- [FCTV] Total de eventos estructurados recopilados: {total} ---")
+    total_allowed = sum(len(evs) for evs in fctv_events_by_sport.values())
+    print(f"\n--- [FCTV] Total de eventos permitidos estructurados recopilados: {total_allowed} ---")
     return fctv_events_by_sport
 
 
