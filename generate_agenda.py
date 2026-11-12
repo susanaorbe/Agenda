@@ -148,6 +148,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         "basketball-champions-league",
         "basketball-super-league-1",
         "b1-league",
+		"caf-africa-cup-of-nations",
         "caf-wc",
 		"college-soccer",
 		"colombian-torneo-betplay-dimayor",
