@@ -114,7 +114,6 @@ def get_dynamic_domain() -> str:
     except Exception as e:
         print(f"Aviso obteniendo dominio dinámico por Taplink: {e}")
 
-    # Probar cuál de los dominios responde correctamente mediante HTTP GET
     with create_http_session() as session:
         for dom in candidate_domains:
             try:
@@ -136,7 +135,6 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
 
     path_lower = parsed_url_path.lower()
 
-    # Patrones de exclusión evaluados directamente sobre la URL/ruta
     excluded_url_patterns = [
         "/american-football/", "/aussie-rules/", "/badminton/", "/cycling/", "/fighting/", "/handball/", "/others/",
         "3x3basketball",
@@ -172,7 +170,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals",
         "saff-championship", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga",
         "spanish-segunda-division", "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan",
-        "thai-league-3", "turkey-basketball-league-2",
+        "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2",
         "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship",
         "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", 
         "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "uruguay-cup", 
@@ -188,7 +186,6 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
-    """Explora dinámicamente las categorías de la web de FCTV33 usando /es?ptst=1."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -230,7 +227,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         page = context.new_page()
 
         try:
-            print(f"   -> Explorando portada de FCTV33: {target_url}")
             page.goto(target_url, timeout=35000, wait_until="domcontentloaded")
             page.wait_for_timeout(2000)
 
@@ -256,8 +252,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 if path_l and path_l not in valid_categories:
                     valid_categories.add(path_l)
 
-            print(f"   [FCTV] Categorías descubiertas en la web: {list(valid_categories)[:10]}")
-
             global_seen_urls = set()
             
             for cat in valid_categories:
@@ -266,11 +260,9 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     cat_url += "?ptst=1"
                 
                 try:
-                    print(f"   -> Escaneando categoría FCTV: {cat_url}")
                     page.goto(cat_url, timeout=25000, wait_until="domcontentloaded")
                     page.wait_for_timeout(1000)
 
-                    # Scroll para cargar lazy content
                     for _ in range(3):
                         page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
                         page.wait_for_timeout(300)
@@ -348,7 +340,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             h, m = time_match.groups()
                             extracted_time = f"{int(h):02d}:{m}"
 
-                        # Descartar eventos de FCTV33 que se queden en LIVE para evitar duplicados y directos sin hora exacta
                         if extracted_time == "LIVE":
                             continue
 
@@ -380,7 +371,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if normalize_search_text(comp_str) == normalize_search_text(event_str):
                             comp_str = detected_sport_label
 
-                        # Aplicar filtro estricto de deportes y exclusión de URL
                         if not is_fctv_event_allowed(parsed_url.path, detected_sport_key):
                             continue
 
@@ -414,13 +404,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         finally:
             browser.close()
 
-    total_allowed = sum(len(evs) for evs in fctv_events_by_sport.values())
-    print(f"\n--- [FCTV] Total de eventos permitidos estructurados recopilados: {total_allowed} ---")
     return fctv_events_by_sport
 
 
 def get_time_slot(time_str: str) -> str:
-    """Clasifica una hora en su franja horaria correspondiente."""
     try:
         if time_str == "LIVE":
             return "noche"
@@ -461,13 +448,6 @@ def clean_time(time_str: str) -> str:
     if not (0 <= hours <= 23 and 0 <= minutes <= 59):
         return ""
     return f"{hours:02d}:{minutes:02d}"
-
-
-def normalize_channel_name(channel_name: str) -> str:
-    normalized = normalize_search_text(channel_name)
-    normalized = re.sub(r"\([^)]*\)", "", normalized)
-    normalized = re.sub(r"\s+", " ", normalized).strip()
-    return normalized
 
 
 def clean_channel_display_name(channel_name: str) -> str:
@@ -863,7 +843,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
     dynamic_domain = get_dynamic_domain()
     
-    # 1. Recopilar y fusionar eventos de FCTV33 directamente en la agenda principal
     fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
     for sport_key, events_list in fctv_events_by_sport.items():
         for ev in events_list:
@@ -872,7 +851,6 @@ def fetch_and_parse_agenda() -> list[dict]:
                 seen_events.add(event_key)
                 futbolenlatv_results.append(ev)
 
-    # 2. Recopilar eventos de Futbolenlatv
     try:
         with create_http_session() as session:
             response = session.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
@@ -1054,7 +1032,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .tv-badge.channel-chip-link:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
         .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
 
-        /* Estilos de la vista de Canales */
         .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 16px; }
         .channel-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; transition: all 0.2s; }
         .channel-card:hover { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.05); }
@@ -1068,25 +1045,19 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .channel-action { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
         .channel-action:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
 
-        /* Accesos directos a Sport TV Guide (Fijos en la cabecera de canales) */
         .guides-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; padding-bottom: 10px; }
         .guide-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(167, 139, 250, 0.2)); border: 1px solid rgba(59, 130, 246, 0.4); color: #f8fafc; padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; text-decoration: none; text-align: center; }
         .guide-btn:hover { background: rgba(59, 130, 246, 0.35); border-color: var(--accent-blue); transform: translateY(-1px); }
 
-        /* Estilos para los botones alfabéticos de canales */
         .letter-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-width: 28px; text-align: center; }
         .letter-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         .letter-btn:hover { background: rgba(59, 130, 246, 0.3); }
 
-        /* Estilos del reproductor modal */
         #player-dialog { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 0; width: 90%; max-width: 900px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); margin: auto; }
         #player-dialog::backdrop { background: rgba(0, 0, 0, 0.8); }
         .player-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border-color); background: #111827; }
         .player-body { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; }
 
-        /* ================================================================= */
-        /* MEDIA QUERIES PARA OPTIMIZACIÓN MÓVIL (< 768px)                   */
-        /* ================================================================= */
         @media (max-width: 768px) {
             body { padding: 8px 4px; }
             .container { max-width: 100%; }
@@ -1101,7 +1072,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             .comp-filter-header > div { width: 100%; justify-content: space-between; }
             .comp-checkboxes { width: 100%; display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8px !important; }
             
-            /* Transformación de tabla a formato de tarjetas en móvil */
             .table-card { background: transparent; border: none; box-shadow: none; margin-bottom: 60px; }
             table, thead, tbody, tr, td { display: block; width: 100% !important; }
             thead { display: none; }
@@ -1120,7 +1090,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 background: transparent !important;
             }
             
-            /* Distribución interna de celdas en la tarjeta móvil */
             .cell-date, .cell-time {
                 display: inline-block;
                 margin-right: 6px;
@@ -1154,7 +1123,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 flex-wrap: wrap;
                 gap: 5px;
             }
-            /* 1 canal por línea en móvil para lectura completa del nombre */
             .channels-grid {
                 grid-template-columns: 1fr !important;
                 padding: 8px;
@@ -1180,7 +1148,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
     </header>
     
-    <!-- Controles de la Agenda Unificada -->
     <div id="futbolenlatv-controls">
         <div class="stats-grid">
             <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
@@ -1226,12 +1193,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <input type="text" id="agendaSearch" placeholder="Buscar por competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
     </div>
 
-    <!-- Controles fijos de la vista de canales (incluye búsqueda, letras y guías) -->
     <div id="channels-controls" style="display: none; margin-bottom: 4px;">
         <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
         <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
             <button class="letter-btn active" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('TODOS')">TODOS</button>
+            <button class="letter-btn" onclick="filterChannelsByLetter('Todos')">Todos</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('#')">#</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('A')">A</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('B')">B</button>
@@ -1270,7 +1236,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
     </div>
 
-    <!-- VISTA 1: AGENDA UNIFICADA -->
     <div class="table-card" id="futbolenlatv-view-container">
         <table>
             <thead>
@@ -1289,14 +1254,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </table>
     </div>
 
-    <!-- VISTA 2: CATÁLOGO DE CANALES CDN LIVE TV -->
     <div class="table-card" id="channels-view-container" style="display: none;">
         <div id="channelsGrid" class="channels-grid">
             <div class="empty-state">Cargando canales...</div>
         </div>
     </div>
 
-    <!-- VISTA 3: VISTA DE GUÍAS A PANTALLA COMPLETA -->
     <div class="table-card" id="guide-view-container" style="display: none; padding: 20px; text-align: center;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
             <button onclick="switchView('channels')" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">← Volver a Canales</button>
@@ -1313,7 +1276,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
 </div>
 
-<!-- MODAL REPRODUCTOR OFICIAL CDN LIVE TV -->
 <dialog id="player-dialog">
     <div class="player-head">
         <strong id="player-title" style="color: #38bdf8; font-size: 0.95rem;">Reproductor</strong>
@@ -1326,7 +1288,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 const TODAY_DATE_STR = "{TODAY_DATE_STR}";
 let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
-let currentLetterFilter = 'TODOS';
+let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
 
 const AGENDA_CHANNEL_ALIASES = new Map([
@@ -1567,7 +1529,7 @@ async function initApp() {
             return nameA.localeCompare(nameB, 'es', { sensitivity: 'accent', numeric: true });
         });
 
-        renderChannelsGrid(allCatalogChannels);
+        filterChannels();
         linkAgendaChannelsToCdn();
     } catch (e) {
         console.error("Error cargando canales:", e);
@@ -1575,7 +1537,10 @@ async function initApp() {
 }
 
 async function loadChannelsCatalog() {
-    if (allCatalogChannels.length > 0) return;
+    if (allCatalogChannels.length > 0) {
+        filterChannels();
+        return;
+    }
     await initApp();
 }
 
@@ -1707,7 +1672,7 @@ function filterChannels() {
         let matchesLetter = true;
         if (currentLetterFilter === 'FAVORITOS') {
             matchesLetter = favs.includes(name);
-        } else if (currentLetterFilter !== 'TODOS') {
+        } else if (currentLetterFilter !== 'Todos') {
             const firstChar = name.charAt(0).toUpperCase();
             if (currentLetterFilter === '#') {
                 matchesLetter = /^[^A-ZÑ]/i.test(firstChar);
