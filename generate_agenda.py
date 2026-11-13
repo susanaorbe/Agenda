@@ -153,6 +153,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "english-football-league-trophy", "eurocup-basketball", "europe-womens-basketball-championship-qualifier",
         "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", 
         "fiba-u16-womens-americup-2027-south-american-qualifiers", "french-division-1-feminine", "ftbol-sala-primera-divisin", 
+        "futsal-tl-2026-play-off",
         "german-frauen-bundesliga",
         "hunan-football-league",
         "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
