@@ -155,14 +155,14 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", "australia-w-league", 
         "austrian-basketball-superliga", "auto-racing", "bahrain-premier-league", "basketball-bundesliga", 
         "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", "b1-league", "b2-league", 
-        "belgian-womens-super-league", "benin-ligue-1", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", "burundi-premier-league",
+        "belgian-womens-super-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
         "british-basketball-league", "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", 
         "china-taipei-professional-basketball-league", "cfa-team-china-international-tournament", "cfa-womens-super-league", 
         "china-hong-kong-basketball-league","china-womens-basketball-association", "chinese-football-assorciation-u-20-league", 
         "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "czech-cup",  
         "east-asia-super-league", "egyptian-scores-cup", "el-salvador-reserves-league", "elite-league-u20", 
-        "english-fa-womens-super-league", "english-football-league-one", "english-football-league-trophy", "english-football-league-two", "english-national-league", 
-        "epa-one-u18", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", 
+        "english-fa-womens-super-league", "english-football-league-trophy", "english-football-league-two", "epa-one-u18", 
+        "eurocup-basketball", "europe-womens-basketball-championship-qualifier", "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", 
         "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
         "french-division-1-feminine", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", "german-frauen-bundesliga", 
         "hunan-football-league", "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
@@ -173,17 +173,17 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "liga-nova-kbm", "liga-u", "liga-prime-futsal", "ligue-nationale-de-basket-pro-a", "lithuania-cup", 
         "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
         "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
-        "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "niger-premier-league",
+        "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division",
         "oman-tamkeen-league", "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl", 
         "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "portuguese-u23-league", 
-        "premier-padel", "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals", "saff-championship", "scottish-womens-premier-league",
+        "premier-padel", "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals", "saff-championship", 
         "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-segunda-division", 
         "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan", "thai-kings-cup", "thai-league-3", 
         "turkey-basketball-league-2", "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", 
         "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", 
         "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", 
-        "ukrainian-second-league", "uruguay-cup", "uzbekistan-super-league", "venezuela-primera-division", "venezuela-segunda-division", 
-        "vtb-united-league", "women-empowerment-league"
+        "ukrainian-second-league", "uruguay-cup", "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league",
+        "women-empowerment-league"
     ]
     for pat in excluded_url_patterns:
         if pat in path_lower:
@@ -206,6 +206,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     def is_event_detail_url(href: str) -> bool:
         parsed = urlparse(href)
         path = (parsed.path or href.split("?", 1)[0]).lower()
+        
         forbidden_filenames = {
             "football.html", "basketball.html", "tennis.html", "motorsport.html",
             "motor.html", "motorsports.html", "futbol.html", "baloncesto.html",
@@ -214,13 +215,11 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         filename = path.split("/")[-1]
         if filename in forbidden_filenames or path in {"/", "/es", "/es/"}:
             return False
+
         if "-match-" not in path:
             return False
-        return True
 
-    spain_tz = get_spain_timezone()
-    now_spain = datetime.now(spain_tz)
-    now_minutes = now_spain.hour * 60 + now_spain.minute
+        return True
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -275,26 +274,40 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         page.wait_for_timeout(300)
                     page.evaluate("window.scrollTo(0, 0)")
 
+                    # Extracción mejorada que detecta encabezados de fecha o bloques de día en FCTV33
                     candidate_cards = page.evaluate("""() => {
                         const out = [];
                         const seen = new Set();
                         const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
+                        
+                        // Recorrer el DOM buscando elementos o contenedores
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
                             const absolute = a.href;
                             if (seen.has(absolute)) continue;
                             seen.add(absolute);
+                            
                             let node = a;
                             let cardText = a.innerText || a.textContent || '';
+                            let isTomorrow = false;
+                            
                             for (let level = 0; level < 9 && node; level++, node = node.parentElement) {
                                 const candidate = (node.innerText || node.textContent || '').trim();
                                 if (timePattern.test(candidate)) {
                                     cardText = candidate;
-                                    break;
+                                }
+                                // Comprobar si el bloque o un elemento previo indica que es mañana
+                                const prev = node.previousElementSibling;
+                                const parentText = node.parentElement ? node.parentElement.innerText.toLowerCase() : '';
+                                if (parentText.includes('mañana') || parentText.includes('tomorrow') || parentText.includes('próximamente')) {
+                                    isTomorrow = true;
+                                }
+                                if (prev && (prev.innerText.toLowerCase().includes('mañana') || prev.innerText.toLowerCase().includes('tomorrow'))) {
+                                    isTomorrow = true;
                                 }
                             }
-                            out.push({href: absolute, cardText});
+                            out.push({href: absolute, cardText, isTomorrow});
                         }
                         return out;
                     }""")
@@ -304,12 +317,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if is_event_detail_url(item.get("href", ""))
                     ]
 
-                    # Lógica precisa de fechas para FCTV33:
-                    # Comienza en hoy. Si detectamos un salto hacia atrás en las horas (ej. de la noche a la madrugada)
-                    # o si encontramos eventos matutinos al inicio anteriores a la hora actual, se asignan a mañana.
                     current_event_date = today_date
                     last_time_mins = -1
-                    has_seen_future_or_current = False
 
                     for item in valid_candidates:
                         href = item.get("href", "")
@@ -344,8 +353,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             detected_sport_label = "MOTOR"
                             detected_icon = "🏆"
                             detected_comp_key = "motor"
-                        elif any(k in path_lower for k in ["/rugby/", "/hockey/", "/cricket/", "/baseball/", "/volleyball/"]):
-                            detected_sport_key = "other"
 
                         card_text = item.get("cardText", "").strip()
                         extracted_time = "LIVE"
@@ -357,23 +364,15 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if extracted_time == "LIVE":
                             continue
 
-                        # Calcular minutos del evento
                         ev_h, ev_m = map(int, extracted_time.split(":"))
                         ev_mins = ev_h * 60 + ev_m
 
-                        # Regla de fecha para FCTV33:
-                        # 1. Si el evento ocurre antes de la hora actual y aún no hemos visto un evento futuro/actual,
-                        #    pertenece al día siguiente (mañana), ya que los partidos de hoy a esa hora ya pasaron.
-                        # 2. Si el tiempo desciende respecto al evento anterior (ej. 23:00 -> 13:00), significa que la lista
-                        #    ha pasado al día siguiente.
-                        if current_event_date == today_date:
-                            if not has_seen_future_or_current and ev_mins < now_minutes:
-                                current_event_date = today_date + timedelta(days=1)
-                            elif last_time_mins != -1 and ev_mins < last_time_mins - 120:
-                                current_event_date = today_date + timedelta(days=1)
-
-                        if current_event_date == today_date and ev_mins >= now_minutes:
-                            has_seen_future_or_current = True
+                        # Respetar la indicación explícita de la web o detectar el salto natural de día 
+                        # cuando la hora desciende abruptamente (ej. de la noche a la primera hora de la mañana siguiente)
+                        if item.get("isTomorrow"):
+                            current_event_date = today_date + timedelta(days=1)
+                        elif last_time_mins != -1 and ev_mins < last_time_mins - 180:
+                            current_event_date = today_date + timedelta(days=1)
 
                         last_time_mins = ev_mins
 
