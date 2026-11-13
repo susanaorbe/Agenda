@@ -1292,6 +1292,7 @@ let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
 let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
+let lastNonFavSource = 'fctv33';
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
@@ -1354,18 +1355,25 @@ function updateStickyHeadingOffset() {
 }
 
 function handleSourceChange(changedSource) {
+    if (currentFilter === 'favoritos') return;
+
     const chkFutbol = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
     
     if (changedSource === 'futbolenlatv' && chkFutbol.checked) {
         chkFctv.checked = false;
+        lastNonFavSource = 'futbolenlatv';
     } else if (changedSource === 'fctv33' && chkFctv.checked) {
         chkFutbol.checked = false;
+        lastNonFavSource = 'fctv33';
+    } else if (!chkFutbol.checked && !chkFctv.checked) {
+        lastNonFavSource = '';
     }
     applyFilters();
 }
 
 function setFilter(filterType) {
+    const prevFilter = currentFilter;
     currentFilter = cleanStr(filterType);
     const isFavView = (currentFilter === 'favoritos');
     
@@ -1393,12 +1401,18 @@ function setFilter(filterType) {
     const chkFctv = document.getElementById('chk-fctv33');
 
     if (isFavView) {
+        if (prevFilter !== 'favoritos') {
+            if (chkFctv && chkFctv.checked) lastNonFavSource = 'fctv33';
+            else if (chkFutbol && chkFutbol.checked) lastNonFavSource = 'futbolenlatv';
+        }
         if (chkFutbol) {
+            chkFutbol.checked = true;
             chkFutbol.disabled = true;
             chkFutbol.parentElement.style.opacity = '0.6';
             chkFutbol.parentElement.style.cursor = 'not-allowed';
         }
         if (chkFctv) {
+            chkFctv.checked = false;
             chkFctv.disabled = true;
             chkFctv.parentElement.style.opacity = '0.6';
             chkFctv.parentElement.style.cursor = 'not-allowed';
@@ -1414,9 +1428,9 @@ function setFilter(filterType) {
             chkFctv.parentElement.style.opacity = '1';
             chkFctv.parentElement.style.cursor = 'pointer';
         }
-        if ((chkFutbol && chkFutbol.checked && chkFctv && chkFctv.checked) || (chkFutbol && !chkFutbol.checked && chkFctv && !chkFctv.checked)) {
-            if (chkFctv) chkFctv.checked = true;
-            if (chkFutbol) chkFutbol.checked = false;
+        if (prevFilter === 'favoritos') {
+            if (chkFutbol) chkFutbol.checked = (lastNonFavSource === 'futbolenlatv');
+            if (chkFctv) chkFctv.checked = (lastNonFavSource !== 'futbolenlatv');
         }
     }
 
@@ -1437,7 +1451,11 @@ function updateStatsForActiveView() {
         let proxCount = 0;
 
         const checkedSources = new Set();
-        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
+        if (currentFilter === 'favoritos') {
+            if (lastNonFavSource) checkedSources.add(lastNonFavSource);
+        } else {
+            document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
+        }
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
@@ -1458,7 +1476,10 @@ function updateStatsForActiveView() {
             let matchesSport = checkedSports.has(sport);
             let matchesSearch = !searchQuery || searchData.includes(searchQuery);
 
-            if (isFiltered && matchesSource && matchesSport && matchesSearch) favCount++;
+            if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
+                favCount++;
+            }
+
             if (rowDate > TODAY_DATE_STR && matchesSport && matchesSource && matchesSearch) proxCount++;
 
             if (isToday && matchesSport && matchesSource && matchesSearch) {
@@ -1806,7 +1827,6 @@ window.addEventListener('load', async () => {
     await initApp();
     highlightPreviousEvents();
     setInterval(highlightPreviousEvents, 60000);
-    updateStatsForActiveView();
     setFilter(initialSlot);
     updateStickyHeadingOffset();
 });
@@ -1824,7 +1844,11 @@ if ('ResizeObserver' in window) {
 function applyFilters() {
     if (currentActiveView === 'futbolenlatv') {
         const checkedSources = new Set();
-        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
+        if (currentFilter === 'favoritos') {
+            checkedSources.add('futbolenlatv');
+        } else {
+            document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
+        }
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
