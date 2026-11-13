@@ -1,4 +1,4 @@
-[cite: 2]from collections import Counter
+from collections import Counter
 from datetime import datetime, date
 from html import escape
 from playwright.sync_api import sync_playwright
@@ -2003,4 +2003,3 @@ if __name__ == "__main__":
         "Archivo index.html generado con éxito. "
         f"Eventos totales en la agenda unificada: {len(futbolenlatv_events)}"
     )
-```[cite: 2]
