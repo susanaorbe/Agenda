@@ -1230,8 +1230,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <div id="channels-controls" style="display: none; margin-bottom: 4px;">
         <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
         <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
-            <button class="letter-btn active" onclick="filterChannelsByLetter('TODOS')">TODOS</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
+            <button class="letter-btn active" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
+            <button class="letter-btn" onclick="filterChannelsByLetter('TODOS')">TODOS</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('#')">#</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('A')">A</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('B')">B</button>
