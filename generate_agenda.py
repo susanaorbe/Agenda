@@ -1,4 +1,4 @@
-from collections import Counter
+[cite: 2]from collections import Counter
 from datetime import datetime, date
 from html import escape
 from playwright.sync_api import sync_playwright
@@ -1185,8 +1185,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="handleSourceChange('fctv33')"> FCTV33</label>
                     </div>
                 </div>
             </div>
@@ -1375,8 +1375,8 @@ function setFilter(filterType) {
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
 
-    const checkboxes = document.querySelectorAll('.comp-chk, .source-chk');
-    checkboxes.forEach(chk => {
+    const compCheckboxes = document.querySelectorAll('.comp-chk');
+    compCheckboxes.forEach(chk => {
         if (isFavView) {
             chk.checked = true;
             chk.disabled = true;
@@ -1388,6 +1388,38 @@ function setFilter(filterType) {
             chk.parentElement.style.cursor = 'pointer';
         }
     });
+
+    const chkFutbol = document.getElementById('chk-futbolenlatv');
+    const chkFctv = document.getElementById('chk-fctv33');
+
+    if (isFavView) {
+        if (chkFutbol) {
+            chkFutbol.disabled = true;
+            chkFutbol.parentElement.style.opacity = '0.6';
+            chkFutbol.parentElement.style.cursor = 'not-allowed';
+        }
+        if (chkFctv) {
+            chkFctv.disabled = true;
+            chkFctv.parentElement.style.opacity = '0.6';
+            chkFctv.parentElement.style.cursor = 'not-allowed';
+        }
+    } else {
+        if (chkFutbol) {
+            chkFutbol.disabled = false;
+            chkFutbol.parentElement.style.opacity = '1';
+            chkFutbol.parentElement.style.cursor = 'pointer';
+        }
+        if (chkFctv) {
+            chkFctv.disabled = false;
+            chkFctv.parentElement.style.opacity = '1';
+            chkFctv.parentElement.style.cursor = 'pointer';
+        }
+        // Asegurar que NUNCA estén ambos activos y SIEMPRE uno activo (por defecto FCTV33)
+        if ((chkFutbol && chkFutbol.checked && chkFctv && chkFctv.checked) || (chkFutbol && !chkFutbol.checked && chkFctv && !chkFctv.checked)) {
+            if (chkFctv) chkFctv.checked = true;
+            if (chkFutbol) chkFutbol.checked = false;
+        }
+    }
 
     applyFilters();
 }
@@ -1589,9 +1621,26 @@ function safePlayerUrl(channel) {
 }
 
 function linkAgendaChannelsToCdn() {
+    document.querySelectorAll('.event-row').forEach(row => {
+        const source = row.getAttribute('data-source');
+        if (source === 'futbolenlatv') {
+            row.querySelectorAll('.tv-badge').forEach(badge => {
+                badge.removeAttribute('href');
+                badge.classList.remove('channel-chip-link');
+                badge.onclick = null;
+                badge.textContent = badge.textContent.replace(' 🔗', '').replace(' ▶', '').trim();
+            });
+        }
+    });
+
     document.querySelectorAll('.tv-badge').forEach(badge => {
         const textContent = badge.textContent.trim();
         if (textContent.startsWith('FCTV33')) return;
+
+        const row = badge.closest('.event-row');
+        if (row && row.getAttribute('data-source') === 'futbolenlatv') {
+            return;
+        }
 
         const channelName = textContent.replace(' 🔗', '').replace(' ▶', '').trim();
         
@@ -1793,7 +1842,7 @@ function applyFilters() {
             if (tr.id === 'dynamicEmptyState') continue;
 
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-            const isFiltered = tr.getAttribute('data-filtered') === 'true';
+            const isFiltered = tr.getAttribute('data-filtered'] === 'true';
             const source = cleanStr(tr.getAttribute('data-source'));
             const sport = cleanStr(tr.getAttribute('data-sport')); 
             const rowDate = tr.getAttribute('data-date');
@@ -1954,3 +2003,4 @@ if __name__ == "__main__":
         "Archivo index.html generado con éxito. "
         f"Eventos totales en la agenda unificada: {len(futbolenlatv_events)}"
     )
+```[cite: 2]
