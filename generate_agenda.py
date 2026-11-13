@@ -138,39 +138,46 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
 
     # Patrones de exclusión evaluados directamente sobre la URL/ruta
     excluded_url_patterns = [
-        "/american-football/", "/aussie-rules/", "/badminton/", "/fighting/", "/handball/", "/others/",
-        "afc-u17-asian-cup", "argentina-supercopa", "argentine-reserve-league", "argentine-womens-league",
-        "argentinian-liga-nacional-de-bosquetbol", "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", "austrian-basketball-superliga",
-        "bahrain-premier-league", "basketball-champions-league", "basketball-super-league-1", "b1-league", 
-        "b2-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
-        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "college-soccer",
-        "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "czech-cup", "china-hong-kong-basketball-league",
-        "chinese-football-assorciation-u-20-league", "colombian-copa-betplay-dimayor",
+        "/american-football/", "/aussie-rules/", "/badminton/", "/cycling/", "/fighting/", "/handball/", "/others/",
+        "3x3basketball",
+        "admiralbet-aba-league", "afc-u17-asian-cup", "alms-cup", "argentina-supercopa", 
+        "argentine-reserve-league", "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "asian-le-mans-series", 
+        "atp-challenger-orleans", "aus-champ", "australia-w-league", "austrian-basketball-superliga",
+        "auto-racing",
+        "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", 
+        "b1-league", "b2-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
+        "british-basketball-league",
+        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", "cfa-team-china-international-tournament",
+        "cfa-womens-super-league", "college-soccer", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", 
+        "czech-cup", "china-hong-kong-basketball-league", "chinese-football-assorciation-u-20-league", "colombian-copa-betplay-dimayor",
         "east-asia-super-league", "egyptian-scores-cup", "el-salvador-reserves-league", "elite-league-u20", 
         "english-football-league-trophy", "eurocup-basketball", "europe-womens-basketball-championship-qualifier",
-        "fa-womens-league-cup", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
-        "french-division-1-feminine", "ftbol-sala-primera-divisin", 
+        "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", 
+        "fiba-u16-womens-americup-2027-south-american-qualifiers", "french-division-1-feminine", "ftbol-sala-primera-divisin", 
+        "german-frauen-bundesliga",
         "hunan-football-league",
-        "indian-bangalore-super-division", "international-friendly", "indian-league-division-1",
-        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league",
+        "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
+        "international-friendly", "italian-serie-c",
+        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-j2-league", 
+        "japanese-j3-league",
         "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
-        "liberian-second-division", "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", 
-        "lithuania-cup",
+        "liberia-first-division", "liberian-second-division", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", 
+        "liga-nova-kbm", "liga-u", "ligue-nationale-de-basket-pro-a", "lithuania-cup",
         "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
         "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
-        "new-zealand-basketball-league-womens",
+        "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division",
         "oman-tamkeen-league", 
-        "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl",
-        "philippines-university-athletic-association", "poland-liga-2", "portuguese-u23-league", "premier-padel", 
-        "romanian-liga-ii", 
-        "saff-championship", "slovenia-basketball-cup", "spanish-segunda-division-rfef", "superettan-basket", 
-        "svenska-basketligan",
+        "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl", "philippines-university-athletic-association", 
+        "portugal-liga-de-basquetebol", "poland-liga-2", "portuguese-u23-league", "premier-padel", 
+        "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals",
+        "saff-championship", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga",
+        "spanish-segunda-division", "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan",
         "thai-league-3", "turkey-basketball-league-2",
         "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship",
         "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", 
         "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "uruguay-cup", 
-        "venezuela-primera-division", "vtb-united-league",
-        "liberia-first-division", "sierra-leone-premier-league", "slovenia-2-liga"
+        "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league",
+        "women-empowerment-league"
     ]
     
     for pat in excluded_url_patterns:
@@ -1017,7 +1024,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .stat-card .lbl { font-size: 0.72rem; color: var(--text-muted); }
 
         .comp-filter-panel { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; overflow: hidden; }
-        .comp-filter-header { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; }
+        .comp-filter-header { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; flex-wrap: wrap; gap: 8px; }
         .comp-checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.85rem; font-weight: 700; white-space: nowrap; min-width: 0; }
         .comp-checkboxes input[type="checkbox"] { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; flex: 0 0 16px; margin: 0; }
         
@@ -1054,11 +1061,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .channel-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
         .channel-logo { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: #111827; flex-shrink: 0; }
         .channel-name { font-size: 0.85rem; font-weight: 600; color: var(--text-main); line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+        .channel-actions { display: flex; align-items: center; gap: 6px; }
+        .channel-fav-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px; transition: transform 0.2s; color: #64748b; }
+        .channel-fav-btn:hover { transform: scale(1.2); }
+        .channel-fav-btn.is-fav { color: #f59e0b; }
         .channel-action { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
         .channel-action:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
 
-        /* Accesos directos a Sport TV Guide */
-        .guides-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; padding: 16px 16px 0 16px; }
+        /* Accesos directos a Sport TV Guide (Fijos en la cabecera de canales) */
+        .guides-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; padding-bottom: 10px; }
         .guide-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(167, 139, 250, 0.2)); border: 1px solid rgba(59, 130, 246, 0.4); color: #f8fafc; padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; text-decoration: none; text-align: center; }
         .guide-btn:hover { background: rgba(59, 130, 246, 0.35); border-color: var(--accent-blue); transform: translateY(-1px); }
 
@@ -1086,7 +1097,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             .stat-card .val { font-size: 0.95rem; }
             .stat-card .lbl { font-size: 0.68rem; }
             
-            .comp-filter-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .comp-filter-header { flex-direction: column; align-items: stretch; gap: 8px; }
+            .comp-filter-header > div { width: 100%; justify-content: space-between; }
             .comp-checkboxes { width: 100%; display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8px !important; }
             
             /* Transformación de tabla a formato de tarjetas en móvil */
@@ -1142,12 +1154,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 flex-wrap: wrap;
                 gap: 5px;
             }
+            /* 1 canal por línea en móvil para lectura completa del nombre */
             .channels-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                grid-template-columns: 1fr !important;
                 padding: 8px;
                 gap: 6px;
             }
-            .guides-banner { grid-template-columns: repeat(2, 1fr); padding: 8px 8px 0 8px; }
+            .guides-banner { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; padding-bottom: 8px; }
         }
     </style>
 </head>
@@ -1169,8 +1182,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     
     <!-- Controles de la Agenda Unificada -->
     <div id="futbolenlatv-controls">
-        <input type="text" id="agendaSearch" placeholder="Buscar por competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
-
         <div class="stats-grid">
             <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
                 <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">📌</div>
@@ -1193,29 +1204,34 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
         
         <div class="comp-filter-panel">
-            <div class="comp-filter-header" style="cursor: default; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+            <div class="comp-filter-header">
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <span>⚙️ Deportes</span>
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="source-chk" value="futbolenlatv" checked onchange="applyFilters()"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" value="fctv33" checked onchange="applyFilters()"> FCTV33</label>
+                        <label><input type="checkbox" class="comp-chk" value="futbol" checked onchange="applyFilters()"> ⚽ FÚTBOL</label>
+                        <label><input type="checkbox" class="comp-chk" value="baloncesto" checked onchange="applyFilters()"> 🏀 BALONCESTO</label>
+                        <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> 🎾 TENIS</label>
+                        <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> 🏆 MOTOR</label>
                     </div>
                 </div>
-                <div class="comp-checkboxes" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <label><input type="checkbox" class="comp-chk" value="futbol" checked onchange="applyFilters()"> ⚽ FÚTBOL</label>
-                    <label><input type="checkbox" class="comp-chk" value="baloncesto" checked onchange="applyFilters()"> 🏀 BALONCESTO</label>
-                    <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> 🎾 TENIS</label>
-                    <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> 🏆 MOTOR</label>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <input type="text" id="agendaSearch" placeholder="Buscar por competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
     </div>
 
-    <!-- Controles de la vista de canales -->
-    <div id="channels-controls" style="display: none; margin-bottom: 12px;">
+    <!-- Controles fijos de la vista de canales (incluye búsqueda, letras y guías) -->
+    <div id="channels-controls" style="display: none; margin-bottom: 4px;">
         <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
         <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
             <button class="letter-btn active" onclick="filterChannelsByLetter('TODOS')">TODOS</button>
+            <button class="letter-btn" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('#')">#</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('A')">A</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('B')">B</button>
@@ -1245,6 +1261,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <button class="letter-btn" onclick="filterChannelsByLetter('Y')">Y</button>
             <button class="letter-btn" onclick="filterChannelsByLetter('Z')">Z</button>
         </div>
+        <div class="guides-banner">
+            <button class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</button>
+            <button class="guide-btn" onclick="openGuideView('🏀 Guía de Baloncesto', 'https://sport-tv-guide.live/es/live/baloncesto')">🏀 Guía Baloncesto</button>
+            <button class="guide-btn" onclick="openGuideView('🎾 Guía de Tenis', 'https://sport-tv-guide.live/es/live/tenis')">🎾 Guía Tenis</button>
+            <button class="guide-btn" onclick="openGuideView('🏆 Guía de Motor', 'https://sport-tv-guide.live/es/live/deportes-de-motor')">🏆 Guía Motor</button>
+        </div>
     </div>
     </div>
 
@@ -1269,12 +1291,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
     <!-- VISTA 2: CATÁLOGO DE CANALES CDN LIVE TV -->
     <div class="table-card" id="channels-view-container" style="display: none;">
-        <div class="guides-banner">
-            <button class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</button>
-            <button class="guide-btn" onclick="openGuideView('🏀 Guía de Baloncesto', 'https://sport-tv-guide.live/es/live/baloncesto')">🏀 Guía Baloncesto</button>
-            <button class="guide-btn" onclick="openGuideView('🎾 Guía de Tenis', 'https://sport-tv-guide.live/es/live/tenis')">🎾 Guía Tenis</button>
-            <button class="guide-btn" onclick="openGuideView('🏆 Guía de Motor', 'https://sport-tv-guide.live/es/live/deportes-de-motor')">🏆 Guía Motor</button>
-        </div>
         <div id="channelsGrid" class="channels-grid">
             <div class="empty-state">Cargando canales...</div>
         </div>
@@ -1321,6 +1337,31 @@ const AGENDA_CHANNEL_ALIASES = new Map([
   ['m+ deportes', 'Movistar Deportes 1 FHD']
 ]);
 
+function getFavoriteChannels() {
+    try {
+        const stored = localStorage.getItem('favorite_channels');
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+}
+
+function toggleChannelFavorite(channelName) {
+    let favs = getFavoriteChannels();
+    const idx = favs.indexOf(channelName);
+    if (idx > -1) {
+        favs.splice(idx, 1);
+    } else {
+        favs.push(channelName);
+    }
+    try {
+        localStorage.setItem('favorite_channels', JSON.stringify(favs));
+    } catch (e) {
+        console.error("Error guardando favoritos en localStorage:", e);
+    }
+    filterChannels();
+}
+
 function updateLiveClock() {
     const now = new Date();
     const options = { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
@@ -1346,6 +1387,18 @@ function updateStickyHeadingOffset() {
     const panel = document.getElementById('stickyPanel');
     if (!panel) return;
     document.documentElement.style.setProperty('--sticky-panel-height', panel.getBoundingClientRect().height + 'px');
+}
+
+function handleSourceChange(changedSource) {
+    const chkFutbol = document.getElementById('chk-futbolenlatv');
+    const chkFctv = document.getElementById('chk-fctv33');
+    
+    if (changedSource === 'futbolenlatv' && chkFutbol.checked) {
+        chkFctv.checked = false;
+    } else if (changedSource === 'fctv33' && chkFctv.checked) {
+        chkFutbol.checked = false;
+    }
+    applyFilters();
 }
 
 function setFilter(filterType) {
@@ -1610,9 +1663,12 @@ function renderChannelsGrid(channels) {
         return;
     }
 
+    const favs = getFavoriteChannels();
+
     grid.innerHTML = channels.map(ch => {
         const playable = Boolean(safePlayerUrl(ch));
         const url = safePlayerUrl(ch);
+        const isFav = favs.includes(ch.name);
         const img = ch.image ? `<img src="${ch.image}" class="channel-logo" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="channel-logo"></div>`;
         
         return `
@@ -1621,7 +1677,8 @@ function renderChannelsGrid(channels) {
                     ${img}
                     <div class="channel-name" title="${ch.name}">${ch.name}</div>
                 </div>
-                <div>
+                <div class="channel-actions">
+                    <button class="channel-fav-btn ${isFav ? 'is-fav' : ''}" onclick="toggleChannelFavorite('${ch.name.replace(/'/g, "\\'")}')" title="${isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}">⭐</button>
                     ${playable ? `<a href="#reproductor" class="channel-action" onclick="openPlayerModal('${ch.name.replace(/'/g, "\\'")}', '${url}')">▶ Ver</a>` : '<span style="font-size:0.7rem; color:var(--text-muted)">No disponible</span>'}
                 </div>
             </div>
@@ -1639,6 +1696,8 @@ function filterChannelsByLetter(letter) {
 
 function filterChannels() {
     const query = document.getElementById('channelSearch').value.toLowerCase();
+    const favs = getFavoriteChannels();
+
     const filtered = allCatalogChannels.filter(ch => {
         const name = (ch.name || '').trim();
         const lowerName = name.toLowerCase();
@@ -1646,7 +1705,9 @@ function filterChannels() {
         const matchesQuery = lowerName.includes(query);
         
         let matchesLetter = true;
-        if (currentLetterFilter !== 'TODOS') {
+        if (currentLetterFilter === 'FAVORITOS') {
+            matchesLetter = favs.includes(name);
+        } else if (currentLetterFilter !== 'TODOS') {
             const firstChar = name.charAt(0).toUpperCase();
             if (currentLetterFilter === '#') {
                 matchesLetter = /^[^A-ZÑ]/i.test(firstChar);
