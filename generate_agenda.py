@@ -333,8 +333,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             detected_sport_label = "MOTOR"
                             detected_icon = "🏆"
                             detected_comp_key = "motor"
-                        elif any(k in path_lower for k in ["/rugby/", "/hockey/", "/cricket/", "/baseball/", "/volleyball/"]):
-                            detected_sport_key = "other"
 
                         card_text = item.get("cardText", "").strip()
                         extracted_time = "LIVE"
@@ -385,6 +383,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             query += "&ilang=es"
                         normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
+                        # Asignamos directamente la fecha de hoy para que se mantengan visibles durante todo el día actual
                         fctv_events_by_sport[detected_sport_key].append({
                             "date_obj": today_date,
                             "hora": extracted_time,
