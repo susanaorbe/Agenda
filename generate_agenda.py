@@ -1414,7 +1414,6 @@ function setFilter(filterType) {
             chkFctv.parentElement.style.opacity = '1';
             chkFctv.parentElement.style.cursor = 'pointer';
         }
-        // Asegurar que NUNCA estén ambos activos y SIEMPRE uno activo (por defecto FCTV33)
         if ((chkFutbol && chkFutbol.checked && chkFctv && chkFctv.checked) || (chkFutbol && !chkFutbol.checked && chkFctv && !chkFctv.checked)) {
             if (chkFctv) chkFctv.checked = true;
             if (chkFutbol) chkFutbol.checked = false;
@@ -1842,7 +1841,7 @@ function applyFilters() {
             if (tr.id === 'dynamicEmptyState') continue;
 
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-            const isFiltered = tr.getAttribute('data-filtered'] === 'true';
+            const isFiltered = tr.getAttribute('data-filtered') === 'true';
             const source = cleanStr(tr.getAttribute('data-source'));
             const sport = cleanStr(tr.getAttribute('data-sport')); 
             const rowDate = tr.getAttribute('data-date');
