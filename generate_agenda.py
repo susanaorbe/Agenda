@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from html import escape
 from playwright.sync_api import sync_playwright
 import zoneinfo
@@ -23,11 +23,12 @@ WIDGET_URL = "https://www.futbolenlatv.es/deporte"
 REQUEST_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "Chrome/120.0.0.0 Safari/537.36"
+        "Chrome/122.0.0.0 Safari/537.36"
     )
 }
 
 REQUEST_TIMEOUT = 15
+TAPLINK_URL = "https://taplink.cc/fctvlink"
 
 
 def get_spain_timezone():
@@ -75,57 +76,70 @@ def update_channels_json_from_api():
         print(f"Aviso: No se pudo actualizar channels.json desde la API ({e}). Usando versión local.")
 
 
-def get_dynamic_domain() -> str:
-    """Obtiene dinámicamente el dominio actual resolviendo las rutas de Taplink y validando conectividad."""
-    candidate_domains = ["www.fctv33go.autos", "fctv33go.autos"]
-    taplink_url = "https://taplink.cc/fctvlink"
-    
+def get_dynamic_domain() -> str | None:
+    """Devuelve el dominio activo de FCTV33 leyendo el botón LINK de Taplink."""
     try:
-        from html.parser import HTMLParser
-        
-        class TaplinkParser(HTMLParser):
-            def __init__(self):
-                super().__init__()
-                self.links = []
-            def handle_starttag(self, tag, attrs):
-                if tag == 'a':
-                    href = dict(attrs).get('href', '')
-                    if href:
-                        self.links.append(href)
-                        
-        with create_http_session() as session:
-            resp1 = session.get(taplink_url, headers=REQUEST_HEADERS, timeout=10)
-            parser = TaplinkParser()
-            parser.feed(resp1.text)
-            
-            for href in parser.links:
-                lower_href = href.lower()
-                if not any(x in lower_href for x in ["taplink.cc", "telegram", "whatsapp", "instagram", "twitter", "facebook", "mailto:"]):
-                    target_url = urljoin(taplink_url, href)
-                    try:
-                        r_final = session.get(target_url, headers=REQUEST_HEADERS, allow_redirects=True, timeout=6)
-                        parsed = urlparse(r_final.url)
-                        if parsed.netloc and "taplink.cc" not in parsed.netloc:
-                            domain = parsed.netloc
-                            if domain not in candidate_domains:
-                                candidate_domains.insert(0, domain)
-                    except Exception:
-                        continue
-    except Exception as e:
-        print(f"Aviso obteniendo dominio dinámico por Taplink: {e}")
-
-    with create_http_session() as session:
-        for dom in candidate_domains:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled", "--no-sandbox"]
+            )
+            context = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/122.0.0.0 Safari/537.36"
+                ),
+                timezone_id="Europe/Madrid"
+            )
+            page = context.new_page()
+            link_href = None
             try:
-                test_url = f"https://{dom}/es?ptst=1"
-                resp = session.get(test_url, headers=REQUEST_HEADERS, timeout=5)
-                if resp.status_code < 500:
-                    print(f"   -> Dominio FCTV activo validado: {dom}")
-                    return dom
-            except Exception:
-                continue
+                page.goto(TAPLINK_URL, timeout=35000, wait_until="domcontentloaded")
+                page.wait_for_selector("a[href]", timeout=20000)
+                page.wait_for_timeout(1500)
 
-    return "www.fctv33go.autos"
+                anchors = page.locator("a[href]").all()
+                for a in anchors:
+                    txt = (a.inner_text() or "").strip().upper()
+                    if txt == "LINK":
+                        link_href = a.get_attribute("href")
+                        break
+            finally:
+                context.close()
+                browser.close()
+
+        if not link_href:
+            print("Aviso: No se encontró el botón LINK en Taplink. FCTV33 se omitirá.")
+            return None
+
+        parsed = urlparse(urljoin(TAPLINK_URL, link_href))
+        domain = (parsed.netloc or "").split("@")[-1].split(":")[0].lower()
+
+        if parsed.scheme not in ("http", "https") or not re.fullmatch(r"[a-z0-9.-]+\.[a-z]{2,}", domain):
+            print(f"Aviso: El botón LINK de Taplink apunta a un destino inválido ({link_href}). FCTV33 se omitirá.")
+            return None
+        if "taplink.cc" in domain or "taplink.at" in domain:
+            print("Aviso: El botón LINK de Taplink sigue apuntando a Taplink. FCTV33 se omitirá.")
+            return None
+
+        with create_http_session() as session:
+            resp = session.get(
+                f"https://{domain}/es?ptst=1",
+                headers=REQUEST_HEADERS,
+                timeout=10,
+                allow_redirects=True,
+            )
+            if resp.status_code >= 500:
+                print(f"Aviso: El dominio activo {domain} no responde (HTTP {resp.status_code}). FCTV33 se omitirá.")
+                return None
+
+        print(f"   -> Dominio FCTV activo validado desde Taplink: {domain}")
+        return domain
+    except Exception as e:
+        print(f"Aviso: No se pudo obtener el dominio activo desde Taplink ({e}). FCTV33 se omitirá.")
+        return None
+
 
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
@@ -134,57 +148,46 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         return False
 
     path_lower = parsed_url_path.lower()
-
     excluded_url_patterns = [
         "/american-football/", "/aussie-rules/", "/badminton/", "/cycling/", "/fighting/", "/handball/", "/others/",
-        "3x3basketball",
-        "admiralbet-aba-league", "afc-u17-asian-cup", "alms-cup", "argentina-supercopa", 
+        "3x3basketball", "admiralbet-aba-league", "afc-u17-asian-cup", "alms-cup", "argentina-supercopa", 
         "argentine-reserve-league", "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "asian-le-mans-cup-2026-27", 
         "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", "australia-w-league", 
-        "austrian-basketball-superliga", "auto-racing",
-        "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", 
-        "basketbol-super-ligi", "b1-league", "b2-league", "belgian-womens-super-league",
-        "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", "british-basketball-league",
-        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", "china-taipei-professional-basketball-league", 
-        "cfa-team-china-international-tournament", "cfa-womens-super-league", "china-hong-kong-basketball-league","china-womens-basketball-association", 
-        "chinese-football-assorciation-u-20-league", "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", 
-        "concacaf-nations-league", "czech-cup",  
+        "austrian-basketball-superliga", "auto-racing", "bahrain-premier-league", "basketball-bundesliga", 
+        "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", "b1-league", "b2-league", 
+        "belgian-womens-super-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
+        "british-basketball-league", "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", 
+        "china-taipei-professional-basketball-league", "cfa-team-china-international-tournament", "cfa-womens-super-league", 
+        "china-hong-kong-basketball-league","china-womens-basketball-association", "chinese-football-assorciation-u-20-league", 
+        "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "czech-cup",  
         "east-asia-super-league", "egyptian-scores-cup", "el-salvador-reserves-league", "elite-league-u20", 
         "english-fa-womens-super-league", "english-football-league-trophy", "english-football-league-two", "epa-one-u18", 
-        "eurocup-basketball", "europe-womens-basketball-championship-qualifier",
-        "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", 
-        "fiba-u16-womens-americup-2027-south-american-qualifiers", "french-division-1-feminine", "ftbol-sala-primera-divisin", 
-        "futsal-tl-2026-play-off",
-        "german-frauen-bundesliga",
-        "hunan-football-league",
-        "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
-        "international-friendly", "italian-serie-c", "italian-womens-serie-a",
-        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-j2-league", 
-        "japanese-j3-league",
-        "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
-        "liberia-first-division", "liberian-second-division", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", 
-        "liga-nova-kbm", "liga-u", "liga-prime-futsal", "ligue-nationale-de-basket-pro-a", "lithuania-cup",
+        "eurocup-basketball", "europe-womens-basketball-championship-qualifier", "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", 
+        "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
+        "french-division-1-feminine", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", "german-frauen-bundesliga", 
+        "hunan-football-league", "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
+        "international-friendly", "italian-serie-c", "italian-womens-serie-a", "j-league-yamazaki-biscuit-levain-cup", 
+        "jamaica-premier-league", "japan-womens-basketball-league", "japanese-j2-league", "japanese-j3-league", 
+        "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", "liberia-first-division", 
+        "liberian-second-division", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", 
+        "liga-nova-kbm", "liga-u", "liga-prime-futsal", "ligue-nationale-de-basket-pro-a", "lithuania-cup", 
         "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
         "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
         "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division",
-        "oman-tamkeen-league", 
-        "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl", "philippines-university-athletic-association", 
-        "portugal-liga-de-basquetebol", "poland-liga-2", "portuguese-u23-league", "premier-padel", 
-        "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals",
-        "saff-championship", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga",
-        "spanish-segunda-division", "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan",
-        "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2",
-        "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship",
-        "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", 
-        "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "uruguay-cup", 
-        "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league",
+        "oman-tamkeen-league", "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl", 
+        "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "portuguese-u23-league", 
+        "premier-padel", "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals", "saff-championship", 
+        "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-segunda-division", 
+        "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan", "thai-kings-cup", "thai-league-3", 
+        "turkey-basketball-league-2", "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", 
+        "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", 
+        "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", 
+        "ukrainian-second-league", "uruguay-cup", "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league",
         "women-empowerment-league"
     ]
-    
     for pat in excluded_url_patterns:
         if pat in path_lower:
             return False
-            
     return True
 
 
@@ -203,7 +206,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     def is_event_detail_url(href: str) -> bool:
         parsed = urlparse(href)
         path = (parsed.path or href.split("?", 1)[0]).lower()
-        
         forbidden_filenames = {
             "football.html", "basketball.html", "tennis.html", "motorsport.html",
             "motor.html", "motorsports.html", "futbol.html", "baloncesto.html",
@@ -212,11 +214,13 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         filename = path.split("/")[-1]
         if filename in forbidden_filenames or path in {"/", "/es", "/es/"}:
             return False
-
         if "-match-" not in path:
             return False
-
         return True
+
+    spain_tz = get_spain_timezone()
+    now_spain = datetime.now(spain_tz)
+    now_minutes = now_spain.hour * 60 + now_spain.minute
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -300,6 +304,13 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if is_event_detail_url(item.get("href", ""))
                     ]
 
+                    # Lógica precisa de fechas para FCTV33:
+                    # Comienza en hoy. Si detectamos un salto hacia atrás en las horas (ej. de la noche a la madrugada)
+                    # o si encontramos eventos matutinos al inicio anteriores a la hora actual, se asignan a mañana.
+                    current_event_date = today_date
+                    last_time_mins = -1
+                    has_seen_future_or_current = False
+
                     for item in valid_candidates:
                         href = item.get("href", "")
                         if not href:
@@ -346,6 +357,26 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if extracted_time == "LIVE":
                             continue
 
+                        # Calcular minutos del evento
+                        ev_h, ev_m = map(int, extracted_time.split(":"))
+                        ev_mins = ev_h * 60 + ev_m
+
+                        # Regla de fecha para FCTV33:
+                        # 1. Si el evento ocurre antes de la hora actual y aún no hemos visto un evento futuro/actual,
+                        #    pertenece al día siguiente (mañana), ya que los partidos de hoy a esa hora ya pasaron.
+                        # 2. Si el tiempo desciende respecto al evento anterior (ej. 23:00 -> 13:00), significa que la lista
+                        #    ha pasado al día siguiente.
+                        if current_event_date == today_date:
+                            if not has_seen_future_or_current and ev_mins < now_minutes:
+                                current_event_date = today_date + timedelta(days=1)
+                            elif last_time_mins != -1 and ev_mins < last_time_mins - 120:
+                                current_event_date = today_date + timedelta(days=1)
+
+                        if current_event_date == today_date and ev_mins >= now_minutes:
+                            has_seen_future_or_current = True
+
+                        last_time_mins = ev_mins
+
                         path_parts = [part for part in parsed_url.path.split("/") if part]
                         comp_str = detected_sport_label
                         event_str = "EVENTO FCTV33"
@@ -386,7 +417,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
                         fctv_events_by_sport[detected_sport_key].append({
-                            "date_obj": today_date,
+                            "date_obj": current_event_date,
                             "hora": extracted_time,
                             "deporte": detected_sport_label,
                             "icono": detected_icon,
@@ -845,14 +876,16 @@ def fetch_and_parse_agenda() -> list[dict]:
     current_date_obj = today_date
 
     dynamic_domain = get_dynamic_domain()
-    
-    fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
-    for sport_key, events_list in fctv_events_by_sport.items():
-        for ev in events_list:
-            event_key = (ev["date_obj"], ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
-            if event_key not in seen_events:
-                seen_events.add(event_key)
-                futbolenlatv_results.append(ev)
+    if dynamic_domain:
+        fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
+        for sport_key, events_list in fctv_events_by_sport.items():
+            for ev in events_list:
+                event_key = (ev["date_obj"], ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+                if event_key not in seen_events:
+                    seen_events.add(event_key)
+                    futbolenlatv_results.append(ev)
+    else:
+        print("Aviso: FCTV33 se omitirá en esta generación: no hay un dominio activo válido (Taplink no disponible).")
 
     try:
         with create_http_session() as session:
@@ -1921,7 +1954,6 @@ def generate_html(futbolenlatv_events):
     filtered_cnt = sum(1 for event in futbolenlatv_events if event["is_filtered"])
     slot_counts = Counter(get_time_slot(event["hora"]) for event in futbolenlatv_events if event["date_obj"] == today_date)
     total_cnt = sum(1 for event in futbolenlatv_events if event["date_obj"] > today_date)
-    domain = get_dynamic_domain()
 
     def clean_key(s):
         return normalize_search_text(s)
@@ -2003,13 +2035,13 @@ def generate_html(futbolenlatv_events):
             
     futbolenlatv_rows_html = "".join(rows_list)
 
-    html = HTML_TEMPLATE.replace("{DOMAIN}", domain)
-    html = html.replace("{FECHA_ACT}", fecha_act)
+    html = HTML_TEMPLATE.replace("{FECHA_ACT}", fecha_act)
     html = html.replace("{FILTERED_CNT}", str(filtered_cnt))
     html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
     html = html.replace("{MANANA_CNT}", str(slot_counts["manana"]))
     html = html.replace("{TARDE_CNT}", str(slot_counts["tarde"]))
     html = html.replace("{NOCHE_CNT}", str(slot_counts["noche"]))
+    html = html.export if hasattr(html, 'export') else html # fallback
     html = html.replace("{TOTAL_CNT}", str(total_cnt))
     html = html.replace("{TODAY_DATE_STR}", today_date.isoformat())
     html = html.replace("{FUTBOLENLATV_ROWS_HTML}", futbolenlatv_rows_html)
