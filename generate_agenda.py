@@ -153,20 +153,22 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "3x3basketball", "admiralbet-aba-league", "afc-u17-asian-cup", "alms-cup", "argentina-supercopa", 
         
-        "antigua-barbuda-premier-division", "arg-primera-nacional", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-reserve-league", 
-        "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asian-le-mans-cup-2026-27", "asian-le-mans-series", 
-        "atp-challenger-orleans", "asian-le-mans-cup", "aus-champ", "australia-w-league", "austrian-basketball-superliga", 
-        "australian-superbike-championship", "auto-racing", 
+        "andorran-second-division", "antigua-barbuda-premier-division", "arg-primera-nacional", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", 
+        "argentine-reserve-league", "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asian-le-mans-cup-2026-27", 
+        "asian-le-mans-series", "atp-challenger-orleans", "asian-le-mans-cup", "aus-champ", "australia-w-league", 
+        "austrian-basketball-superliga", "australian-superbike-championship", "auto-racing", 
         
         "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", 
         "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", 
-        "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", "burkina-faso-division-1", "burundi-premier-league", 
-        "b1-league", "b2-league", 
+        "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", "bulgarian-vtora-liga", "burkina-faso-division-1", 
+        "burundi-premier-league", "b1-league", "b2-league", 
 
         "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", "china-taipei-professional-basketball-league", 
         "cfa-team-china-international-tournament", "cfa-womens-super-league", "china-hong-kong-basketball-league","china-womens-basketball-association", "chinese-football-assorciation-u-20-league", 
         "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", 
         "copa-argentina", "copa-intercontinental", "croatian-cup", "czech-cup",  
+
+        "division-1-feminin",
         
         "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20", 
         "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-trophy", "english-football-league-two", "english-football-league-one", 
@@ -180,8 +182,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "hunan-football-league", 
 
-        "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", "international-friendly", 
-        "italian-serie-c", "italian-womens-serie-a", 
+        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
+        "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
 
         "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", "japanese-j2-league", 
         "japanese-j3-league", 
@@ -189,14 +191,14 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
 
         "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", "liga-espanola-de-baloncesto-oro", 
-        "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", "liga-prime-futsal", "ligue-nationale-de-basket-pro-a", 
-        "lithuania-cup", 
+        "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", "liga-portugal-2", "liga-prime-futsal", 
+        "ligue-nationale-de-basket-pro-a", "lithuania-cup", 
 
         "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", "mongolia-premier-league",
  
         "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", "netherlands-eerste-divisie", 
-        "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "nhra-drag-racing", "niger-national-league",
-        "niger-premier-league",
+        "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "nhra-drag-racing", 
+        "niger-national-league", "niger-premier-league",
 
         "oman-tamkeen-league", 
 
@@ -1319,10 +1321,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <span>⚙️ Deportes</span>
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="comp-chk" value="futbol" checked onchange="applyFilters()"> ⚽ FÚTBOL</label>
-                        <label><input type="checkbox" class="comp-chk" value="baloncesto" checked onchange="applyFilters()"> 🏀 BALONCESTO</label>
-                        <label><input type="checkbox" class="comp-chk" value="tenis" checked onchange="applyFilters()"> 🎾 TENIS</label>
-                        <label><input type="checkbox" class="comp-chk" value="motor" checked onchange="applyFilters()"> 🏆 MOTOR</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-futbol" value="futbol" checked onchange="handleSportChange('futbol')"> ⚽ FÚTBOL</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-baloncesto" value="baloncesto" onchange="handleSportChange('baloncesto')"> 🏀 BALONCESTO</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-tenis" value="tenis" onchange="handleSportChange('tenis')"> 🎾 TENIS</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-motor" value="motor" onchange="handleSportChange('motor')"> 🏆 MOTOR</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-todos" value="todos" onchange="handleSportChange('todos')"> TODOS</label>
                     </div>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
@@ -1520,6 +1523,37 @@ function handleSourceChange(changedSource) {
     applyFilters();
 }
 
+function handleSportChange(changedSport) {
+    if (currentFilter === 'favoritos') return;
+
+    const chkFutbol = document.getElementById('chk-futbol');
+    const chkBaloncesto = document.getElementById('chk-baloncesto');
+    const chkTenis = document.getElementById('chk-tenis');
+    const chkMotor = document.getElementById('chk-motor');
+    const chkTodos = document.getElementById('chk-todos');
+
+    const sportCheckboxes = [chkFutbol, chkBaloncesto, chkTenis, chkMotor];
+
+    if (changedSport === 'todos') {
+        if (chkTodos.checked) {
+            sportCheckboxes.forEach(chk => chk.checked = true);
+        } else {
+            chkTodos.checked = true;
+        }
+    } else {
+        const changedElement = document.getElementById('chk-' + changedSport);
+        if (!changedElement.checked) {
+            changedElement.checked = true;
+            return;
+        }
+        sportCheckboxes.forEach(chk => {
+            if (chk.value !== changedSport) chk.checked = false;
+        });
+        chkTodos.checked = false;
+    }
+    applyFilters();
+}
+
 function setFilter(filterType) {
     const prevFilter = currentFilter;
     currentFilter = cleanStr(filterType);
@@ -1621,7 +1655,7 @@ function updateStatsForActiveView() {
             const isToday = (rowDate === TODAY_DATE_STR);
 
             let matchesSource = checkedSources.has(source);
-            let matchesSport = checkedSports.has(sport);
+            let matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             let matchesSearch = !searchQuery || searchData.includes(searchQuery);
 
             if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
@@ -2032,7 +2066,7 @@ function applyFilters() {
 
             let matchesFilter = false;
             let matchesSource = checkedSources.has(source);
-            let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
+            let matchesSport = (currentFilter === 'favoritos') ? true : (checkedSports.has('todos') || checkedSports.has(sport));
             let matchesSearch = !searchQuery || searchData.includes(searchQuery);
 
             if (currentFilter === 'favoritos') {
