@@ -35,9 +35,9 @@ jobs:
         id: playwright-cache
         with:
           path: /home/runner/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-playwright-v2-${{ hashFiles('requirements.txt') }}
           restore-keys: |
-            ${{ runner.os }}-playwright-
+            ${{ runner.os }}-playwright-v2-
 
       - name: Instalar dependencias de Python
         run: |
