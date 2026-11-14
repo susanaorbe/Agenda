@@ -149,40 +149,75 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
 
     path_lower = parsed_url_path.lower()
     excluded_url_patterns = [
-        "/american-football/", "/aussie-rules/", "/badminton/", "/cycling/", "/fighting/", "/handball/", "/others/",
+        "/american-football/", "/aussie-rules/", "/badminton/", "/baseball/", "/cricket/", "/cycling/", "/fighting/", "/handball/", "/hockey/", "/others/", "/rugby/", "/volleyball/",
+        
         "3x3basketball", "admiralbet-aba-league", "afc-u17-asian-cup", "alms-cup", "argentina-supercopa", 
-        "argentine-reserve-league", "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "asian-le-mans-cup-2026-27", 
-        "asian-le-mans-series", "atp-challenger-orleans", "aus-champ", "australia-w-league", 
-        "austrian-basketball-superliga", "auto-racing", "bahrain-premier-league", "basketball-bundesliga", 
-        "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", "b1-league", "b2-league", 
-        "belgian-womens-super-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-serie-b", 
-        "british-basketball-league", "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", 
-        "china-taipei-professional-basketball-league", "cfa-team-china-international-tournament", "cfa-womens-super-league", 
-        "china-hong-kong-basketball-league","china-womens-basketball-association", "chinese-football-assorciation-u-20-league", 
-        "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "czech-cup",  
-        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-reserves-league", "elite-league-u20", 
-        "english-fa-womens-super-league", "english-football-league-trophy", "english-football-league-two", "epa-one-u18", 
-        "eurocup-basketball", "europe-womens-basketball-championship-qualifier", "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", 
-        "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
-        "french-division-1-feminine", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", "german-frauen-bundesliga", 
-        "hunan-football-league", "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
-        "international-friendly", "italian-serie-c", "italian-womens-serie-a", "j-league-yamazaki-biscuit-levain-cup", 
-        "jamaica-premier-league", "japan-womens-basketball-league", "japanese-j2-league", "japanese-j3-league", 
-        "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", "liberia-first-division", 
-        "liberian-second-division", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", 
-        "liga-nova-kbm", "liga-u", "liga-prime-futsal", "ligue-nationale-de-basket-pro-a", "lithuania-cup", 
-        "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
-        "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
-        "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division",
-        "oman-tamkeen-league", "panda-cup", "philippine-basketball-governors-cup", "philippines-mpbl", 
-        "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "portuguese-u23-league", 
-        "premier-padel", "rmc-grand-finals", "romanian-liga-ii", "rotax-grand-finals", "saff-championship", 
-        "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-segunda-division", 
-        "spanish-segunda-division-rfef", "superettan-basket", "svenska-basketligan", "thai-kings-cup", "thai-league-3", 
-        "turkey-basketball-league-2", "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", 
-        "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", 
-        "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", 
-        "ukrainian-second-league", "uruguay-cup", "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league",
+        
+        "antigua-barbuda-premier-division", "arg-primera-nacional", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-reserve-league", 
+        "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asian-le-mans-cup-2026-27", "asian-le-mans-series", 
+        "atp-challenger-orleans", "asian-le-mans-cup", "aus-champ", "australia-w-league", "austrian-basketball-superliga", 
+        "australian-superbike-championship", "auto-racing", 
+        
+        "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", 
+        "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", 
+        "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", "burkina-faso-division-1", "burundi-premier-league", 
+        "b1-league", "b2-league", 
+
+        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", "china-taipei-professional-basketball-league", 
+        "cfa-team-china-international-tournament", "cfa-womens-super-league", "china-hong-kong-basketball-league","china-womens-basketball-association", "chinese-football-assorciation-u-20-league", 
+        "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", 
+        "copa-argentina", "copa-intercontinental", "croatian-cup", "czech-cup",  
+        
+        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20", 
+        "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-trophy", "english-football-league-two", "english-football-league-one", 
+        "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern-football-league", "english-southern-league-central-division", 
+        "epa-one-u18", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
+
+        "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
+        "french-division-1-feminine", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", 
+
+        "german-frauen-bundesliga", "greek-basket-league",
+        
+        "hunan-football-league", 
+
+        "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", "international-friendly", 
+        "italian-serie-c", "italian-womens-serie-a", 
+
+        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", "japanese-j2-league", 
+        "japanese-j3-league", 
+        
+        "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
+
+        "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", "liga-espanola-de-baloncesto-oro", 
+        "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", "liga-prime-futsal", "ligue-nationale-de-basket-pro-a", 
+        "lithuania-cup", 
+
+        "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", "mongolia-premier-league",
+ 
+        "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", "netherlands-eerste-divisie", 
+        "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "nhra-drag-racing", "niger-national-league",
+        "niger-premier-league",
+
+        "oman-tamkeen-league", 
+
+        "panda-cup", "paraguayan-cup", "perseden-denpasar", "philippine-basketball-governors-cup", "philippines-mpbl", 
+        "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "poland-womens-ekstraliga", "portuguese-u23-league", 
+        "premier-padel", "putra-sang-fajar-fc",
+
+        "rmc-grand-finals", "romanian-liga-ii", "romanian-superliga-feminina", "rotax-grand-finals", "russian-first-league",
+
+        "saff-championship", "scottish-championship", "scottish-league-two", "scottish-league-one", "scottish-womens-premier-league", 
+        "segunda-feb", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-futsal-division-de-honor", 
+        "spanish-segunda-division", "spanish-segunda-division-rfef", "superettan-basket", "suriname-major-league", "svenska-basketligan", 
+
+        "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2", 
+
+        "united-arab-emirates-adib-cup", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uefa-el-w", "uefa-european-u17-football-championship", 
+        "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", 
+        "ukrainian-first-league", "ukrainian-second-league", "uruguay-cup", "usl-championship", "uzbekistan-super-league",
+
+        "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league",
+        
         "women-empowerment-league"
     ]
     for pat in excluded_url_patterns:
@@ -206,7 +241,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
     def is_event_detail_url(href: str) -> bool:
         parsed = urlparse(href)
         path = (parsed.path or href.split("?", 1)[0]).lower()
-        
         forbidden_filenames = {
             "football.html", "basketball.html", "tennis.html", "motorsport.html",
             "motor.html", "motorsports.html", "futbol.html", "baloncesto.html",
@@ -215,11 +249,11 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         filename = path.split("/")[-1]
         if filename in forbidden_filenames or path in {"/", "/es", "/es/"}:
             return False
-
         if "-match-" not in path:
             return False
-
         return True
+
+    spain_tz = get_spain_timezone()
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -274,51 +308,138 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         page.wait_for_timeout(300)
                     page.evaluate("window.scrollTo(0, 0)")
 
-                    # Extracción mejorada que detecta encabezados de fecha o bloques de día en FCTV33
                     candidate_cards = page.evaluate("""() => {
                         const out = [];
                         const seen = new Set();
                         const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
-                        
-                        // Recorrer el DOM buscando elementos o contenedores
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
                             const absolute = a.href;
                             if (seen.has(absolute)) continue;
                             seen.add(absolute);
-                            
+
                             let node = a;
-                            let cardText = a.innerText || a.textContent || '';
-                            let isTomorrow = false;
-                            
-                            for (let level = 0; level < 9 && node; level++, node = node.parentElement) {
-                                const candidate = (node.innerText || node.textContent || '').trim();
-                                if (timePattern.test(candidate)) {
-                                    cardText = candidate;
+                            let cardText = (a.innerText || a.textContent || '').trim();
+                            let bestNode = a;
+
+                            for (let level = 0; level < 6 && node && node.parentElement; level++) {
+                                const parent = node.parentElement;
+                                const matchLinks = parent.querySelectorAll('a[href*="-match-"]');
+                                if (matchLinks.length > 1) {
+                                    break;
                                 }
-                                // Comprobar si el bloque o un elemento previo indica que es mañana
-                                const prev = node.previousElementSibling;
-                                const parentText = node.parentElement ? node.parentElement.innerText.toLowerCase() : '';
-                                if (parentText.includes('mañana') || parentText.includes('tomorrow') || parentText.includes('próximamente')) {
-                                    isTomorrow = true;
+                                bestNode = parent;
+                                const txt = (parent.innerText || parent.textContent || '').trim();
+                                if (timePattern.test(txt)) {
+                                    cardText = txt;
                                 }
-                                if (prev && (prev.innerText.toLowerCase().includes('mañana') || prev.innerText.toLowerCase().includes('tomorrow'))) {
-                                    isTomorrow = true;
+                                node = parent;
+                            }
+
+                            cardText = (bestNode.innerText || bestNode.textContent || cardText).trim();
+
+                            const dataAttrs = [];
+                            for (const el of [bestNode, ...bestNode.querySelectorAll('*')]) {
+                                for (const attr of el.attributes) {
+                                    if (attr.name.startsWith('data-') || attr.name === 'datetime' || attr.name === 'title') {
+                                        dataAttrs.push(attr.name + '=' + attr.value);
+                                    }
                                 }
                             }
-                            out.push({href: absolute, cardText, isTomorrow});
+
+                            out.push({
+                                href: absolute,
+                                cardText,
+                                dataAttrs: dataAttrs.join(' | ')
+                            });
                         }
                         return out;
                     }""")
 
+                    # FILTRADO PREVIO: Solo conservamos los enlaces que cumplen la estructura de detalle
                     valid_candidates = [
                         item for item in candidate_cards
                         if is_event_detail_url(item.get("href", ""))
                     ]
 
-                    current_event_date = today_date
-                    last_time_mins = -1
+                    month_map = {
+                        "ene": 1, "jan": 1, "feb": 2, "mar": 3, "abr": 4, "apr": 4,
+                        "may": 5, "jun": 6, "jul": 7, "ago": 8, "aug": 8,
+                        "sep": 9, "sept": 9, "oct": 10, "nov": 11, "dic": 12, "dec": 12
+                    }
+
+                    def parse_fctv_datetime(item_dict: dict) -> tuple[date | None, str]:
+                        card_text = item_dict.get("cardText", "")
+                        data_attrs = item_dict.get("dataAttrs", "")
+                        combined = f"{card_text}\n{data_attrs}"
+
+                        ts_match = re.search(r"\b(1[6-9]\d{8}|2\d{9})(\d{3})?\b", data_attrs)
+                        if ts_match:
+                            try:
+                                ts_sec = int(ts_match.group(1))
+                                dt_spain = datetime.fromtimestamp(ts_sec, tz=spain_tz)
+                                return dt_spain.date(), f"{dt_spain.hour:02d}:{dt_spain.minute:02d}"
+                            except Exception:
+                                pass
+
+                        iso_match = re.search(r"\b(20\d{2})-(\d{1,2})-(\d{1,2})(?:[T\s]+(\d{1,2}):(\d{2}))?", combined)
+                        if iso_match:
+                            try:
+                                y, m, d = int(iso_match.group(1)), int(iso_match.group(2)), int(iso_match.group(3))
+                                ev_d = date(y, m, d)
+                                if iso_match.group(4) and iso_match.group(5):
+                                    return ev_d, f"{int(iso_match.group(4)):02d}:{int(iso_match.group(5)):02d}"
+                                t_m = time_re.search(card_text)
+                                if t_m:
+                                    return ev_d, f"{int(t_m.group(1)):02d}:{int(t_m.group(2)):02d}"
+                            except ValueError:
+                                pass
+
+                        t_match = time_re.search(card_text)
+                        if not t_match:
+                            return None, ""
+                        extracted_t = f"{int(t_match.group(1)):02d}:{t_match.group(2)}"
+
+                        text_norm = normalize_search_text(card_text)
+
+                        if any(k in text_norm for k in ["en vivo", "en directo", "directo", "live", "hoy", "today"]):
+                            return today_date, extracted_t
+                        if any(k in text_norm for k in ["manana", "tomorrow"]):
+                            return today_date + timedelta(days=1), extracted_t
+                        if any(k in text_norm for k in ["ayer", "yesterday"]):
+                            return today_date - timedelta(days=1), extracted_t
+
+                        dm_match = re.search(r"\b(\d{1,2})[/-](\d{1,2})(?:[/-](20\d{2}))?\b", card_text)
+                        if dm_match:
+                            try:
+                                d_val, m_val = int(dm_match.group(1)), int(dm_match.group(2))
+                                y_val = int(dm_match.group(3)) if dm_match.group(3) else today_date.year
+                                if not dm_match.group(3) and m_val < today_date.month - 6:
+                                    y_val += 1
+                                return date(y_val, m_val, d_val), extracted_t
+                            except ValueError:
+                                pass
+
+                        txt_date_match = re.search(
+                            r"\b(\d{1,2})\s+(?:de\s+)?([a-z]{3,10})\b|\b([a-z]{3,10})\s+(\d{1,2})\b",
+                            text_norm
+                        )
+                        if txt_date_match:
+                            if txt_date_match.group(1) and txt_date_match.group(2):
+                                d_str, mon_str = txt_date_match.group(1), txt_date_match.group(2)[:3]
+                            else:
+                                mon_str, d_str = txt_date_match.group(3)[:3], txt_date_match.group(4)
+                            if mon_str in month_map:
+                                try:
+                                    m_val = month_map[mon_str]
+                                    d_val = int(d_str)
+                                    y_val = today_date.year + (1 if m_val < today_date.month - 6 else 0)
+                                    return date(y_val, m_val, d_val), extracted_t
+                                except ValueError:
+                                    pass
+
+                        return today_date, extracted_t
 
                     for item in valid_candidates:
                         href = item.get("href", "")
@@ -327,11 +448,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         
                         full_url = urljoin(base_url, href)
                         parsed_url = urlparse(full_url)
-                        canonical_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-                        if canonical_url in global_seen_urls:
-                            continue
-                        global_seen_urls.add(canonical_url)
-
+                        
+                        # 1. DETECCIÓN PREVIA DEL DEPORTE SEGÚN LA RUTA
                         path_lower = parsed_url.path.lower()
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
@@ -354,27 +472,21 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             detected_icon = "🏆"
                             detected_comp_key = "motor"
 
-                        card_text = item.get("cardText", "").strip()
-                        extracted_time = "LIVE"
-                        time_match = time_re.search(card_text)
-                        if time_match:
-                            h, m = time_match.groups()
-                            extracted_time = f"{int(h):02d}:{m}"
-
-                        if extracted_time == "LIVE":
+                        # 2. FILTRADO ESTRICTO ANTES DE PROCESAR: Si la URL coincide con un torneo excluido, se descarta inmediatamente
+                        if not is_fctv_event_allowed(parsed_url.path, detected_sport_key):
                             continue
 
-                        ev_h, ev_m = map(int, extracted_time.split(":"))
-                        ev_mins = ev_h * 60 + ev_m
+                        canonical_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+                        if canonical_url in global_seen_urls:
+                            continue
+                        global_seen_urls.add(canonical_url)
 
-                        # Respetar la indicación explícita de la web o detectar el salto natural de día 
-                        # cuando la hora desciende abruptamente (ej. de la noche a la primera hora de la mañana siguiente)
-                        if item.get("isTomorrow"):
-                            current_event_date = today_date + timedelta(days=1)
-                        elif last_time_mins != -1 and ev_mins < last_time_mins - 180:
-                            current_event_date = today_date + timedelta(days=1)
+                        current_event_date, extracted_time = parse_fctv_datetime(item)
+                        if not current_event_date or not extracted_time or extracted_time == "LIVE":
+                            continue
 
-                        last_time_mins = ev_mins
+                        if current_event_date < today_date:
+                            continue
 
                         path_parts = [part for part in parsed_url.path.split("/") if part]
                         comp_str = detected_sport_label
@@ -403,9 +515,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             continue
                         if normalize_search_text(comp_str) == normalize_search_text(event_str):
                             comp_str = detected_sport_label
-
-                        if not is_fctv_event_allowed(parsed_url.path, detected_sport_key):
-                            continue
 
                         query = parsed_url.query
                         if "icg=" not in query:
@@ -1218,8 +1327,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
                     </div>
                 </div>
             </div>
@@ -1325,7 +1434,7 @@ let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
 let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
-let lastNonFavSource = 'fctv33';
+let lastNonFavSource = 'futbolenlatv';
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
@@ -1393,14 +1502,20 @@ function handleSourceChange(changedSource) {
     const chkFutbol = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
     
-    if (changedSource === 'futbolenlatv' && chkFutbol.checked) {
+    if (changedSource === 'futbolenlatv') {
+        if (!chkFutbol.checked) {
+            chkFutbol.checked = true;
+            return;
+        }
         chkFctv.checked = false;
         lastNonFavSource = 'futbolenlatv';
-    } else if (changedSource === 'fctv33' && chkFctv.checked) {
+    } else if (changedSource === 'fctv33') {
+        if (!chkFctv.checked) {
+            chkFctv.checked = true;
+            return;
+        }
         chkFutbol.checked = false;
         lastNonFavSource = 'fctv33';
-    } else if (!chkFutbol.checked && !chkFctv.checked) {
-        lastNonFavSource = '';
     }
     applyFilters();
 }
@@ -1462,8 +1577,8 @@ function setFilter(filterType) {
             chkFctv.parentElement.style.cursor = 'pointer';
         }
         if (prevFilter === 'favoritos') {
-            if (chkFutbol) chkFutbol.checked = (lastNonFavSource === 'futbolenlatv');
-            if (chkFctv) chkFctv.checked = (lastNonFavSource !== 'futbolenlatv');
+            if (chkFutbol) chkFutbol.checked = (lastNonFavSource !== 'fctv33');
+            if (chkFctv) chkFctv.checked = (lastNonFavSource === 'fctv33');
         }
     }
 
