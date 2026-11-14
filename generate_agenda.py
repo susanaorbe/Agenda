@@ -1925,40 +1925,51 @@ function closePlayerModal() {
 }
 
 function highlightPreviousEvents() {
-    const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
-    const nowMs = Date.now();
-    const currentMinuteTimestamp = Math.floor(nowMs / 60000) * 60000;
-    const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
+    const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
 
-    const currentlyLiveRows = rows.filter(row => row.classList.contains('previous-event'));
-    for (const row of currentlyLiveRows) {
-        const ts = Number(row.getAttribute('data-ts'));
-        if (Number.isFinite(ts) && (nowMs - ts) > THREE_HOURS_MS) {
-            location.reload();
-            return;
-        }
-    }
+    // 1. Procesar independientemente para FUTBOLENLATV
+    const rowsFutbol = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
+    rowsFutbol.forEach(row => row.classList.remove('previous-event'));
+    let prevTsFutbol = null;
 
-    rows.forEach(row => row.classList.remove('previous-event'));
-    let previousTimestamp = null;
-
-    rows.forEach(row => {
+    rowsFutbol.forEach(row => {
         if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
         const timestamp = Number(row.getAttribute('data-ts'));
         if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
-        if ((nowMs - timestamp) > THREE_HOURS_MS) return;
-        if (previousTimestamp === null || timestamp > previousTimestamp) {
-            previousTimestamp = timestamp;
+        if (prevTsFutbol === null || timestamp > prevTsFutbol) {
+            prevTsFutbol = timestamp;
         }
     });
 
-    if (previousTimestamp === null) return;
+    if (prevTsFutbol !== null) {
+        rowsFutbol.forEach(row => {
+            if (row.getAttribute('data-date') === TODAY_DATE_STR && Number(row.getAttribute('data-ts')) === prevTsFutbol) {
+                row.classList.add('previous-event');
+            }
+        });
+    }
 
-    rows.forEach(row => {
-        if (row.getAttribute('data-date') === TODAY_DATE_STR && Number(row.getAttribute('data-ts')) === previousTimestamp) {
-            row.classList.add('previous-event');
+    // 2. Procesar independientemente para FCTV33
+    const rowsFctv = Array.from(document.querySelectorAll('#fctv33Table tr.event-row[data-ts]'));
+    rowsFctv.forEach(row => row.classList.remove('previous-event'));
+    let prevTsFctv = null;
+
+    rowsFctv.forEach(row => {
+        if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
+        const timestamp = Number(row.getAttribute('data-ts'));
+        if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
+        if (prevTsFctv === null || timestamp > prevTsFctv) {
+            prevTsFctv = timestamp;
         }
     });
+
+    if (prevTsFctv !== null) {
+        rowsFctv.forEach(row => {
+            if (row.getAttribute('data-date') === TODAY_DATE_STR && Number(row.getAttribute('data-ts')) === prevTsFctv) {
+                row.classList.add('previous-event');
+            }
+        });
+    }
 }
 
 window.addEventListener('load', async () => {
