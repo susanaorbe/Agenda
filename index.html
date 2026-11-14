@@ -170,7 +170,7 @@
         </div>
         <div class="last-update">
             <span>Hora actual: <strong id="liveClock">--:--:--</strong></span>
-            <span>Última actualización: <strong>14/11/2026 - 11:52</strong></span>
+            <span>Última actualización: <strong>14/11/2026 - 12:31</strong></span>
         </div>
     </header>
     
@@ -209,8 +209,8 @@
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
                     </div>
                 </div>
             </div>
@@ -316,7 +316,7 @@ let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
 let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
-let lastNonFavSource = 'fctv33';
+let lastNonFavSource = 'futbolenlatv';
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
@@ -384,14 +384,20 @@ function handleSourceChange(changedSource) {
     const chkFutbol = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
     
-    if (changedSource === 'futbolenlatv' && chkFutbol.checked) {
+    if (changedSource === 'futbolenlatv') {
+        if (!chkFutbol.checked) {
+            chkFutbol.checked = true;
+            return;
+        }
         chkFctv.checked = false;
         lastNonFavSource = 'futbolenlatv';
-    } else if (changedSource === 'fctv33' && chkFctv.checked) {
+    } else if (changedSource === 'fctv33') {
+        if (!chkFctv.checked) {
+            chkFctv.checked = true;
+            return;
+        }
         chkFutbol.checked = false;
         lastNonFavSource = 'fctv33';
-    } else if (!chkFutbol.checked && !chkFctv.checked) {
-        lastNonFavSource = '';
     }
     applyFilters();
 }
@@ -453,8 +459,8 @@ function setFilter(filterType) {
             chkFctv.parentElement.style.cursor = 'pointer';
         }
         if (prevFilter === 'favoritos') {
-            if (chkFutbol) chkFutbol.checked = (lastNonFavSource === 'futbolenlatv');
-            if (chkFctv) chkFctv.checked = (lastNonFavSource !== 'futbolenlatv');
+            if (chkFutbol) chkFutbol.checked = (lastNonFavSource !== 'fctv33');
+            if (chkFctv) chkFctv.checked = (lastNonFavSource === 'fctv33');
         }
     }
 
