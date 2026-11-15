@@ -1508,7 +1508,6 @@ function handleSourceChange(changedSource) {
     } else if (changedSource === 'fctv33' && chkFctv.checked) {
         chkFutbolenlatv.checked = false;
     } else if (!chkFutbolenlatv.checked && !chkFctv.checked) {
-        // Asegurar que al menos uno esté activo si el usuario desmarca ambos
         if (changedSource === 'futbolenlatv') {
             chkFctv.checked = true;
         } else {
@@ -1944,7 +1943,7 @@ function closePlayerModal() {
 
 function highlightPreviousEvents() {
     const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
-    const MAX_LIVE_DURATION_MS = 3 * 3600 * 1000; // Ventana máxima de 3 horas para considerar un evento "en juego"
+    const MAX_LIVE_DURATION_MS = 3 * 3600 * 1000;
 
     const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
     rows.forEach(row => row.classList.remove('previous-event'));
@@ -2017,7 +2016,6 @@ window.addEventListener('load', async () => {
     await initApp();
     highlightPreviousEvents();
     setInterval(highlightPreviousEvents, 60000);
-    // Configurado para que la tarjeta por defecto al cargar o actualizar sea 'favoritos'
     setFilter('favoritos');
     updateStickyHeadingOffset();
 });
@@ -2196,8 +2194,6 @@ def generate_html(futbolenlatv_events):
     futbolenlatv_rows_html = "".join(rows_list)
 
     html = HTML_TEMPLATE.replace("{FECHA_ACT}", fecha_act)
-    html = html.replace("{FILTERED_CNT}", str(filtered_cnt))
-    html = html.2replace if hasattr(str, '2replace') else html # Dummy placeholder replacement
     html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
     html = html.replace("{MANANA_CNT}", str(slot_counts["manana"]))
     html = html.replace("{TARDE_CNT}", str(slot_counts["tarde"]))
