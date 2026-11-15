@@ -1322,10 +1322,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                     <span>⚙️ Deportes</span>
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                         <label><input type="checkbox" class="comp-chk" id="chk-futbol" value="futbol" checked onchange="handleSportChange('futbol')"> ⚽ FÚTBOL</label>
-                        <label><input type="checkbox" class="comp-chk" id="chk-baloncesto" value="baloncesto" onchange="handleSportChange('baloncesto')"> 🏀 BALONCESTO</label>
-                        <label><input type="checkbox" class="comp-chk" id="chk-tenis" value="tenis" onchange="handleSportChange('tenis')"> 🎾 TENIS</label>
-                        <label><input type="checkbox" class="comp-chk" id="chk-motor" value="motor" onchange="handleSportChange('motor')"> 🏆 MOTOR</label>
-                        <label><input type="checkbox" class="comp-chk" id="chk-todos" value="todos" onchange="handleSportChange('todos')"> TODOS</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-baloncesto" value="baloncesto" checked onchange="handleSportChange('baloncesto')"> 🏀 BALONCESTO</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-tenis" value="tenis" checked onchange="handleSportChange('tenis')"> 🎾 TENIS</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-motor" value="motor" checked onchange="handleSportChange('motor')"> 🏆 MOTOR</label>
+                        <label><input type="checkbox" class="comp-chk" id="chk-todos" value="todos" checked onchange="handleSportChange('todos')"> TODOS</label>
                     </div>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
@@ -1538,18 +1538,24 @@ function handleSportChange(changedSport) {
         if (chkTodos.checked) {
             sportCheckboxes.forEach(chk => chk.checked = true);
         } else {
-            chkTodos.checked = true;
+            sportCheckboxes.forEach(chk => chk.checked = false);
+            chkFutbol.checked = true;
         }
     } else {
         const changedElement = document.getElementById('chk-' + changedSport);
-        if (!changedElement.checked) {
-            changedElement.checked = true;
-            return;
+        if (changedElement.checked) {
+            sportCheckboxes.forEach(chk => {
+                chk.checked = (chk.value === changedSport);
+            });
+            chkTodos.checked = false;
+        } else {
+            const anyChecked = sportCheckboxes.some(chk => chk.checked);
+            if (!anyChecked && !chkTodos.checked) {
+                chkFutbol.checked = true;
+            } else {
+                chkTodos.checked = false;
+            }
         }
-        sportCheckboxes.forEach(chk => {
-            if (chk.value !== changedSport) chk.checked = false;
-        });
-        chkTodos.checked = false;
     }
     applyFilters();
 }
@@ -1961,48 +1967,102 @@ function closePlayerModal() {
 function highlightPreviousEvents() {
     const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
 
-    // 1. Procesar independientemente para FUTBOLENLATV
+    // Procesar FUTBOLENLATV por deporte de forma independiente
     const rowsFutbol = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
     rowsFutbol.forEach(row => row.classList.remove('previous-event'));
-    let prevTsFutbol = null;
-
-    rowsFutbol.forEach(row => {
-        if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
-        const timestamp = Number(row.getAttribute('data-ts'));
-        if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
-        if (prevTsFutbol === null || timestamp > prevTsFutbol) {
-            prevTsFutbol = timestamp;
-        }
-    });
-
-    if (prevTsFutbol !== null) {
+    
+    if (rowsFutbol.length > 0) {
+        const rowsBySport = {};
         rowsFutbol.forEach(row => {
-            if (row.getAttribute('data-date') === TODAY_DATE_STR && Number(row.getAttribute('data-ts')) === prevTsFutbol) {
-                row.classList.add('previous-event');
+            if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
+            const sport = cleanStr(row.getAttribute('data-sport'));
+            const timestamp = Number(row.getAttribute('data-ts'));
+            if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
+
+            if (!rowsBySport[sport]) {
+                rowsBySport[sport] = [];
             }
+            rowsBySport[sport].push({ row, ts: timestamp });
         });
+
+        for (const sport in rowsBySport) {
+            let maxTs = null;
+            rowsBySport[sport].forEach(item => {
+                if (maxTs === null || item.ts > maxTs) {
+                    maxTs = item.ts;
+                }
+            });
+
+            if (maxTs !== null) {
+                rowsBySport[sport].forEach(item => {
+                    if (item.ts === maxTs) {
+                        item.row.classList.add('previous-event');
+                    }
+                });
+            }
+        }
     }
 
-    // 2. Procesar independientemente para FCTV33
+    // Procesar FCTV33 por deporte de forma independiente
     const rowsFctv = Array.from(document.querySelectorAll('#fctv33Table tr.event-row[data-ts]'));
-    rowsFctv.forEach(row => row.classList.remove('previous-event'));
-    let prevTsFctv = null;
-
-    rowsFctv.forEach(row => {
-        if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
-        const timestamp = Number(row.getAttribute('data-ts'));
-        if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
-        if (prevTsFctv === null || timestamp > prevTsFctv) {
-            prevTsFctv = timestamp;
-        }
-    });
-
-    if (prevTsFctv !== null) {
+    if (rowsFctv.length > 0) {
+        rowsFctv.forEach(row => row.classList.remove('previous-event'));
+        const fctvRowsBySport = {};
         rowsFctv.forEach(row => {
-            if (row.getAttribute('data-date') === TODAY_DATE_STR && Number(row.getAttribute('data-ts')) === prevTsFctv) {
-                row.classList.add('previous-event');
+            if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
+            const sport = cleanStr(row.getAttribute('data-sport'));
+            const timestamp = Number(row.getAttribute('data-ts'));
+            if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
+
+            if (!fctvRowsBySport[sport]) {
+                fctvRowsBySport[sport] = [];
             }
+            fctvRowsBySport[sport].push({ row, ts: timestamp });
         });
+
+        for (const sport in fctvRowsBySport) {
+            let maxTs = null;
+            fctvRowsBySport[sport].forEach(item => {
+                if (maxTs === null || item.ts > maxTs) {
+                    maxTs = item.ts;
+                }
+            });
+
+            if (maxTs !== null) {
+                fctvRowsBySport[sport].forEach(item => {
+                    if (item.ts === maxTs) {
+                        item.row.classList.add('previous-event');
+                    }
+                });
+            }
+        }
+    }
+}
+
+function scrollToTargetEvent() {
+    const table = document.getElementById('futbolenlatvTable');
+    if (!table) return;
+    const visibleRows = Array.from(table.getElementsByClassName('event-row')).filter(r => r.style.display !== 'none');
+    if (visibleRows.length === 0) return;
+
+    const inPlayRows = visibleRows.filter(r => r.classList.contains('previous-event'));
+    let targetRow = null;
+
+    if (inPlayRows.length > 0) {
+        const lastVisibleRow = visibleRows[visibleRows.length - 1];
+        const isLastInPlay = inPlayRows.includes(lastVisibleRow);
+
+        if (isLastInPlay) {
+            targetRow = lastVisibleRow;
+        } else {
+            targetRow = inPlayRows[0];
+        }
+    } else {
+        targetRow = visibleRows[visibleRows.length - 1];
+    }
+
+    if (targetRow) {
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
 
@@ -2096,7 +2156,10 @@ function applyFilters() {
                 emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección.</td>';
                 table.appendChild(emptyRow);
             } else { emptyRow.style.display = ''; }
-        } else { if (emptyRow) emptyRow.style.display = 'none'; }
+        } else { 
+            if (emptyRow) emptyRow.style.display = 'none'; 
+            scrollToTargetEvent();
+        }
     }
 }
 </script>
