@@ -1502,7 +1502,6 @@ function handleSourceChange(changedSource) {
     const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
 
-    // Comportamiento excluyente para FUTBOLENLATV y FCTV33
     if (changedSource === 'futbolenlatv' && chkFutbolenlatv.checked) {
         chkFctv.checked = false;
     } else if (changedSource === 'fctv33' && chkFctv.checked) {
@@ -1586,13 +1585,13 @@ function setFilter(filterType) {
         }
     } else {
         if (chkFutbolenlatv) {
-            chkFutbolenlatv.checked = false; // Desmarcado por defecto en otras tarjetas
+            chkFutbolenlatv.checked = false;
             chkFutbolenlatv.disabled = false;
             chkFutbolenlatv.parentElement.style.opacity = '1';
             chkFutbolenlatv.parentElement.style.cursor = 'pointer';
         }
         if (chkFctv) {
-            chkFctv.checked = true; // Marcado por defecto en otras tarjetas
+            chkFctv.checked = true;
             chkFctv.disabled = false;
             chkFctv.parentElement.style.opacity = '1';
             chkFctv.parentElement.style.cursor = 'pointer';
@@ -1991,19 +1990,20 @@ function scrollToTargetEvent() {
     const visibleRows = Array.from(table.getElementsByClassName('event-row')).filter(r => r.style.display !== 'none');
     if (visibleRows.length === 0) return;
 
-    const inPlayRows = visibleRows.filter(r => r.classList.contains('previous-event'));
-    let targetRow = null;
+    // 1. Primer evento marcado como EN JUEGO
+    let targetRow = visibleRows.find(r => r.classList.contains('previous-event'));
 
-    if (inPlayRows.length > 0) {
-        const lastVisibleRow = visibleRows[visibleRows.length - 1];
-        const isLastInPlay = inPlayRows.includes(lastVisibleRow);
+    // 2. Si no hay ningún evento marcado como EN JUEGO, buscar el próximo evento (timestamp > ahora)
+    if (!targetRow) {
+        const now = Date.now();
+        targetRow = visibleRows.find(r => {
+            const ts = Number(r.getAttribute('data-ts'));
+            return Number.isFinite(ts) && ts > now;
+        });
+    }
 
-        if (isLastInPlay) {
-            targetRow = lastVisibleRow;
-        } else {
-            targetRow = inPlayRows[0];
-        }
-    } else {
+    // 3. Si ya no hay más eventos futuros, el último evento de la lista
+    if (!targetRow) {
         targetRow = visibleRows[visibleRows.length - 1];
     }
 
