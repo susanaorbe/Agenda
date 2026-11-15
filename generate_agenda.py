@@ -1941,47 +1941,27 @@ function closePlayerModal() {
 }
 
 function highlightPreviousEvents() {
-    const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
-    const MAX_LIVE_DURATION_MS = 3 * 3600 * 1000;
+    const now = Date.now();
+    const TWO_HOURS_MS = 2 * 3600 * 1000; // Ventana estricta de las últimas 2 horas
 
     const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
-    rows.forEach(row => row.classList.remove('previous-event'));
     
-    if (rows.length > 0) {
-        const groups = {};
-        rows.forEach(row => {
-            if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
-            const sport = cleanStr(row.getAttribute('data-sport'));
-            const source = cleanStr(row.getAttribute('data-source'));
-            const timestamp = Number(row.getAttribute('data-ts'));
-            
-            if (!Number.isFinite(timestamp) || timestamp > currentMinuteTimestamp) return;
-            if (currentMinuteTimestamp - timestamp > MAX_LIVE_DURATION_MS) return;
-
-            const groupKey = `${sport}_${source}`;
-            if (!groups[groupKey]) {
-                groups[groupKey] = [];
-            }
-            groups[groupKey].push({ row, ts: timestamp });
-        });
-
-        for (const key in groups) {
-            let maxTs = null;
-            groups[key].forEach(item => {
-                if (maxTs === null || item.ts > maxTs) {
-                    maxTs = item.ts;
-                }
-            });
-
-            if (maxTs !== null) {
-                groups[key].forEach(item => {
-                    if (item.ts === maxTs) {
-                        item.row.classList.add('previous-event');
-                    }
-                });
-            }
+    rows.forEach(row => {
+        // Solo evaluamos los eventos que corresponden al día de hoy
+        if (row.getAttribute('data-date') !== TODAY_DATE_STR) {
+            row.classList.remove('previous-event');
+            return;
         }
-    }
+
+        const timestamp = Number(row.getAttribute('data-ts'));
+        
+        // Se marca como EN JUEGO si el evento ya comenzó y su inicio se produjo hace menos de 2 horas
+        if (Number.isFinite(timestamp) && timestamp <= now && (now - timestamp) <= TWO_HOURS_MS) {
+            row.classList.add('previous-event');
+        } else {
+            row.classList.remove('previous-event');
+        }
+    });
 }
 
 function scrollToTargetEvent() {
