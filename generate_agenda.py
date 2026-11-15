@@ -1328,7 +1328,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
                         <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="handleSourceChange('fctv33')"> FCTV33</label>
                     </div>
                 </div>
@@ -1499,23 +1499,9 @@ function updateStickyHeadingOffset() {
 function handleSourceChange(changedSource) {
     if (currentFilter === 'favoritos') return;
 
-    const chkTodos = document.getElementById('chk-todos');
     const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
 
-    if (changedSource === 'todos') {
-        const state = chkTodos.checked;
-        chkFutbolenlatv.checked = state;
-        chkFctv.checked = state;
-    } else {
-        if (!chkFutbolenlatv.checked && !chkFctv.checked) {
-            chkTodos.checked = false;
-        } else if (chkFutbolenlatv.checked && chkFctv.checked) {
-            chkTodos.checked = true;
-        } else {
-            chkTodos.checked = false;
-        }
-    }
     applyFilters();
 }
 
@@ -1942,6 +1928,7 @@ function closePlayerModal() {
 
 function highlightPreviousEvents() {
     const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
+    const MAX_LIVE_DURATION_MS = 3 * 3600 * 1000; // Ventana máxima de 3 horas para considerar un evento "en juego"
 
     const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
     rows.forEach(row => row.classList.remove('previous-event'));
@@ -1950,13 +1937,14 @@ function highlightPreviousEvents() {
         const groups = {};
         rows.forEach(row => {
             if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
-            const slot = cleanStr(row.getAttribute('data-slot'));
             const sport = cleanStr(row.getAttribute('data-sport'));
             const source = cleanStr(row.getAttribute('data-source'));
             const timestamp = Number(row.getAttribute('data-ts'));
-            if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
+            
+            if (!Number.isFinite(timestamp) || timestamp > currentMinuteTimestamp) return;
+            if (currentMinuteTimestamp - timestamp > MAX_LIVE_DURATION_MS) return;
 
-            const groupKey = `${slot}_${sport}_${source}`;
+            const groupKey = `${sport}_${source}`;
             if (!groups[groupKey]) {
                 groups[groupKey] = [];
             }
