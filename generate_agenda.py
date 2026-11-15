@@ -173,12 +173,12 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20", 
         "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-trophy", "english-football-league-two", "english-football-league-one", 
         "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern-football-league", "english-southern-league-central-division", 
-        "epa-one-u18", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
+        "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
 
         "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
         "french-division-1-feminine", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", 
 
-        "german-frauen-bundesliga", "greek-basket-league",
+        "georgia-erovnuli-liga", "german-frauen-bundesliga", "greek-basket-league",
         
         "hunan-football-league", 
 
@@ -190,9 +190,9 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
 
-        "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", "liga-espanola-de-baloncesto-oro", 
-        "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", "liga-portugal-2", "liga-prime-futsal", 
-        "ligue-nationale-de-basket-pro-a", "lithuania-cup", 
+        "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", "lietuvos-krepsinio-lyga",
+        "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-u", "liga-portugal-2", 
+        "liga-prime-futsal", "ligat-haal", "ligue-nationale-de-basket-pro-a", "lithuania-cup", 
 
         "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", "mongolia-premier-league",
  
@@ -202,15 +202,16 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
 
         "oman-tamkeen-league", 
 
-        "panda-cup", "paraguayan-cup", "perseden-denpasar", "philippine-basketball-governors-cup", "philippines-mpbl", 
-        "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "poland-womens-ekstraliga", "portuguese-u23-league", 
-        "premier-padel", "putra-sang-fajar-fc",
+        "panda-cup", "paraguayan-cup", "perseden-denpasar", "peruvian-liga-1", "philippine-basketball-governors-cup", 
+        "philippines-mpbl", "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "poland-womens-ekstraliga", 
+        "portuguese-u23-league", "premier-padel", "putra-sang-fajar-fc",
 
         "rmc-grand-finals", "romanian-liga-ii", "romanian-superliga-feminina", "rotax-grand-finals", "russian-first-league",
 
         "saff-championship", "scottish-championship", "scottish-league-two", "scottish-league-one", "scottish-womens-premier-league", 
         "segunda-feb", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-futsal-division-de-honor", 
-        "spanish-segunda-division", "spanish-segunda-division-rfef", "superettan-basket", "suriname-major-league", "svenska-basketligan", 
+        "spanish-segunda-division", "spanish-segunda-division-rfef", "spanish-tercera-division", "superettan-basket", "suriname-major-league", 
+        "svenska-basketligan", 
 
         "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2", 
 
