@@ -1502,6 +1502,20 @@ function handleSourceChange(changedSource) {
     const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
 
+    // Comportamiento excluyente para FUTBOLENLATV y FCTV33
+    if (changedSource === 'futbolenlatv' && chkFutbolenlatv.checked) {
+        chkFctv.checked = false;
+    } else if (changedSource === 'fctv33' && chkFctv.checked) {
+        chkFutbolenlatv.checked = false;
+    } else if (!chkFutbolenlatv.checked && !chkFctv.checked) {
+        // Asegurar que al menos uno esté activo si el usuario desmarca ambos
+        if (changedSource === 'futbolenlatv') {
+            chkFctv.checked = true;
+        } else {
+            chkFutbolenlatv.checked = true;
+        }
+    }
+
     applyFilters();
 }
 
@@ -1573,11 +1587,13 @@ function setFilter(filterType) {
         }
     } else {
         if (chkFutbolenlatv) {
+            chkFutbolenlatv.checked = false; // Desmarcado por defecto en otras tarjetas
             chkFutbolenlatv.disabled = false;
             chkFutbolenlatv.parentElement.style.opacity = '1';
             chkFutbolenlatv.parentElement.style.cursor = 'pointer';
         }
         if (chkFctv) {
+            chkFctv.checked = true; // Marcado por defecto en otras tarjetas
             chkFctv.disabled = false;
             chkFctv.parentElement.style.opacity = '1';
             chkFctv.parentElement.style.cursor = 'pointer';
@@ -1998,20 +2014,11 @@ function scrollToTargetEvent() {
 }
 
 window.addEventListener('load', async () => {
-    const nowMadrid = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Madrid"}));
-    const h = nowMadrid.getHours();
-    const m = nowMadrid.getMinutes();
-    const totalMins = h * 60 + m;
-    let initialSlot = 'noche';
-    if (totalMins <= 419) initialSlot = 'madrugada';
-    else if (totalMins <= 779) initialSlot = 'manana';
-    else if (totalMins <= 1229) initialSlot = 'tarde';
-    else initialSlot = 'noche';
-
     await initApp();
     highlightPreviousEvents();
     setInterval(highlightPreviousEvents, 60000);
-    setFilter(initialSlot);
+    // Configurado para que la tarjeta por defecto al cargar o actualizar sea 'favoritos'
+    setFilter('favoritos');
     updateStickyHeadingOffset();
 });
 
@@ -2190,6 +2197,7 @@ def generate_html(futbolenlatv_events):
 
     html = HTML_TEMPLATE.replace("{FECHA_ACT}", fecha_act)
     html = html.replace("{FILTERED_CNT}", str(filtered_cnt))
+    html = html.2replace if hasattr(str, '2replace') else html # Dummy placeholder replacement
     html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
     html = html.replace("{MANANA_CNT}", str(slot_counts["manana"]))
     html = html.replace("{TARDE_CNT}", str(slot_counts["tarde"]))
