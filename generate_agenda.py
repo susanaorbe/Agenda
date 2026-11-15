@@ -166,7 +166,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "chile-liga-nacional-basketball", "china-taipei-professional-basketball-league", 
         "cfa-team-china-international-tournament", "cfa-womens-super-league", "china-hong-kong-basketball-league","china-womens-basketball-association", "chinese-football-assorciation-u-20-league", 
         "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", 
-        "copa-argentina", "copa-intercontinental", "croatian-cup", "czech-cup",  
+        "copa-argentina", "copa-intercontinental", "costa-rica-2-liga","croatian-cup", "czech-cup",  
 
         "division-1-feminin",
         
@@ -206,7 +206,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "philippines-mpbl", "philippines-university-athletic-association", "portugal-liga-de-basquetebol", "poland-liga-2", "poland-womens-ekstraliga", 
         "portuguese-u23-league", "premier-padel", "putra-sang-fajar-fc",
 
-        "rmc-grand-finals", "romanian-liga-ii", "romanian-superliga-feminina", "rotax-grand-finals", "russian-first-league",
+        "rmc-grand-finals", "romanian-liga-ii", "romanian-superliga-feminina", "rotax-grand-finals", "russian-first-league", "rwandan-womens-league", 
 
         "saff-championship", "scottish-championship", "scottish-league-two", "scottish-league-one", "scottish-womens-premier-league", 
         "segunda-feb", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-futsal-division-de-honor", 
@@ -360,7 +360,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         return out;
                     }""")
 
-                    # FILTRADO PREVIO: Solo conservamos los enlaces que cumplen la estructura de detalle
                     valid_candidates = [
                         item for item in candidate_cards
                         if is_event_detail_url(item.get("href", ""))
@@ -452,7 +451,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         full_url = urljoin(base_url, href)
                         parsed_url = urlparse(full_url)
                         
-                        # 1. DETECCIÓN PREVIA DEL DEPORTE SEGÚN LA RUTA
                         path_lower = parsed_url.path.lower()
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
@@ -475,7 +473,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             detected_icon = "🏆"
                             detected_comp_key = "motor"
 
-                        # 2. FILTRADO ESTRICTO ANTES DE PROCESAR: Si la URL coincide con un torneo excluido, se descarta inmediatamente
                         if not is_fctv_event_allowed(parsed_url.path, detected_sport_key):
                             continue
 
@@ -1332,7 +1329,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                         <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="handleSourceChange('fctv33')"> FCTV33</label>
                     </div>
                 </div>
             </div>
@@ -1438,7 +1435,6 @@ let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
 let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
-let lastNonFavSource = 'futbolenlatv';
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
@@ -1503,23 +1499,22 @@ function updateStickyHeadingOffset() {
 function handleSourceChange(changedSource) {
     if (currentFilter === 'favoritos') return;
 
-    const chkFutbol = document.getElementById('chk-futbolenlatv');
+    const chkTodos = document.getElementById('chk-todos');
+    const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
-    
-    if (changedSource === 'futbolenlatv') {
-        if (!chkFutbol.checked) {
-            chkFutbol.checked = true;
-            return;
+
+    if (changedSource === 'todos') {
+        const state = chkTodos.checked;
+        chkFutbolenlatv.checked = state;
+        chkFctv.checked = state;
+    } else {
+        if (!chkFutbolenlatv.checked && !chkFctv.checked) {
+            chkTodos.checked = false;
+        } else if (chkFutbolenlatv.checked && chkFctv.checked) {
+            chkTodos.checked = true;
+        } else {
+            chkTodos.checked = false;
         }
-        chkFctv.checked = false;
-        lastNonFavSource = 'futbolenlatv';
-    } else if (changedSource === 'fctv33') {
-        if (!chkFctv.checked) {
-            chkFctv.checked = true;
-            return;
-        }
-        chkFutbol.checked = false;
-        lastNonFavSource = 'fctv33';
     }
     applyFilters();
 }
@@ -1536,33 +1531,21 @@ function handleSportChange(changedSport) {
     const sportCheckboxes = [chkFutbol, chkBaloncesto, chkTenis, chkMotor];
 
     if (changedSport === 'todos') {
-        if (chkTodos.checked) {
-            sportCheckboxes.forEach(chk => chk.checked = true);
-        } else {
-            sportCheckboxes.forEach(chk => chk.checked = false);
-            chkFutbol.checked = true;
-        }
+        const state = chkTodos.checked;
+        sportCheckboxes.forEach(chk => chk.checked = state);
     } else {
-        const changedElement = document.getElementById('chk-' + changedSport);
-        if (changedElement.checked) {
-            sportCheckboxes.forEach(chk => {
-                chk.checked = (chk.value === changedSport);
-            });
-            chkTodos.checked = false;
+        const allChecked = sportCheckboxes.every(chk => chk.checked);
+        const anyChecked = sportCheckboxes.some(chk => chk.checked);
+        if (allChecked) {
+            chkTodos.checked = true;
         } else {
-            const anyChecked = sportCheckboxes.some(chk => chk.checked);
-            if (!anyChecked && !chkTodos.checked) {
-                chkFutbol.checked = true;
-            } else {
-                chkTodos.checked = false;
-            }
+            chkTodos.checked = false;
         }
     }
     applyFilters();
 }
 
 function setFilter(filterType) {
-    const prevFilter = currentFilter;
     currentFilter = cleanStr(filterType);
     const isFavView = (currentFilter === 'favoritos');
     
@@ -1586,19 +1569,15 @@ function setFilter(filterType) {
         }
     });
 
-    const chkFutbol = document.getElementById('chk-futbolenlatv');
+    const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
 
     if (isFavView) {
-        if (prevFilter !== 'favoritos') {
-            if (chkFctv && chkFctv.checked) lastNonFavSource = 'fctv33';
-            else if (chkFutbol && chkFutbol.checked) lastNonFavSource = 'futbolenlatv';
-        }
-        if (chkFutbol) {
-            chkFutbol.checked = true;
-            chkFutbol.disabled = true;
-            chkFutbol.parentElement.style.opacity = '0.6';
-            chkFutbol.parentElement.style.cursor = 'not-allowed';
+        if (chkFutbolenlatv) {
+            chkFutbolenlatv.checked = true;
+            chkFutbolenlatv.disabled = true;
+            chkFutbolenlatv.parentElement.style.opacity = '0.6';
+            chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
         }
         if (chkFctv) {
             chkFctv.checked = false;
@@ -1607,19 +1586,15 @@ function setFilter(filterType) {
             chkFctv.parentElement.style.cursor = 'not-allowed';
         }
     } else {
-        if (chkFutbol) {
-            chkFutbol.disabled = false;
-            chkFutbol.parentElement.style.opacity = '1';
-            chkFutbol.parentElement.style.cursor = 'pointer';
+        if (chkFutbolenlatv) {
+            chkFutbolenlatv.disabled = false;
+            chkFutbolenlatv.parentElement.style.opacity = '1';
+            chkFutbolenlatv.parentElement.style.cursor = 'pointer';
         }
         if (chkFctv) {
             chkFctv.disabled = false;
             chkFctv.parentElement.style.opacity = '1';
             chkFctv.parentElement.style.cursor = 'pointer';
-        }
-        if (prevFilter === 'favoritos') {
-            if (chkFutbol) chkFutbol.checked = (lastNonFavSource !== 'fctv33');
-            if (chkFctv) chkFctv.checked = (lastNonFavSource === 'fctv33');
         }
     }
 
@@ -1641,7 +1616,7 @@ function updateStatsForActiveView() {
 
         const checkedSources = new Set();
         if (currentFilter === 'favoritos') {
-            if (lastNonFavSource) checkedSources.add(lastNonFavSource);
+            checkedSources.add('futbolenlatv');
         } else {
             document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
         }
@@ -1968,69 +1943,36 @@ function closePlayerModal() {
 function highlightPreviousEvents() {
     const currentMinuteTimestamp = Math.floor(Date.now() / 60000) * 60000;
 
-    // Procesar FUTBOLENLATV por deporte de forma independiente
-    const rowsFutbol = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
-    rowsFutbol.forEach(row => row.classList.remove('previous-event'));
+    const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
+    rows.forEach(row => row.classList.remove('previous-event'));
     
-    if (rowsFutbol.length > 0) {
-        const rowsBySport = {};
-        rowsFutbol.forEach(row => {
+    if (rows.length > 0) {
+        const groups = {};
+        rows.forEach(row => {
             if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
+            const slot = cleanStr(row.getAttribute('data-slot'));
             const sport = cleanStr(row.getAttribute('data-sport'));
+            const source = cleanStr(row.getAttribute('data-source'));
             const timestamp = Number(row.getAttribute('data-ts'));
             if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
 
-            if (!rowsBySport[sport]) {
-                rowsBySport[sport] = [];
+            const groupKey = `${slot}_${sport}_${source}`;
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
             }
-            rowsBySport[sport].push({ row, ts: timestamp });
+            groups[groupKey].push({ row, ts: timestamp });
         });
 
-        for (const sport in rowsBySport) {
+        for (const key in groups) {
             let maxTs = null;
-            rowsBySport[sport].forEach(item => {
+            groups[key].forEach(item => {
                 if (maxTs === null || item.ts > maxTs) {
                     maxTs = item.ts;
                 }
             });
 
             if (maxTs !== null) {
-                rowsBySport[sport].forEach(item => {
-                    if (item.ts === maxTs) {
-                        item.row.classList.add('previous-event');
-                    }
-                });
-            }
-        }
-    }
-
-    // Procesar FCTV33 por deporte de forma independiente
-    const rowsFctv = Array.from(document.querySelectorAll('#fctv33Table tr.event-row[data-ts]'));
-    if (rowsFctv.length > 0) {
-        rowsFctv.forEach(row => row.classList.remove('previous-event'));
-        const fctvRowsBySport = {};
-        rowsFctv.forEach(row => {
-            if (row.getAttribute('data-date') !== TODAY_DATE_STR) return;
-            const sport = cleanStr(row.getAttribute('data-sport'));
-            const timestamp = Number(row.getAttribute('data-ts'));
-            if (!Number.isFinite(timestamp) || timestamp >= currentMinuteTimestamp) return;
-
-            if (!fctvRowsBySport[sport]) {
-                fctvRowsBySport[sport] = [];
-            }
-            fctvRowsBySport[sport].push({ row, ts: timestamp });
-        });
-
-        for (const sport in fctvRowsBySport) {
-            let maxTs = null;
-            fctvRowsBySport[sport].forEach(item => {
-                if (maxTs === null || item.ts > maxTs) {
-                    maxTs = item.ts;
-                }
-            });
-
-            if (maxTs !== null) {
-                fctvRowsBySport[sport].forEach(item => {
+                groups[key].forEach(item => {
                     if (item.ts === maxTs) {
                         item.row.classList.add('previous-event');
                     }
@@ -2127,7 +2069,7 @@ function applyFilters() {
 
             let matchesFilter = false;
             let matchesSource = checkedSources.has(source);
-            let matchesSport = (currentFilter === 'favoritos') ? true : (checkedSports.has('todos') || checkedSports.has(sport));
+            let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
             let matchesSearch = !searchQuery || searchData.includes(searchQuery);
 
             if (currentFilter === 'favoritos') {
@@ -2264,7 +2206,6 @@ def generate_html(futbolenlatv_events):
     html = html.replace("{MANANA_CNT}", str(slot_counts["manana"]))
     html = html.replace("{TARDE_CNT}", str(slot_counts["tarde"]))
     html = html.replace("{NOCHE_CNT}", str(slot_counts["noche"]))
-    html = html.export if hasattr(html, 'export') else html # fallback
     html = html.replace("{TOTAL_CNT}", str(total_cnt))
     html = html.replace("{TODAY_DATE_STR}", today_date.isoformat())
     html = html.replace("{FUTBOLENLATV_ROWS_HTML}", futbolenlatv_rows_html)
