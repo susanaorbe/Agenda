@@ -1580,7 +1580,7 @@ function setFilter(filterType) {
             chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
         }
         if (chkFctv) {
-            chkFctv.checked = false;
+            chkFctv.checked = true;
             chkFctv.disabled = true;
             chkFctv.parentElement.style.opacity = '0.6';
             chkFctv.parentElement.style.cursor = 'not-allowed';
