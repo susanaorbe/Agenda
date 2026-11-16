@@ -156,7 +156,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "admiralbet-aba-league", "afc-u17-asian-cup", "alms-cup", "argentina-supercopa", "andorran-second-division", 
         "antigua-barbuda-premier-division", "arg-primera-nacional", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-reserve-league", 
         "argentine-womens-league", "argentine-liga-nacional-de-bosquetbol", "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asian-le-mans-cup-2026-27", 
-        "asian-le-mans-series", "atp-challenger-helsinki-finland-men-singles", "atp-challenger-orleans", "asian-le-mans-cup", "aus-champ", 
+        "asian-le-mans-series", "atp-challenger-helsinki--finland-men-singles", "atp-challenger-orleans", "asian-le-mans-cup", "aus-champ", 
         "australia-w-league", "austrian-basketball-superliga", "australian-superbike-championship", "auto-racing", 
         
         "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", 
@@ -183,8 +183,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "hunan-football-league", 
 
-        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indo-d4", "indonesian-womens-liga-1", 
-        "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
+        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indo-d4", 
+        "indonesian-womens-liga-1", "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
 
         "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", 
         "japanese-j2-league", "japanese-j3-league", 
@@ -211,9 +211,9 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "russian-womens-basketball-premier-league",
 
         "saff-championship", "scottish-championship", "scottish-league-two", "scottish-league-one", "scottish-womens-premier-league", 
-        "segunda-feb", "sierra-leone-premier-league", "slovenia-basketball-cup", "slovenia-2-liga", "spanish-futsal-division-de-honor", 
-        "spanish-segunda-division", "spanish-segunda-division-rfef", "spanish-tercera-division", "superettan-basket", "suriname-major-league", 
-        "svenska-basketligan", 
+        "segunda-feb", "sierra-leone-premier-league", "slovak-2-liga", "slovenia-basketball-cup", "slovenia-2-liga", 
+        "spanish-futsal-division-de-honor", "spanish-segunda-division", "spanish-segunda-division-rfef", "spanish-tercera-division", "superettan-basket", 
+        "suriname-major-league", "svenska-basketligan", 
 
         "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2", 
 
