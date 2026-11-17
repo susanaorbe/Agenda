@@ -1601,12 +1601,9 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
+        // Leemos siempre los orígenes marcados en los checkboxes de manera unificada
         const checkedSources = new Set();
-        if (currentFilter === 'favoritos') {
-            checkedSources.add('futbolenlatv');
-        } else {
-            document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
-        }
+        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
