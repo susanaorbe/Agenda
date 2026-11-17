@@ -1113,7 +1113,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
 
-    futbolenlatv_results.sort(key=lambda x: (x["date_obj"], x["hora"]))
+    futbolenlatv_results.sort(key=lambda x: (x["date_obj"], x["hora"], x["competicion"]))
     return futbolenlatv_results
 
 
@@ -1625,7 +1625,12 @@ function updateStatsForActiveView() {
 
             let matchesSource = checkedSources.has(source);
             let matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
-            let matchesSearch = !searchQuery || searchData.includes(searchQuery);
+            let matchesSearch = true;
+            if (searchQuery) {
+                const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
+                const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
+                matchesSearch = compText.includes(searchQuery) || eventText.includes(searchQuery);
+            }
 
             if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
                 favCount++;
@@ -2030,7 +2035,12 @@ function applyFilters() {
             let matchesFilter = false;
             let matchesSource = checkedSources.has(source);
             let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
-            let matchesSearch = !searchQuery || searchData.includes(searchQuery);
+            let matchesSearch = true;
+            if (searchQuery) {
+                const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
+                const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
+                matchesSearch = compText.includes(searchQuery) || eventText.includes(searchQuery);
+            }
 
             if (currentFilter === 'favoritos') {
                 matchesFilter = isFiltered;
