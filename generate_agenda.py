@@ -1379,9 +1379,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </header>
 
     <nav class="app-launcher" aria-label="Abrir aplicaciones de Fire TV">
-        <!-- Kodi (Centro multimedia unificado) -->
-        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=org.xbmc.kodi;end" style="grid-column: span 4;">🎬 Abrir Kodi (Centro Multimedia)</a>
+        <a class="app-launch-btn" href="kodi://" style="grid-column: span 4;">🎬 Abrir Kodi (Centro Multimedia)</a>
     </nav>
+
 
     <div id="futbolenlatv-controls">
         <div class="stats-grid">
