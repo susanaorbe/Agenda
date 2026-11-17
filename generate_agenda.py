@@ -1122,7 +1122,14 @@ def fetch_and_parse_agenda() -> list[dict]:
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
 
-    futbolenlatv_results.sort(key=lambda x: (x["date_obj"], x["hora"], x["competicion"]))
+    def event_similarity_key(x):
+        ev_norm = normalize_search_text(x["evento"])
+        for w in [" vs ", " - ", "fc", "bc", "basket", "club"]:
+            ev_norm = ev_norm.replace(w, " ")
+        ev_core = " ".join(sorted(set(ev_norm.split())))
+        return (x["date_obj"], x["hora"], x["competicion"], ev_core)
+
+    futbolenlatv_results.sort(key=event_similarity_key)
     return futbolenlatv_results
 
 
