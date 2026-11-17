@@ -1122,9 +1122,12 @@ def fetch_and_parse_agenda() -> list[dict]:
         print(f"Error cargando la agenda general: {e}")
 
     def event_similarity_key(x):
+        # Normalizamos también la competición para unificar "NBA" y "NATIONAL BASKETBALL ASSOCIATION"
+        comp_norm = normalize_search_text(x["competicion"])
+        
         ev_norm = normalize_search_text(x["evento"])
         
-        # Diccionario de equivalencias bilingües y variantes de clubes
+        # Diccionario unificado de sinónimos (incluyendo competiciones y equipos)
         synonyms = {
             "ax olimpia milano": "milano",
             "barca basket": "barcelona",
@@ -1132,6 +1135,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             "baskonia": "baskonia",
             "bosnia and herzegovina": "bosnia",
             "crvena zvezda": "red star",
+            "euroleague": "euroliga",
             "gales": "wales",
             "hapoel tel aviv": "hapoel",
             "hungria": "hungary",
@@ -1148,17 +1152,17 @@ def fetch_and_parse_agenda() -> list[dict]:
         }
         
         for k, v in synonyms.items():
+            comp_norm = comp_norm.replace(k, v)
             ev_norm = ev_norm.replace(k, v)
             
-        # Limpiamos conectores y palabras accesorias
+        # Limpiamos conectores y palabras accesorias del evento
         for w in [" vs ", " - ", "fc", "bc", "basket", "club", "mts", "red", "star"]:
             ev_norm = ev_norm.replace(w, " ")
             
         ev_core = " ".join(sorted(set([w for w in ev_norm.split() if len(w) > 2])))
-        return (x["date_obj"], x["hora"], x["competicion"], ev_core)
-
-    futbolenlatv_results.sort(key=event_similarity_key)
-    return futbolenlatv_results
+        
+        # Devolvemos la tupla ordenada usando la competición ya unificada
+        return (x["date_obj"], x["hora"], comp_norm, ev_core)
 
 
 # ============================================================================
