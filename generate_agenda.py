@@ -1379,21 +1379,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </header>
 
     <nav class="app-launcher" aria-label="Abrir aplicaciones de Fire TV">
-        <!-- DAZN -->
-        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.dazn;end">📺 DAZN (paquete)</a>
-        <a class="app-launch-btn" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.dazn;end">📺 DAZN (alternativa)</a>
-        
-        <!-- Movistar Plus+ -->
-        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.movistarplus.androidtv;end">🔵 Movistar+ (paquete)</a>
-        <a class="app-launch-btn" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.movistarplus.androidtv;end">🔵 Movistar+ (alternativa)</a>
-        
-        <!-- Kodi -->
-        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=org.xbmc.kodi;end">🎬 Kodi (paquete)</a>
-        <a class="app-launch-btn" href="intent:#Intent;component=org.xbmc.kodi/.Splash;end">🎬 Kodi (componente)</a>
-        
-        <!-- FCTV33 -->
-        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.fctv.app;end">⚽ FCTV33 (paquete)</a>
-        <a class="app-launch-btn" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.fctv.app;end">⚽ FCTV33 (alternativa)</a>
+        <!-- Kodi (Centro multimedia unificado) -->
+        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=org.xbmc.kodi;end" style="grid-column: span 4;">🎬 Abrir Kodi (Centro Multimedia)</a>
     </nav>
 
     <div id="futbolenlatv-controls">
