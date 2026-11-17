@@ -969,7 +969,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             matchup_candidates.append(part)
 
     if tournament_candidates:
-        # Filtrar términos genéricos que no son nombres de competiciones reales
         valid_tournaments = [
             t for t in tournament_candidates 
             if normalize_search_text(t) not in {
@@ -2026,11 +2025,30 @@ function scrollToTargetEvent() {
     }
 }
 
+function getCurrentTimeSlot() {
+    const now = new Date();
+    const madridTimeStr = new Intl.DateTimeFormat('es-ES', {
+        timeZone: 'Europe/Madrid',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    }).format(now);
+    
+    const [h, m] = madridTimeStr.split(':').map(Number);
+    const totalMins = h * 60 + m;
+    
+    if (totalMins <= 419) return 'madrugada';
+    if (totalMins <= 779) return 'manana';
+    if (totalMins <= 1229) return 'tarde';
+    return 'noche';
+}
+
 window.addEventListener('load', async () => {
     await initApp();
     highlightPreviousEvents();
     setInterval(highlightPreviousEvents, 60000);
-    setFilter('favoritos');
+    const activeSlot = getCurrentTimeSlot();
+    setFilter(activeSlot);
     updateStickyHeadingOffset();
 });
 
