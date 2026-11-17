@@ -1241,6 +1241,44 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .guide-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(167, 139, 250, 0.2)); border: 1px solid rgba(59, 130, 246, 0.4); color: #f8fafc; padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; text-decoration: none; text-align: center; }
         .guide-btn:hover { background: rgba(59, 130, 246, 0.35); border-color: var(--accent-blue); transform: translateY(-1px); }
 
+        /* Lanzador de aplicaciones para Fire TV / Amazon Silk */
+        .app-launcher {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin: 0 0 12px;
+        }
+        .app-launch-btn {
+            min-height: 46px;
+            padding: 9px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid #475569;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #f8fafc;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.15s;
+        }
+        .app-launch-btn:hover,
+        .app-launch-btn:focus-visible {
+            background: #334155;
+            border-color: #60a5fa;
+            outline: 2px solid #60a5fa;
+            outline-offset: 2px;
+        }
+        .app-launch-btn:active { transform: scale(0.98); }
+        @media (max-width: 520px) {
+            .app-launcher { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .app-launch-btn { min-height: 44px; font-size: 0.82rem; }
+        }
+
         .letter-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-width: 28px; text-align: center; }
         .letter-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         .letter-btn:hover { background: rgba(59, 130, 246, 0.3); }
@@ -1339,7 +1377,25 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <span>Última actualización: <strong>{FECHA_ACT}</strong></span>
         </div>
     </header>
-    
+
+    <nav class="app-launcher" aria-label="Abrir aplicaciones de Fire TV">
+        <!-- DAZN -->
+        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.dazn;end">📺 DAZN (paquete)</a>
+        <a class="app-launch-btn" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.dazn;end">📺 DAZN (alternativa)</a>
+        
+        <!-- Movistar Plus+ -->
+        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.movistarplus.androidtv;end">🔵 Movistar+ (paquete)</a>
+        <a class="app-launch-btn" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.movistarplus.androidtv;end">🔵 Movistar+ (alternativa)</a>
+        
+        <!-- Kodi -->
+        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=org.xbmc.kodi;end">🎬 Kodi (paquete)</a>
+        <a class="app-launch-btn" href="intent:#Intent;component=org.xbmc.kodi/.Splash;end">🎬 Kodi (componente)</a>
+        
+        <!-- FCTV33 -->
+        <a class="app-launch-btn" href="intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.fctv.app;end">⚽ FCTV33 (paquete)</a>
+        <a class="app-launch-btn" href="intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.fctv.app;end">⚽ FCTV33 (alternativa)</a>
+    </nav>
+
     <div id="futbolenlatv-controls">
         <div class="stats-grid">
             <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
