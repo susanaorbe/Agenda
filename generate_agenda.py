@@ -153,11 +153,13 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "2026-fiba-3x3-americup", "3x3basketball", 
         
-        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-u17-asian-cup", "alms-cup", "andorran-second-division", 
-        "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", 
-        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", 
-        "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", "atp-challenger-helsinki--finland-men-singles", "atp-challenger-orleans", 
-        "aus-champ", "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
+        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-u17-asian-cup", "alms-cup", "albanian-cup",
+        "andorran-second-division", "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", "argentine-group-b-tebolidun-league-manchester", 
+        "argentine-group-c-tebolidun-league-manchester", 
+        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", 
+        "aruba-division-di-honor", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", "atp-challenger-helsinki--finland-men-singles", 
+        "atp-challenger-orleans", "aus-champ", "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", 
+        "auto-racing", 
         
         "b1-league", "b2-league", "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", 
         "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", 
@@ -968,7 +970,14 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             matchup_candidates.append(part)
 
     if tournament_candidates:
-        tournament = tournament_candidates[0]
+        # Filtrar términos genéricos que no son nombres de competiciones reales
+        valid_tournaments = [
+            t for t in tournament_candidates 
+            if normalize_search_text(t) not in {
+                "fase de grupos", "jornada", "cuartos de final", "semifinales", "final", "ida", "vuelta"
+            }
+        ]
+        tournament = valid_tournaments[0] if valid_tournaments else tournament_candidates[0]
         event_lines = [part for part in matchup_candidates if part != tournament]
     else:
         tournament = text_lines[0]
