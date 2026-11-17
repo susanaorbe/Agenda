@@ -153,13 +153,12 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "2026-fiba-3x3-americup", "3x3basketball", 
         
-        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-u17-asian-cup", "alms-cup", "albanian-cup",
-        "andorran-second-division", "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", "argentine-group-b-tebolidun-league-manchester", 
-        "argentine-group-c-tebolidun-league-manchester", 
-        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", 
-        "aruba-division-di-honor", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", "atp-challenger-helsinki--finland-men-singles", 
-        "atp-challenger-orleans", "aus-champ", "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", 
-        "auto-racing", 
+        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-beach-soccer-2026", "afc-u17-asian-cup", "alms-cup", 
+        "albanian-cup", "andorran-second-division", "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", 
+        "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", 
+        "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", 
+        "atp-challenger-helsinki--finland-men-singles", "atp-challenger-orleans", "aus-champ", "australia-w-league", "australian-superbike-championship", 
+        "austrian-basketball-superliga", "auto-racing", 
         
         "b1-league", "b2-league", "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", 
         "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", 
@@ -1127,23 +1126,25 @@ def fetch_and_parse_agenda() -> list[dict]:
         
         # Diccionario de equivalencias bilingües y variantes de clubes
         synonyms = {
-            "bosnia and herzegovina": "bosnia",
-            "rumania": "romania",
-            "hungria": "hungary",
-            "northern ireland": "irlanda del norte",
-            "republica irlanda": "ireland",
-            "gales": "wales",
-            "saski baskonia": "baskonia",
-            "winterthur fc barcelona": "barcelona",
+            "ax olimpia milano": "milano",
             "barca basket": "barcelona",
             "barça": "barcelona",
-            "olimpia milano": "milano",
-            "ax olimpia milano": "milano",
+            "baskonia": "baskonia",
+            "bosnia and herzegovina": "bosnia",
             "crvena zvezda": "red star",
+            "gales": "wales",
+            "hapoel tel aviv": "hapoel",
+            "hungria": "hungary",
             "mts belgrade": "",
-            "red star": "red star",
+            "national basketball association": "nba",
+            "northern ireland": "irlanda del norte",
+            "olimpia milano": "milano",
             "paris basketball": "paris",
-            "hapoel tel aviv": "hapoel"
+            "red star": "red star",
+            "republica irlanda": "ireland",
+            "rumania": "romania",
+            "saski baskonia": "baskonia",
+            "winterthur fc barcelona": "barcelona",
         }
         
         for k, v in synonyms.items():
