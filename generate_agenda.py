@@ -1379,9 +1379,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </header>
 
     <nav class="app-launcher" aria-label="Abrir aplicaciones de Fire TV">
-        <a class="app-launch-btn" href="kodi://" style="grid-column: span 4;">🎬 Abrir Kodi (Centro Multimedia)</a>
+        <a class="app-launch-btn" href="http://127.0.0" style="grid-column: span 4;">🎬 Abrir Kodi (Centro Multimedia)</a>
     </nav>
-
 
     <div id="futbolenlatv-controls">
         <div class="stats-grid">
