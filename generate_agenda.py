@@ -1124,9 +1124,36 @@ def fetch_and_parse_agenda() -> list[dict]:
 
     def event_similarity_key(x):
         ev_norm = normalize_search_text(x["evento"])
-        for w in [" vs ", " - ", "fc", "bc", "basket", "club"]:
+        
+        # Diccionario de equivalencias bilingües y variantes de clubes
+        synonyms = {
+            "bosnia and herzegovina": "bosnia",
+            "rumania": "romania",
+            "hungria": "hungary",
+            "northern ireland": "irlanda del norte",
+            "republica irlanda": "ireland",
+            "gales": "wales",
+            "saski baskonia": "baskonia",
+            "winterthur fc barcelona": "barcelona",
+            "barca basket": "barcelona",
+            "barça": "barcelona",
+            "olimpia milano": "milano",
+            "ax olimpia milano": "milano",
+            "crvena zvezda": "red star",
+            "mts belgrade": "",
+            "red star": "red star",
+            "paris basketball": "paris",
+            "hapoel tel aviv": "hapoel"
+        }
+        
+        for k, v in synonyms.items():
+            ev_norm = ev_norm.replace(k, v)
+            
+        # Limpiamos conectores y palabras accesorias
+        for w in [" vs ", " - ", "fc", "bc", "basket", "club", "mts", "red", "star"]:
             ev_norm = ev_norm.replace(w, " ")
-        ev_core = " ".join(sorted(set(ev_norm.split())))
+            
+        ev_core = " ".join(sorted(set([w for w in ev_norm.split() if len(w) > 2])))
         return (x["date_obj"], x["hora"], x["competicion"], ev_core)
 
     futbolenlatv_results.sort(key=event_similarity_key)
