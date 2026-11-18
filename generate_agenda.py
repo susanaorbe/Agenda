@@ -1130,18 +1130,20 @@ def fetch_and_parse_agenda() -> list[dict]:
         ev_norm = normalize_search_text(x["evento"])
         
         synonyms = {
+            "euroleague": "euroliga",
+            "national basketball association": "nba",
+            "uefa women's champions league": "uefa womens champions league",
+
             "ax olimpia milano": "milano",
             "barca basket": "barcelona",
             "barça": "barcelona",
             "baskonia": "baskonia",
             "bosnia and herzegovina": "bosnia",
             "crvena zvezda": "red star",
-            "euroleague": "euroliga",
             "gales": "wales",
             "hapoel tel aviv": "hapoel",
             "hungria": "hungary",
             "mts belgrade": "",
-            "national basketball association": "nba",
             "northern ireland": "irlanda del norte",
             "olimpia milano": "milano",
             "paris basketball": "paris",
