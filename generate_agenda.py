@@ -151,35 +151,32 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     excluded_url_patterns = [
         "/american-football/", "/aussie-rules/", "/badminton/", "/baseball/", "/cricket/", "/cycling/", "/fighting/", "/handball/", "/hockey/", "/others/", "/rugby/", "/volleyball/",
         
-        "2026-fiba-3x3-americup", "3x3basketball", 
+        "3x3", "u16", "u17", "u18", "u19", "u20", "u-20", "u21", "u-21", "u23", 
         
-        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-beach-soccer-2026", "afc-u17-asian-cup", "alms-cup", 
-        "albanian-cup", "andorran-second-division", "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", 
-        "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", 
-        "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", 
-        "asian-le-mans-series", "atp-challenger-helsinki--finland-men-singles", "atp-challenger-orleans", "aus-champ", "australia-w-league", 
-        "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
+        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-beach-soccer-2026", "alms-cup", "albanian-cup", "andorran-second-division", 
+        "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", "argentine-group", "argentine-womens-league", 
+        "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans", "atp-challenger", "aus-champ", 
+
+        "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
         
         "b1-league", "b2-league", "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", 
         "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", 
-        "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", "brazilian-paulista-womens-league", "brazilian-serie-a", "brazilian-serie-b", 
-        "british-basketball-league", "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league", 
+        "betplay-dimayor", "bolivian-copa-lfpb", "brazilian-paulista-womens-league", "brazilian-serie", "british-basketball-league", 
+        "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league", 
         
-        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", 
-        "cfa-womens-super-league", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", "china-womens-basketball-association", 
-        "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", 
-        "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27", "copa-intercontinental", "costa-rica-2-liga", 
-        "croatian-cup", "czech-cup", "czech-third-league", 
+        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", "cfa-womens-super-league", 
+        "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", "china-womens-basketball-association", "chinese-football-league-1", 
+        "college-soccer",  "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27", "copa-intercontinental", 
+        "costa-rica-2-liga", "croatian-cup", "czech-cup", "czech-third-league", 
         
         "division-1-feminin", 
         
-        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20", 
-        "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-one", "english-football-league-trophy", "english-football-league-two", 
-        "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern-football-league", "english-southern-league-central-division", 
-        "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
+        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "english-fa-trophy", "english-fa-womens-super-league", 
+        "english-football-league", "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern", 
+        "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
         
-        "fa-womens-league-cup", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
-        "french-division-1-feminine", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", 
+        "fa-womens-league-cup", "fiba-africa-basketball-league", "fiba-europe-cup", "french-division-1-feminine", "ftbol-sala-primera-divisin", 
+        "futsal-tl-2026-play-off", 
         
         "georgia-erovnuli-liga", "german-frauen-bundesliga", "greek-basket-league", 
         
@@ -188,45 +185,45 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indo-d4", 
         "indonesian-womens-liga-1", "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
         
-        "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", 
-        "japanese-j2-league", "japanese-j3-league", 
+        "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", "japanese-j", 
         
         "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
         
         "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", "lietuvos-krepsinio-lyga", 
-        "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-nusantara-2026-27", "liga-portugal-2", 
-        "liga-prime-futsal", "liga-u", "ligat-haal", "ligue-nationale-de-basket-pro-a", "ligue-nationale-de-basket-pro-b", 
+        "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nacional-de-bosquetbol", "liga-nova-kbm", "liga-nusantara-2026-27", 
+        "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal", "ligue-nationale-de-basket-pro", 
         "lithuania-cup", 
         
-        "mali-premiere-division", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", "mongolia-premier-league", 
+        "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", "mongolia-premier-league", 
         
-        "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", "netherlands-eerste-divisie", 
-        "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "nhra-drag-racing", 
-        "niger-national-league", "niger-premier-league", 
+        "narodni-basketbalova-liga", "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
+        "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", 
+        "nhra-drag-racing", "niger-national-league", "niger-premier-league", 
         
         "oman-tamkeen-league", 
         
         "panda-cup", "paraguayan-cup", "perseden-denpasar", "peruvian-liga-1", "philippine-basketball-governors-cup", 
         "philippines-mpbl", "philippines-university-athletic-association", "poland-liga-2", "poland-womens-ekstraliga", "portugal-liga-de-basquetebol", 
-        "portuguese-u23-league", "premier-padel", "putra-sang-fajar-fc", 
+        "premier-padel", "putra-sang-fajar-fc", 
         
-        "rmc-grand-finals", "romanian-liga-ii", "romanian-superliga-feminina", "rotax-grand-finals", "russian-first-league", 
-        "russian-womens-basketball-premier-league", "rwandan-womens-league", 
+        "reserve", "rmc-grand-finals", "romanian-liga-ii", "romanian-superliga-feminina", "rotax-grand-finals", 
+        "russian-first-league", "russian-womens-basketball-premier-league", "rwandan-womens-league", 
         
-        "saff-championship", "scottish-championship", "scottish-league-one", "scottish-league-two", "scottish-womens-premier-league", 
-        "segunda-feb", "sierra-leone-premier-league", "slovak-2-liga", "slovenia-2-liga", "slovenia-basketball-cup", 
-        "spanish-futsal-division-de-honor", "spanish-segunda-division", "spanish-segunda-division-rfef", "spanish-tercera-division", "superettan-basket", 
+        "saff-championship", "saudi-arabia-division-1", "scottish-championship", "scottish-league", "scottish-womens-premier-league", 
+        "segunda-feb", "sierra-leone-premier-league", "slovak-2-liga", "slovak-womens-basketball-extraliga", "slovenia-2-liga", 
+        "slovenia-basketball-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division", "spanish-tercera-division", "superettan-basket", 
         "suriname-major-league", "svenska-basketligan", 
         
         "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2", 
         
-        "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", 
-        "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "united-arab-emirates-adib-cup", 
-        "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uruguay-cup", "usl-championship", "uzbekistan-super-league", 
+        "uefa-el-w", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", 
+        "united-arab-emirates-adib-cup", "united-states-womens", "uruguay-cup", "usl-championship", "uzbekistan-super-league", 
         
         "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league", 
         
-        "women-empowerment-league"
+        "women-empowerment-league",
+
+        "youth"
     ]
     for pat in excluded_url_patterns:
         if pat in path_lower:
