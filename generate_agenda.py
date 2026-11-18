@@ -155,10 +155,10 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "admiralbet-aba-league", "adriatic-basketball-d2", "afc-beach-soccer-2026", "afc-u17-asian-cup", "alms-cup", 
         "albanian-cup", "andorran-second-division", "antigua-barbuda-premier-division", "arg-primera-nacional", "argentina-supercopa", 
-        "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", 
-        "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", 
-        "asian-le-mans-series", "atp-challenger-champaign--usa-men-double", "atp-challenger-helsinki--finland-men-singles", "atp-challenger-helsinki--finland-men-double", 
-        "atp-challenger-orleans", "aus-champ", 
+        "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", 
+        "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", 
+        "asian-le-mans-cup-2026-27", "asian-le-mans-series", "atp-challenger-champaign--usa-men-double", "atp-challenger-helsinki--finland-men-singles", 
+        "atp-challenger-helsinki--finland-men-double", "atp-challenger-orleans", "aus-champ", 
 
         "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
         
@@ -168,10 +168,10 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "british-basketball-league", "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league", 
         
         "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", 
-        "cfa-womens-super-league", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", "china-womens-basketball-association", 
-        "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", 
-        "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27", "copa-intercontinental", "costa-rica-2-liga", 
-        "croatian-cup", "czech-cup", "czech-third-league", 
+        "cfa-womens-super-league", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", 
+        "china-womens-basketball-association", "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor", 
+        "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27", "copa-intercontinental", 
+        "costa-rica-2-liga", "croatian-cup", "czech-cup", "czech-third-league", 
         
         "division-1-feminin", 
         
@@ -201,7 +201,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "lithuania-cup", 
         
         "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", 
-        "mongolia-premier-league", 
+        "mongolia-premier-league", "mozzart-serbian-cup",
         
         "narodni-basketbalova-liga", "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
         "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", 
@@ -218,15 +218,16 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "saff-championship", "saudi-arabia-division-1", "scottish-championship", "scottish-league-one", "scottish-league-two", 
         "scottish-womens-premier-league", "segunda-feb", "sierra-leone-premier-league", "slovak-2-liga", "slovak-womens-basketball-extraliga", 
-        "slovenia-2-liga", "slovenia-basketball-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division", "spanish-segunda-division-rfef", 
-        "spanish-tercera-division", "superettan-basket", "suriname-major-league", "svenska-basketligan", 
+        "slovenia-2-liga", "slovenia-basketball-cup", "slovenia-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division", 
+        "spanish-segunda-division-rfef", "spanish-tercera-division", "superettan-basket", "suriname-major-league", "svenska-basketligan", 
+        "switzerland-nlb",
         
         "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2", 
         
-        "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", "uefa-european-u21-championship-qualification", 
-        "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", "ukrainian-second-league", "ukrainian-u19-liga",
-        "united-arab-emirates-adib-cup", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uruguay-cup", "usl-championship", 
-        "uzbekistan-super-league", 
+        "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", 
+        "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", 
+        "ukrainian-second-league", "ukrainian-u19-liga", "united-arab-emirates-adib-cup", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", 
+        "uruguay-cup", "usl-championship", "uzbekistan-super-league", 
         
         "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league", 
         
