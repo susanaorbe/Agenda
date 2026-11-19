@@ -1358,16 +1358,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">📌</div>
             </div>
             <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
-                <div><div class="lbl">Madrugada</div><div class="val" style="color:#60a5fa">0</div></div><div style="font-size:1.1rem">💤</div>
+                <div><div class="lbl">Madrugada (00:00 - 06:59)</div><div class="val" style="color:#60a5fa">0</div></div><div style="font-size:1.1rem">💤</div>
             </div>
             <div class="stat-card" id="card-manana" onclick="setFilter('manana')">
-                <div><div class="lbl">Mañana</div><div class="val" style="color:#fbbf24">0</div></div><div style="font-size:1.1rem">☀️</div>
+                <div><div class="lbl">Mañana (07:00 - 12:59)</div><div class="val" style="color:#fbbf24">0</div></div><div style="font-size:1.1rem">☀️</div>
             </div>
             <div class="stat-card" id="card-tarde" onclick="setFilter('tarde')">
-                <div><div class="lbl">Tarde</div><div class="val" style="color:#f97316">0</div></div><div style="font-size:1.1rem">🌇</div>
+                <div><div class="lbl">Tarde (13:00 - 20:29)</div><div class="val" style="color:#f97316">0</div></div><div style="font-size:1.1rem">🌇</div>
             </div>
             <div class="stat-card" id="card-noche" onclick="setFilter('noche')">
-                <div><div class="lbl">Noche</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">🌙</div>
+                <div><div class="lbl">Noche (20:30 - 23:59)</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">🌙</div>
             </div>
             <div class="stat-card" id="card-proximamente" onclick="setFilter('proximamente')">
                 <div><div class="lbl">Próximamente</div><div class="val">0</div></div><div style="font-size:1.1rem">📅</div>
