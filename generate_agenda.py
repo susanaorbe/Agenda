@@ -159,8 +159,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asean-club-championship-shopee-cup", 
         "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", "atp-challenger-champaign--usa-men-double", "atp-challenger-helsinki--finland-men-singles", 
         "atp-challenger-helsinki--finland-men-double", "atp-challenger-orleans", "aus-champ", "azerbaijan-first-division",
-        "australia-a", "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
-        "azerbaijan-first-division",
+        "australia-a-league", "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
+        "azerbaijan-first-division", "azerbaijan-premier-league", 
         
         "b1-league", "b2-league", "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", 
         "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", 
@@ -189,10 +189,11 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "higher-league", "hunan-football-league", 
         
         "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indo-d4", 
-        "indonesian-championship", "indonesian-womens-liga-1", "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
+        "indonesian-championship", "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly", "italian-serie-c", 
+        "italian-womens-serie-a", 
         
         "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", 
-        "japanese-j2-league", "japanese-j3-league", 
+        "japanese-j1-league", "japanese-j2-league", "japanese-j3-league", 
         
         "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
         
@@ -232,7 +233,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "ukrainian-second-league", "ukrainian-u19-liga", "united-arab-emirates-adib-cup", "united-arab-emirates-adnoc-pro-league", "united-states-womens-national-soccer-league", 
         "united-states-womens-premier-league", "uruguay-cup", "usac-racing", "usl-championship", "uzbekistan-super-league", 
         
-        "venezuela-primera-division", "venezuela-segunda-division", "vtb-united-league", 
+        "venezuela-primera-division", "venezuela-segunda-division", "vietnam-national-champion-league", "vietnam-national-first-class-league", "vtb-united-league", 
+        "vtl-2027",
         
         "women-empowerment-league"
     ]
@@ -1393,7 +1395,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             </div>
         </div>
 
-        <input type="text" id="agendaSearch" placeholder="Buscar por hora competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
+        <input type="text" id="agendaSearch" placeholder="Buscar por hora, competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
     </div>
 
     <div id="channels-controls" style="display: none; margin-bottom: 4px;">
