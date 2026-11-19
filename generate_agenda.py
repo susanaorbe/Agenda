@@ -159,7 +159,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "aruba-division-di-honor", "asean-club-championship-shopee-cup", 
         "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", "atp-challenger-champaign--usa-men-double", "atp-challenger-helsinki--finland-men-singles", 
         "atp-challenger-helsinki--finland-men-double", "atp-challenger-orleans", "aus-champ", "azerbaijan-first-division",
-        "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", "azerbaijan-first-division",
+        "australia-a", "australia-w-league", "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", 
+        "azerbaijan-first-division",
         
         "b1-league", "b2-league", "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", 
         "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-womens-super-league", "benin-ligue-1", 
@@ -179,16 +180,16 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern-football-league", "english-southern-league-central-division", 
         "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
         
-        "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", 
-        "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", "fifa-u17-world-cup", "french-division-1-feminine", "french-ligue-3", 
-        "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", 
+        "f1-academy", "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fia-f4-world-cup", 
+        "fia-tcr-world-tour", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
+        "fifa-u17-world-cup", "french-division-1-feminine", "french-ligue-3", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", 
         
         "georgia-erovnuli-liga", "german-frauen-bundesliga", "greek-basket-league", 
         
-        "hunan-football-league", 
+        "higher-league", "hunan-football-league", 
         
         "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indo-d4", 
-        "indonesian-womens-liga-1", "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
+        "indonesian-championship", "indonesian-womens-liga-1", "international-friendly", "italian-serie-c", "italian-womens-serie-a", 
         
         "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", 
         "japanese-j2-league", "japanese-j3-league", 
@@ -200,8 +201,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal", "ligue-nationale-de-basket-pro-a", 
         "ligue-nationale-de-basket-pro-b", "lithuania-cup", "lithuanian-i-lyga", 
         
-        "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", 
-        "mongolia-premier-league", "mozzart-serbian-cup",
+        "malaysian-super-league", "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", 
+        "mexico-liga-mx-femenil", "mongolia-premier-league", "mozzart-serbian-cup",
         
         "narodni-basketbalova-liga", "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
         "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", 
