@@ -1392,7 +1392,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             </div>
         </div>
 
-        <input type="text" id="agendaSearch" placeholder="Buscar por competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
+        <input type="text" id="agendaSearch" placeholder="Buscar por hora competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
     </div>
 
     <div id="channels-controls" style="display: none; margin-bottom: 4px;">
@@ -1542,9 +1542,83 @@ function cleanStr(str) {
         .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
         .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ç/g, 'c')
         .replace(/ñ/g, 'n')
-        .replace(new RegExp('[|,;:/]+', 'g'), ' ')
+        .replace(/[|,;/]+/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+}
+
+function normalizeTimeQuery(rawQuery) {
+    const q = (rawQuery || '').toLowerCase().trim();
+    if (!q) return '';
+    // Si el usuario busca por hora/minutos usando ':', '13', '13:', ':00' o '00'
+    const exactTimeMatch = q.match(/^(\d{1,2}):(\d{2})$/);
+    if (exactTimeMatch) {
+        const hh = exactTimeMatch[1].padStart(2, '0');
+        const mm = exactTimeMatch[2];
+        return `${hh}:${mm}`;
+    }
+    const hourColonMatch = q.match(/^(\d{1,2}):$/);
+    if (hourColonMatch) {
+        return `${hourColonMatch[1].padStart(2, '0')}:`;
+    }
+    const colonMinMatch = q.match(/^:(\d{1,2})$/);
+    if (colonMinMatch) {
+        return `:${colonMinMatch[1]}`;
+    }
+    if (q === ':') {
+        return ':';
+    }
+    if (/^\d{1,2}$/.test(q)) {
+        return q;
+    }
+    return '';
+}
+
+function matchesTimeOrTextSearch(tr, rawQuery) {
+    const trimmed = (rawQuery || '').trim();
+    if (!trimmed) return true;
+
+    const rowTime = (tr.getAttribute('data-time') || '').trim(); // e.g. "13:00"
+    const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
+    const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
+    const normQuery = cleanStr(trimmed);
+
+    const timeNorm = normalizeTimeQuery(trimmed);
+    if (timeNorm && rowTime) {
+        // Si es "13" o "13:" -> coincide con horas que empiezan por "13" (o "01" si pusieran "1", etc.)
+        if (/^\d{1,2}$/.test(timeNorm)) {
+            const hh = rowTime.split(':')[0] || '';
+            const mm = rowTime.split(':')[1] || '';
+            // Coincide si la hora exacta (sin cero inicial o con cero inicial) empieza por timeNorm,
+            // o si los minutos empiezan por timeNorm (ej. "00" -> "13:00")
+            if (
+                hh === timeNorm.padStart(2, '0') ||
+                hh.startsWith(timeNorm) ||
+                String(parseInt(hh, 10)) === timeNorm ||
+                mm.startsWith(timeNorm)
+            ) {
+                return true;
+            }
+        } else if (timeNorm.endsWith(':')) {
+            // ej. "13:"
+            const hhWanted = timeNorm.slice(0, -1).padStart(2, '0');
+            if (rowTime.startsWith(`${hhWanted}:`)) return true;
+        } else if (timeNorm.startsWith(':')) {
+            // ej. ":" o ":00"
+            if (timeNorm === ':') {
+                if (rowTime.includes(':')) return true;
+            } else {
+                const mmWanted = timeNorm.slice(1);
+                const mmActual = rowTime.split(':')[1] || '';
+                if (mmActual.startsWith(mmWanted)) return true;
+            }
+        } else {
+            // ej. "13:00"
+            if (rowTime === timeNorm || rowTime.startsWith(timeNorm)) return true;
+        }
+    }
+
+    return compText.includes(normQuery) || eventText.includes(normQuery);
 }
 
 function updateStickyHeadingOffset() {
@@ -1675,12 +1749,8 @@ function updateStatsForActiveView() {
 
             let matchesSource = checkedSources.has(source);
             let matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
-            let matchesSearch = true;
-            if (searchQuery) {
-                const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
-                const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
-                matchesSearch = compText.includes(searchQuery) || eventText.includes(searchQuery);
-            }
+            const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
+            const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
             if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
                 favCount++;
@@ -2104,12 +2174,8 @@ function applyFilters() {
             let matchesFilter = false;
             let matchesSource = checkedSources.has(source);
             let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
-            let matchesSearch = true;
-            if (searchQuery) {
-                const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
-                const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
-                matchesSearch = compText.includes(searchQuery) || eventText.includes(searchQuery);
-            }
+            const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
+            const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
             if (currentFilter === 'favoritos') {
                 matchesFilter = isFiltered;
