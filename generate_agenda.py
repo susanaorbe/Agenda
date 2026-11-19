@@ -172,7 +172,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27", "copa-intercontinental", 
         "costa-rica-2-liga", "croatian-cup", "czech-cup", "czech-third-league", 
         
-        "division-1-feminin", 
+        "danish-1st-division", "division-1-feminin", 
         
         "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20", 
         "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-one", "english-football-league-trophy", "english-football-league-two", 
@@ -180,8 +180,8 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
         
         "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", 
-        "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", "fifa-u17-world-cup", "french-division-1-feminine", "ftbol-sala-primera-divisin", 
-        "futsal-tl-2026-play-off", 
+        "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", "fifa-u17-world-cup", "french-division-1-feminine", "french-ligue-3", 
+        "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off", 
         
         "georgia-erovnuli-liga", "german-frauen-bundesliga", "greek-basket-league", 
         
@@ -196,9 +196,9 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
         
         "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", "lietuvos-krepsinio-lyga", 
-        "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nova-kbm", "liga-nusantara-2026-27", "liga-portugal-2", 
-        "liga-prime-futsal", "liga-u", "ligat-haal", "ligue-nationale-de-basket-pro-a", "ligue-nationale-de-basket-pro-b", 
-        "lithuania-cup", "lithuanian-i-lyga", 
+        "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nationala-de-baschet-masculin", "liga-nova-kbm", "liga-nusantara-2026-27", 
+        "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal", "ligue-nationale-de-basket-pro-a", 
+        "ligue-nationale-de-basket-pro-b", "lithuania-cup", "lithuanian-i-lyga", 
         
         "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil", 
         "mongolia-premier-league", "mozzart-serbian-cup",
@@ -222,7 +222,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "scottish-womens-premier-league", "segunda-feb", "sierra-leone-premier-league", "slovak-2-liga", "slovak-womens-basketball-extraliga", 
         "slovenia-2-liga", "slovenia-basketball-cup", "slovenia-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division", 
         "spanish-segunda-division-rfef", "spanish-tercera-division", "superettan-basket", "suriname-major-league", "svenska-basketligan", 
-        "switzerland-nlb", "syc-pr", 
+        "sweden-damallsvenskan", "switzerland-nlb", "syc-pr", 
         
         "thai-kings-cup", "thai-league-3", "turkey-basketball-league-2", 
         
