@@ -232,7 +232,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "superettan-basket", "suriname-major-league", "svenska-basketligan", "sweden-damallsvenskan", "switzerland-challenge-league", 
         "switzerland-nlb", "syc-pr", 
         
-        "thai-kings-cup", "thai-league-2", "thai-league-3", "the-f1-show-2026", "turkey-basketball-league-2", turkish-first-league",
+        "thai-kings-cup", "thai-league-2", "thai-league-3", "the-f1-show-2026", "turkey-basketball-league-2", "turkish-first-league",
         
         "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", 
         "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", 
