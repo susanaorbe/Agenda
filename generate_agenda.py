@@ -3,6 +3,7 @@ from datetime import datetime, date, timedelta
 from html import escape
 from playwright.sync_api import sync_playwright
 import zoneinfo
+import os
 import re
 import json
 
@@ -29,6 +30,14 @@ REQUEST_HEADERS = {
 
 REQUEST_TIMEOUT = 15
 TAPLINK_URL = "https://taplink.cc/fctvlink"
+
+SPORT_TV_GUIDE_LOGIN_URL = "https://sport-tv-guide.live/es/user/login"
+SPORT_TV_GUIDE_SPORT_URLS = {
+    "futbol": ("FÚTBOL", "⚽", "https://sport-tv-guide.live/es/live/futbol"),
+    "baloncesto": ("BALONCESTO", "🏀", "https://sport-tv-guide.live/es/live/baloncesto"),
+    "tenis": ("TENIS", "🎾", "https://sport-tv-guide.live/es/live/tenis"),
+    "motor": ("MOTOR", "🏆", "https://sport-tv-guide.live/es/live/deportes-de-motor"),
+}
 
 
 def get_spain_timezone():
@@ -141,6 +150,229 @@ def get_dynamic_domain() -> str | None:
         return None
 
 
+def dismiss_consent_banner(page) -> None:
+    """Intenta cerrar o aceptar el banner de consentimiento (fc-consent-root) si bloquea la vista."""
+    try:
+        consent_root = page.locator(".fc-consent-root").first
+        if consent_root.count() == 0 or not consent_root.is_visible():
+            return
+
+        candidate_buttons = consent_root.locator(
+            "button.fc-cta-consent, button[aria-label*='consent' i], button[aria-label*='accept' i], "
+            "button[aria-label*='aceptar' i], button[aria-label*='consentir' i], "
+            "button:has-text('Consentir'), button:has-text('Aceptar'), "
+            "button:has-text('Accept'), button:has-text('Consent'), button:has-text('Agree')"
+        )
+        for i in range(candidate_buttons.count()):
+            btn = candidate_buttons.nth(i)
+            try:
+                if btn.is_visible() and btn.is_enabled():
+                    btn.click(timeout=3000)
+                    page.wait_for_timeout(800)
+                    return
+            except Exception:
+                continue
+
+        page.evaluate("""() => {
+            for (const el of document.querySelectorAll('.fc-consent-root')) {
+                el.style.display = 'none';
+            }
+        }""")
+        page.wait_for_timeout(300)
+    except Exception:
+        pass
+
+
+def fetch_sport_tv_guide_favorite_events() -> list[dict]:
+    """Inicia sesión en sport-tv-guide.live y extrae eventos, fecha/hora, competición y canales."""
+    username = (os.environ.get("SPORT_TV_GUIDE_USER") or "").strip()
+    password = os.environ.get("SPORT_TV_GUIDE_PASS") or ""
+
+    if not username or not password:
+        print("Aviso: SPORT_TV_GUIDE_USER o SPORT_TV_GUIDE_PASS no están definidas. Se omite sport-tv-guide.live.")
+        return []
+
+    spain_tz = get_spain_timezone()
+    today_date = datetime.now(spain_tz).date()
+    events: list[dict] = []
+    seen: set[tuple[str, str, str, str]] = set()
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--disable-blink-features=AutomationControlled", "--no-sandbox"]
+        )
+        context = browser.new_context(
+            user_agent=REQUEST_HEADERS["User-Agent"],
+            timezone_id="Europe/Madrid"
+        )
+        page = context.new_page()
+
+        try:
+            page.goto(SPORT_TV_GUIDE_LOGIN_URL, timeout=35000, wait_until="domcontentloaded")
+            page.wait_for_timeout(1500)
+            dismiss_consent_banner(page)
+
+            user_input = page.locator(
+                "form input[type='email'], form input[type='text'], "
+                "form input[name*='user' i], form input[name*='login' i], form input[name*='email' i]"
+            ).first
+            pass_input = page.locator("form input[type='password']").first
+
+            if user_input.count() == 0 or pass_input.count() == 0:
+                print("Aviso: No se localizaron los campos de usuario o contraseña en el formulario.")
+                return []
+
+            user_input.fill(username)
+            pass_input.fill(password)
+            dismiss_consent_banner(page)
+
+            submit_btn = page.locator(
+                "form button[type='submit'], form input[type='submit'], form button:not([type='button'])"
+            ).first
+            if submit_btn.count() > 0:
+                submit_btn.click(timeout=15000)
+            else:
+                pass_input.press("Enter")
+
+            page.wait_for_load_state("domcontentloaded", timeout=20000)
+            page.wait_for_timeout(2500)
+            dismiss_consent_banner(page)
+
+            still_on_login = "/user/login" in page.url and page.locator("form input[type='password']").count() > 0
+            if still_on_login:
+                print("Aviso: No se completó el inicio de sesión en sport-tv-guide.live.")
+                return []
+
+            for sport_key, (sport_label, sport_icon, sport_url) in SPORT_TV_GUIDE_SPORT_URLS.items():
+                try:
+                    page.goto(sport_url, timeout=30000, wait_until="domcontentloaded")
+                    page.wait_for_timeout(2000)
+                    dismiss_consent_banner(page)
+
+                    raw_items = page.evaluate("""() => {
+                        const out = [];
+                        let currentDayText = '';
+                        const dayPattern = /\\b(\\d{1,2})\\s*(?:de\\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
+
+                        const nodes = document.querySelectorAll('div.row, h2, h3, h4, .dateHeader, .day-header, [class*="date"]');
+                        for (const el of nodes) {
+                            if (el.matches('div.row')) {
+                                const timeEl = el.querySelector('.main.time b, .main b');
+                                const inlineCols = el.querySelectorAll('.col-inline > div');
+                                if (!timeEl || inlineCols.length === 0) continue;
+
+                                const hora = (timeEl.innerText || timeEl.textContent || '').trim();
+                                const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
+
+                                const channelImgs = el.querySelectorAll('.col-xs-4.mobile-normal img, img[data-src*="tvm-station"], img[src*="tvm-station"]');
+                                const canales = [];
+                                const seenCh = new Set();
+                                for (const img of channelImgs) {
+                                    const chName = (img.getAttribute('title') || img.getAttribute('alt') || '').replace(/\\s+/g, ' ').trim();
+                                    const src = (img.getAttribute('data-src') || img.getAttribute('src') || '').toLowerCase();
+                                    if (!chName) continue;
+                                    let countryHint = '';
+                                    if (src.includes('tvm-station-pt-')) countryHint = 'PT';
+                                    else if (src.includes('tvm-station-fr-')) countryHint = 'FR';
+                                    else if (src.includes('tvm-station-uk-')) countryHint = 'UK';
+                                    else if (src.includes('tvm-station-es-')) countryHint = 'ES';
+                                    else if (src.includes('tvm-station-it-')) countryHint = 'IT';
+                                    else if (src.includes('tvm-station-de-')) countryHint = 'DE';
+                                    else if (src.includes('tvm-station-us-')) countryHint = 'US';
+
+                                    const key = chName.toLowerCase() + '|' + countryHint;
+                                    if (!seenCh.has(key)) {
+                                        seenCh.add(key);
+                                        canales.push({ name: chName, country: countryHint });
+                                    }
+                                }
+
+                                out.push({
+                                    dayText: currentDayText,
+                                    hora,
+                                    evento,
+                                    competicion,
+                                    canales
+                                });
+                            } else {
+                                const txt = (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
+                                if (txt && txt.length <= 40 && dayPattern.test(txt)) {
+                                    currentDayText = txt;
+                                }
+                            }
+                        }
+                        return out;
+                    }""")
+
+                    sport_count = 0
+                    for item in raw_items:
+                        hora = clean_time(item.get("hora", ""))
+                        evento = re.sub(r"\s+", " ", str(item.get("evento", ""))).strip()
+                        competicion = re.sub(r"\s+", " ", str(item.get("competicion", ""))).strip()
+                        canales = item.get("canales") or []
+
+                        if not hora or not evento or not canales:
+                            continue
+
+                        norm_all = normalize_search_text(f"{evento} {competicion}")
+                        if any(term in norm_all for term in ["f1 academy", "premier padel", "padel"]):
+                            continue
+
+                        ev_date = today_date
+                        day_txt = str(item.get("dayText", ""))
+                        day_num_match = re.search(r"\b(\d{1,2})\b", day_txt)
+                        if day_num_match:
+                            try:
+                                d_num = int(day_num_match.group(1))
+                                if 1 <= d_num <= 31:
+                                    if d_num >= today_date.day:
+                                        ev_date = today_date.replace(day=d_num)
+                                    else:
+                                        next_month = (today_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+                                        ev_date = next_month.replace(day=d_num)
+                            except ValueError:
+                                ev_date = today_date
+
+                        dedup_key = (ev_date.isoformat(), hora, sport_key, normalize_search_text(evento))
+                        if dedup_key in seen:
+                            continue
+                        seen.add(dedup_key)
+
+                        try:
+                            t_obj = datetime.strptime(hora, "%H:%M").time()
+                        except ValueError:
+                            t_obj = datetime.strptime("00:00", "%H:%M").time()
+                        ev_ts = int(datetime.combine(ev_date, t_obj).replace(tzinfo=spain_tz).timestamp() * 1000)
+
+                        events.append({
+                            "date_iso": ev_date.isoformat(),
+                            "ts": ev_ts,
+                            "fecha_label": "Hoy" if ev_date == today_date else ev_date.strftime("%d/%m"),
+                            "hora": hora,
+                            "deporte": sport_label,
+                            "icono": sport_icon,
+                            "competicion": competicion,
+                            "evento": evento,
+                            "canales": canales,
+                        })
+                        sport_count += 1
+
+                    print(f"   -> [{sport_label}] Eventos con canales extraídos de sport-tv-guide.live: {sport_count}")
+                except Exception as e:
+                    print(f"   [{sport_label}] Error extrayendo {sport_url}: {e}")
+
+        except Exception as e:
+            print(f"Error en sport-tv-guide.live: {e}")
+        finally:
+            context.close()
+            browser.close()
+
+    events.sort(key=lambda x: (x["date_iso"], x["hora"], normalize_search_text(x["evento"])))
+    return events
+
+
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
     allowed_sports = {"football", "basketball", "tennis", "motorsport"}
@@ -150,101 +382,76 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     path_lower = parsed_url_path.lower()
     excluded_url_patterns = [
         "/american-football/", "/aussie-rules/", "/badminton/", "/baseball/", "/cricket/", "/cycling/", "/fighting/", "/handball/", "/hockey/", "/others/", "/rugby/", "/volleyball/",
-        
-        "2026-fiba-3x3-americup", "3x3basketball", 
-        
-        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-awards-2026", "afc-beach-soccer-2026", "afc-u17-asian-cup", 
-        "albanian-super-league", "alms-cup", "albanian-cup", "andorran-second-division", "antigua-barbuda-premier-division", 
-        "arg-primera-nacional", "argentina-supercopa", "argentine-division-1", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester", 
-        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "armenian-premier-league", 
-        "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series", 
-        "atp-challenger-champaign--usa-men-double", 
-        "atp-challenger-helsinki--finland-men-singles", "atp-challenger-helsinki--finland-men-double", "atp-challenger-orleans", 
-        "aus-champ", "austrian-2-liga", "azerbaijan-first-division", "australia-a-league", "australia-w-league", 
-        "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", "azerbaijan-first-division", "azerbaijan-premier-league", 
-        
-        "b1-league", "b2-league", "bahrain-division-2", "bahrain-premier-league", "basketball-bundesliga", 
-        "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-challenger-pro-league", 
-        "belgian-pro-league", "belgian-womens-super-league", "benin-ligue-1", "bermuda-premier-league", "bolivian-copa-lfpb", 
-        "brazilian-campeonato-paulista-youth", "brazilian-paulista-womens-league", "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", 
-        "bulgarian-first-league", "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league", 
-        
-        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", 
-        "cfa-womens-super-league", "chi-liga-de-primera", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", 
-        "china-womens-basketball-association", "chinese-fa-cup", "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer", 
-        "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27", 
-        "copa-intercontinental", "costa-rica-2-liga", "croatian-cup", "cypriot-2nd-division", "czech-cup", 
-        "czech-third-league", 
-        
-        "danish-1st-division", "danish-superliga", "division-1-feminin", 
-        
-        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20", 
-        "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-one", "english-football-league-trophy", "english-football-league-two", 
-        "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern-football-league", "english-southern-league-central-division", 
-        "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", 
-        
-        "f1-academy", "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fia-f4-world-cup", 
-        "fia-tcr-world-tour", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", 
-        "fifa-u17-world-cup", "french-division-1-feminine", "french-ligue-2", "french-ligue-3", "ftbol-sala-primera-divisin", 
-        "futsal-tl-2026-play-off", 
-        
-        "georgia-erovnuli-liga", "german-3-liga", "german-bundesliga-2", "german-frauen-bundesliga", "greek-basket-league", 
-        
-        "higher-league", "hunan-football-league", 
-        
-        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indian-womens-league", 
-        "indo-d4", "indonesian-championship", "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly", 
-        "italian-serie-b", "italian-serie-c", "italian-womens-serie-a", 
-        
-        "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", 
-        "japanese-j1-league", "japanese-j2-league", "japanese-j3-league", 
-        
-        "karnataka-mens-super-division-league-2026-27", "korean-basketball-league", "korean-k-league-1", "korean-wk-league", "korean-womens-basketball-league", 
-        
-        "lebanese-premier-league", "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", 
-        "lietuvos-krepsinio-lyga", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nationala-de-baschet-masculin", "liga-nova-kbm", 
-        "liga-nusantara-2026-27", "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal", 
-        "ligue-2-bkt---13e-journe", "ligue-nationale-de-basket-pro-a", "ligue-nationale-de-basket-pro-b", "lithuania-cup", "lithuanian-i-lyga", 
-        
-        "malaysian-super-league", "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", 
+        "2026-fiba-3x3-americup", "3x3basketball",
+        "admiralbet-aba-league", "adriatic-basketball-d2", "afc-awards-2026", "afc-beach-soccer-2026", "afc-u17-asian-cup",
+        "albanian-super-league", "alms-cup", "albanian-cup", "andorran-second-division", "antigua-barbuda-premier-division",
+        "arg-primera-nacional", "argentina-supercopa", "argentine-division-1", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester",
+        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "armenian-premier-league",
+        "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series",
+        "atp-challenger-champaign--usa-men-double",
+        "atp-challenger-helsinki--finland-men-singles", "atp-challenger-helsinki--finland-men-double", "atp-challenger-orleans",
+        "aus-champ", "austrian-2-liga", "azerbaijan-first-division", "australia-a-league", "australia-w-league",
+        "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", "azerbaijan-first-division", "azerbaijan-premier-league",
+        "b1-league", "b2-league", "bahrain-division-2", "bahrain-premier-league", "basketball-bundesliga",
+        "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-challenger-pro-league",
+        "belgian-pro-league", "belgian-womens-super-league", "benin-ligue-1", "bermuda-premier-league", "bolivian-copa-lfpb",
+        "brazilian-campeonato-paulista-youth", "brazilian-paulista-womens-league", "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league",
+        "bulgarian-first-league", "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league",
+        "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament",
+        "cfa-womens-super-league", "chi-liga-de-primera", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league",
+        "china-womens-basketball-association", "chinese-fa-cup", "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer",
+        "colombian-copa-betplay-dimayor", "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "copa-argentina", "copa-espaa-feb-2026-27",
+        "copa-intercontinental", "costa-rica-2-liga", "croatian-cup", "cypriot-2nd-division", "czech-cup",
+        "czech-third-league",
+        "danish-1st-division", "danish-superliga", "division-1-feminin",
+        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20",
+        "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-one", "english-football-league-trophy", "english-football-league-two",
+        "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league", "english-southern-football-league", "english-southern-league-central-division",
+        "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier",
+        "f1-academy", "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fia-f4-world-cup",
+        "fia-tcr-world-tour", "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers",
+        "fifa-u17-world-cup", "french-division-1-feminine", "french-ligue-2", "french-ligue-3", "ftbol-sala-primera-divisin",
+        "futsal-tl-2026-play-off",
+        "georgia-erovnuli-liga", "german-3-liga", "german-bundesliga-2", "german-frauen-bundesliga", "greek-basket-league",
+        "higher-league", "hunan-football-league",
+        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indian-womens-league",
+        "indo-d4", "indonesian-championship", "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly",
+        "italian-serie-b", "italian-serie-c", "italian-womens-serie-a",
+        "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league",
+        "japanese-j1-league", "japanese-j2-league", "japanese-j3-league",
+        "karnataka-mens-super-division-league-2026-27", "korean-basketball-league", "korean-k-league-1", "korean-wk-league", "korean-womens-basketball-league",
+        "lebanese-premier-league", "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division",
+        "lietuvos-krepsinio-lyga", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nationala-de-baschet-masculin", "liga-nova-kbm",
+        "liga-nusantara-2026-27", "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal",
+        "ligue-2-bkt---13e-journe", "ligue-nationale-de-basket-pro-a", "ligue-nationale-de-basket-pro-b", "lithuania-cup", "lithuanian-i-lyga",
+        "malaysian-super-league", "mali-premiere-division", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx",
         "mexico-liga-mx-femenil", "mongolia-premier-league", "mozzart-serbian-cup",
-        
-        "narodni-basketbalova-liga", "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", 
-        "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", 
-        "nhra-drag-racing", "nicaragua-liga-primera", "niger-national-league", "niger-premier-league", 
-        
-        "oman-tamkeen-league", 
-        
-        "panda-cup", "paraguayan-cup", "paraguayan-primera-division", "perseden-denpasar", "peruvian-liga-1", 
-        "philippine-basketball-governors-cup", "philippines-mpbl", "philippines-university-athletic-association", "pko-bank-polski-ekstraklasa", 
-        "poland-liga-1", "poland-liga-2", "poland-womens-ekstraliga", "portugal-liga-de-basquetebol", "portuguese-cup", 
-        "portuguese-u23-league", "premier-padel", "pro-padel-league", "putra-sang-fajar-fc", 
-
+        "narodni-basketbalova-liga", "nascar-local-racing-series", "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association",
+        "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division",
+        "nhra-drag-racing", "nicaragua-liga-primera", "niger-national-league", "niger-premier-league",
+        "oman-tamkeen-league",
+        "panda-cup", "paraguayan-cup", "paraguayan-primera-division", "perseden-denpasar", "peruvian-liga-1",
+        "philippine-basketball-governors-cup", "philippines-mpbl", "philippines-university-athletic-association", "pko-bank-polski-ekstraklasa",
+        "poland-liga-1", "poland-liga-2", "poland-womens-ekstraliga", "portugal-liga-de-basquetebol", "portuguese-cup",
+        "portuguese-u23-league", "premier-padel", "pro-padel-league", "putra-sang-fajar-fc",
         "qatar-stars-league",
-        
-        "rmc-grand-finals", "romanian-liga-ii", "romanian-super-liga", "romanian-superliga-feminina", "rotax-grand-finals", 
-        "rus-m-leagu", "russian-first-league", "russian-premier-league", "russian-womens-basketball-premier-league", "rwandan-womens-league", 
-        
-        "saff-championship", "saint-kitts-nevis-premier-league", "saudi-arabia-division-1", "saudi-professional-league", "scottish-championship", 
-        "scottish-league-one", "scottish-league-two", "scottish-womens-premier-league", "segunda-feb", "sierra-leone-premier-league", 
-        "singapore-premier-league", "slovak-2-liga", "slovak-womens-basketball-extraliga", "slovenia-2-liga", "slovenia-basketball-cup", 
-        "slovenia-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division", "spanish-segunda-division-rfef", "spanish-tercera-division", 
-        "superettan-basket", "suriname-major-league", "svenska-basketligan", "sweden-damallsvenskan", "switzerland-challenge-league", 
-        "switzerland-nlb", "syc-pr", 
-        
+        "rmc-grand-finals", "romanian-liga-ii", "romanian-super-liga", "romanian-superliga-feminina", "rotax-grand-finals",
+        "rus-m-leagu", "russian-first-league", "russian-premier-league", "russian-womens-basketball-premier-league", "rwandan-womens-league",
+        "saff-championship", "saint-kitts-nevis-premier-league", "saudi-arabia-division-1", "saudi-professional-league", "scottish-championship",
+        "scottish-league-one", "scottish-league-two", "scottish-womens-premier-league", "segunda-feb", "sierra-leone-premier-league",
+        "singapore-premier-league", "slovak-2-liga", "slovak-womens-basketball-extraliga", "slovenia-2-liga", "slovenia-basketball-cup",
+        "slovenia-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division", "spanish-segunda-division-rfef", "spanish-tercera-division",
+        "superettan-basket", "suriname-major-league", "svenska-basketligan", "sweden-damallsvenskan", "switzerland-challenge-league",
+        "switzerland-nlb", "syc-pr",
         "thai-kings-cup", "thai-league-2", "thai-league-3", "the-f1-show-2026", "turkey-basketball-league-2", "turkish-first-league",
-        
-        "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship", 
-        "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league", 
-        "ukrainian-premier-league", "ukrainian-second-league", "ukrainian-u19-liga", "united-arab-emirates-adib-cup", "united-arab-emirates-adnoc-pro-league", 
-        "united-arab-emirates-division-1-group-a", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uruguay-cup", "usac-racing", 
-        "usl-championship", "uzbekistan-super-league", 
-        
-        "venezuela-primera-division", "venezuela-segunda-division", "vietnam-national-champion-league", "vietnam-national-first-class-league", "vtb-united-league", 
+        "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship",
+        "uefa-european-u21-championship-qualification", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league",
+        "ukrainian-premier-league", "ukrainian-second-league", "ukrainian-u19-liga", "united-arab-emirates-adib-cup", "united-arab-emirates-adnoc-pro-league",
+        "united-arab-emirates-division-1-group-a", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uruguay-cup", "usac-racing",
+        "usl-championship", "uzbekistan-super-league",
+        "venezuela-primera-division", "venezuela-segunda-division", "vietnam-national-champion-league", "vietnam-national-first-class-league", "vtb-united-league",
         "vtl-2027",
-        
         "women-empowerment-league",
-
         "zenska-basketbalova-liga"
     ]
     for pat in excluded_url_patterns:
@@ -320,12 +527,12 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     valid_categories.add(path_l)
 
             global_seen_urls = set()
-            
+
             for cat in valid_categories:
                 cat_url = urljoin(base_url, f"/{cat}")
                 if "?" not in cat_url:
                     cat_url += "?ptst=1"
-                
+
                 try:
                     page.goto(cat_url, timeout=25000, wait_until="domcontentloaded")
                     page.wait_for_timeout(1000)
@@ -418,7 +625,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                     return ev_d, f"{int(iso_match.group(4)):02d}:{int(iso_match.group(5)):02d}"
                                 t_m = time_re.search(card_text)
                                 if t_m:
-                                    return ev_d, f"{int(t_m.group(1)):02d}:{int(t_m.group(2)):02d}"
+                                    return ev_d, f"{int(t_m.group(1)):02d}:{t_m.group(2)}"
                             except ValueError:
                                 pass
 
@@ -471,10 +678,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         href = item.get("href", "")
                         if not href:
                             continue
-                        
+
                         full_url = urljoin(base_url, href)
                         parsed_url = urlparse(full_url)
-                        
+
                         path_lower = parsed_url.path.lower()
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
@@ -726,7 +933,7 @@ TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
 DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
 
 CLEAN_TV_RE = re.compile(
-    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder", 
+    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder",
     re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
@@ -780,10 +987,10 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     valid_lines = [l for l in text_lines if normalize_search_text(l) not in {normalize_search_text(comp_name), "motor", "automovilismo", "motociclismo"}]
     clean_desc = " - ".join(valid_lines).strip()
     clean_desc = EVENT_CLEANUP_TRAIL_RE.sub("", clean_desc).strip()
-    
+
     if not clean_desc or clean_desc == "-":
         clean_desc = "Carrera"
-    
+
     event_title = f"{comp_name} - {clean_desc}"
     clean_norm = normalize_search_text(event_title)
 
@@ -989,7 +1196,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     if tournament_candidates:
         valid_tournaments = [
-            t for t in tournament_candidates 
+            t for t in tournament_candidates
             if normalize_search_text(t) not in {
                 "fase de grupos", "jornada", "cuartos de final", "semifinales", "final", "ida", "vuelta"
             }
@@ -1083,7 +1290,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
                 blob, tournament, tv_blob, text_lines
             )
-            
+
             is_movistar_plus_channel = any(normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"} for ch in channels)
             if not sport and is_movistar_plus_channel:
                 sport = "Otros"
@@ -1109,7 +1316,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             if competition:
                 comp_clean_pattern = re.compile(re.escape(competition), re.IGNORECASE)
                 final_event = comp_clean_pattern.sub("", final_event)
-            
+
             final_event = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", final_event).strip()
             final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
 
@@ -1117,7 +1324,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 continue
 
             event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
-            if event_key in seen_events: 
+            if event_key in seen_events:
                 continue
             seen_events.add(event_key)
 
@@ -1142,7 +1349,7 @@ def fetch_and_parse_agenda() -> list[dict]:
     def event_similarity_key(x):
         comp_norm = normalize_search_text(x["competicion"])
         ev_norm = normalize_search_text(x["evento"])
-        
+
         synonyms = {
             "euroleague": "euroliga",
             "national basketball association": "nba",
@@ -1170,14 +1377,14 @@ def fetch_and_parse_agenda() -> list[dict]:
             "saski baskonia": "baskonia",
             "winterthur fc barcelona": "barcelona",
         }
-        
+
         for k, v in synonyms.items():
             comp_norm = comp_norm.replace(k, v)
             ev_norm = ev_norm.replace(k, v)
-            
+
         for w in [" vs ", " - ", "fc", "bc", "basket", "club", "mts", "red", "star"]:
             ev_norm = ev_norm.replace(w, " ")
-            
+
         ev_core = " ".join(sorted(set([w for w in ev_norm.split() if len(w) > 2])))
         return (x["date_obj"], x["hora"], comp_norm, ev_core)
 
@@ -1210,7 +1417,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .nav-tab-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
         .nav-tab-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
         .last-update { font-size: 0.75rem; color: var(--text-muted); background: var(--card-bg); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border-color); width: 100%; display: flex; justify-content: space-between; align-items: center; }
-        
+
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-bottom: 12px; }
         .stat-card { background: var(--card-bg); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s ease; }
         .stat-card.active-card { border-color: var(--accent-blue); background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2); }
@@ -1221,7 +1428,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .comp-filter-header { padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #38bdf8; background: rgba(56, 189, 248, 0.05); user-select: none; flex-wrap: wrap; gap: 8px; }
         .comp-checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-main); font-size: 0.85rem; font-weight: 700; white-space: nowrap; min-width: 0; }
         .comp-checkboxes input[type="checkbox"] { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; flex: 0 0 16px; margin: 0; }
-        
+
         .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
         table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
         th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
@@ -1231,7 +1438,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         tr.event-row.previous-event td:first-child { border-left: 3px solid #38bdf8; }
         tr.event-row.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
         tr.event-row.previous-event .event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
-        
+
+        .stg-event-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; flex-wrap: wrap; }
+        .stg-event-card.previous-event { background: rgba(56, 189, 248, 0.075); border-color: rgba(56, 189, 248, 0.42); border-left: 3px solid #38bdf8; }
+        .stg-event-card.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
+        .stg-event-title::before { content: none; }
+        .stg-event-card.previous-event .stg-event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
+
         .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
         .time-col, .date-col { white-space: nowrap; }
         .sport-tag { font-weight: 600; white-space: nowrap; }
@@ -1260,10 +1473,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .channel-fav-btn.is-fav { color: #f59e0b; }
         .channel-action { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; cursor: pointer; white-space: nowrap; text-decoration: none; }
         .channel-action:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
-
-        .guides-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; padding-bottom: 10px; }
-        .guide-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(167, 139, 250, 0.2)); border: 1px solid rgba(59, 130, 246, 0.4); color: #f8fafc; padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s; text-decoration: none; text-align: center; }
-        .guide-btn:hover { background: rgba(59, 130, 246, 0.35); border-color: var(--accent-blue); transform: translateY(-1px); }
+        .channel-action.disabled-ch { opacity: 0.55; cursor: default; color: var(--text-muted); border-color: var(--border-color); background: rgba(148, 163, 184, 0.08); }
 
         .letter-btn { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; min-width: 28px; text-align: center; }
         .letter-btn.active { background: var(--accent-blue); color: white; border-color: var(--accent-blue); }
@@ -1283,15 +1493,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             .stat-card { padding: 6px 8px; }
             .stat-card .val { font-size: 0.95rem; }
             .stat-card .lbl { font-size: 0.68rem; }
-            
+
             .comp-filter-header { flex-direction: column; align-items: stretch; gap: 8px; }
             .comp-filter-header > div { width: 100%; justify-content: space-between; }
             .comp-checkboxes { width: 100%; display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8px !important; }
-            
+
             .table-card { background: transparent; border: none; box-shadow: none; margin-bottom: 60px; }
             table, thead, tbody, tr, td { display: block; width: 100% !important; }
             thead { display: none; }
-            
+
             tr.event-row {
                 background: var(--card-bg);
                 border: 1px solid var(--border-color);
@@ -1305,7 +1515,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 border: none;
                 background: transparent !important;
             }
-            
+
             .cell-date, .cell-time {
                 display: inline-block;
                 margin-right: 6px;
@@ -1344,7 +1554,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 padding: 8px;
                 gap: 6px;
             }
-            .guides-banner { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; padding-bottom: 8px; }
         }
     </style>
 </head>
@@ -1354,8 +1563,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <button class="nav-tab-btn active" id="btn-view-futbolenlatv" onclick="switchView('futbolenlatv')">AGENDA</button>
-            <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">CANALES</button>
+            <button class="nav-tab-btn active" id="btn-view-futbolenlatv" onclick="switchView('futbolenlatv')">FUTBOLENLATV / FCTV33</button>
+            <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">CDN LIVE</button>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">
@@ -1363,10 +1572,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             <span>Última actualización: <strong>{FECHA_ACT}</strong></span>
         </div>
     </header>
-    
+
     <div id="futbolenlatv-controls">
         <div class="stats-grid">
-            <div class="stat-card" id="card-favoritos" onclick="setFilter('favoritos')">
+            <div class="stat-card active-card" id="card-favoritos" onclick="setFilter('favoritos')">
                 <div><div class="lbl">Favoritos</div><div class="val" style="color:#a78bfa">0</div></div><div style="font-size:1.1rem">📌</div>
             </div>
             <div class="stat-card" id="card-madrugada" onclick="setFilter('madrugada')">
@@ -1385,7 +1594,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div><div class="lbl">Próximamente</div><div class="val">0</div></div><div style="font-size:1.1rem">📅</div>
             </div>
         </div>
-        
+
         <div class="comp-filter-panel">
             <div class="comp-filter-header">
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
@@ -1401,7 +1610,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                         <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="applyFilters()"> FUTBOLENLATV</label>
-			<label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="applyFilters()"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="applyFilters()"> FCTV33</label>
                     </div>
                 </div>
             </div>
@@ -1410,45 +1619,39 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <input type="text" id="agendaSearch" placeholder="Buscar por hora, competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
     </div>
 
-    <div id="channels-controls" style="display: none; margin-bottom: 4px;">
-        <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
+    <div id="channels-controls" style="display: none; margin-bottom: 10px;">
+        <input type="text" id="channelSearch" placeholder="Buscar canal o evento..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
         <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
-            <button class="letter-btn active" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('Todos')">Todos</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('#')">#</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('A')">A</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('B')">B</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('C')">C</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('D')">D</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('E')">E</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('F')">F</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('G')">G</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('H')">H</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('I')">I</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('J')">J</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('K')">K</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('L')">L</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('M')">M</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('N')">N</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('Ñ')">Ñ</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('O')">O</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('P')">P</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('Q')">Q</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('R')">R</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('S')">S</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('T')">T</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('U')">U</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('V')">V</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('W')">W</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('X')">X</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('Y')">Y</button>
-            <button class="letter-btn" onclick="filterChannelsByLetter('Z')">Z</button>
-        </div>
-        <div class="guides-banner">
-            <button class="guide-btn" onclick="openGuideView('⚽ Guía de Fútbol', 'https://sport-tv-guide.live/es/live/futbol')">⚽ Guía Fútbol</button>
-            <button class="guide-btn" onclick="openGuideView('🏀 Guía de Baloncesto', 'https://sport-tv-guide.live/es/live/baloncesto')">🏀 Guía Baloncesto</button>
-            <button class="guide-btn" onclick="openGuideView('🎾 Guía de Tenis', 'https://sport-tv-guide.live/es/live/tenis')">🎾 Guía Tenis</button>
-            <button class="guide-btn" onclick="openGuideView('🏆 Guía de Motor', 'https://sport-tv-guide.live/es/live/deportes-de-motor')">🏆 Guía Motor</button>
+            <button class="letter-btn active" data-mode="EVENTOS" onclick="filterChannelsByLetter('EVENTOS')">📅 Ver eventos</button>
+            <button class="letter-btn" data-mode="FAVORITOS" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
+            <button class="letter-btn" data-mode="Todos" onclick="filterChannelsByLetter('Todos')">Todos</button>
+            <button class="letter-btn" data-mode="#" onclick="filterChannelsByLetter('#')">#</button>
+            <button class="letter-btn" data-mode="A" onclick="filterChannelsByLetter('A')">A</button>
+            <button class="letter-btn" data-mode="B" onclick="filterChannelsByLetter('B')">B</button>
+            <button class="letter-btn" data-mode="C" onclick="filterChannelsByLetter('C')">C</button>
+            <button class="letter-btn" data-mode="D" onclick="filterChannelsByLetter('D')">D</button>
+            <button class="letter-btn" data-mode="E" onclick="filterChannelsByLetter('E')">E</button>
+            <button class="letter-btn" data-mode="F" onclick="filterChannelsByLetter('F')">F</button>
+            <button class="letter-btn" data-mode="G" onclick="filterChannelsByLetter('G')">G</button>
+            <button class="letter-btn" data-mode="H" onclick="filterChannelsByLetter('H')">H</button>
+            <button class="letter-btn" data-mode="I" onclick="filterChannelsByLetter('I')">I</button>
+            <button class="letter-btn" data-mode="J" onclick="filterChannelsByLetter('J')">J</button>
+            <button class="letter-btn" data-mode="K" onclick="filterChannelsByLetter('K')">K</button>
+            <button class="letter-btn" data-mode="L" onclick="filterChannelsByLetter('L')">L</button>
+            <button class="letter-btn" data-mode="M" onclick="filterChannelsByLetter('M')">M</button>
+            <button class="letter-btn" data-mode="N" onclick="filterChannelsByLetter('N')">N</button>
+            <button class="letter-btn" data-mode="O" onclick="filterChannelsByLetter('O')">O</button>
+            <button class="letter-btn" data-mode="P" onclick="filterChannelsByLetter('P')">P</button>
+            <button class="letter-btn" data-mode="Q" onclick="filterChannelsByLetter('Q')">Q</button>
+            <button class="letter-btn" data-mode="R" onclick="filterChannelsByLetter('R')">R</button>
+            <button class="letter-btn" data-mode="S" onclick="filterChannelsByLetter('S')">S</button>
+            <button class="letter-btn" data-mode="T" onclick="filterChannelsByLetter('T')">T</button>
+            <button class="letter-btn" data-mode="U" onclick="filterChannelsByLetter('U')">U</button>
+            <button class="letter-btn" data-mode="V" onclick="filterChannelsByLetter('V')">V</button>
+            <button class="letter-btn" data-mode="W" onclick="filterChannelsByLetter('W')">W</button>
+            <button class="letter-btn" data-mode="X" onclick="filterChannelsByLetter('X')">X</button>
+            <button class="letter-btn" data-mode="Y" onclick="filterChannelsByLetter('Y')">Y</button>
+            <button class="letter-btn" data-mode="Z" onclick="filterChannelsByLetter('Z')">Z</button>
         </div>
     </div>
     </div>
@@ -1472,23 +1675,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
 
     <div class="table-card" id="channels-view-container" style="display: none;">
+        <div id="sportTvGuideEventsPanel" style="display: none; padding: 14px 16px;"></div>
         <div id="channelsGrid" class="channels-grid">
             <div class="empty-state">Cargando canales...</div>
-        </div>
-    </div>
-
-    <div class="table-card" id="guide-view-container" style="display: none; padding: 20px; text-align: center;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-            <button onclick="switchView('channels')" style="background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">← Volver a Canales</button>
-            <strong id="guide-title" style="color: #38bdf8; font-size: 1.1rem;">Guía de TV</strong>
-            <div style="display: flex; gap: 10px;">
-                <a id="guide-external-link" href="" class="btn-update" style="text-decoration: none; background: #8b5cf6;">🚀 Abrir Guía a Pantalla Completa</a>
-            </div>
-        </div>
-        <div style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px 20px;">
-            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">
-                Para mantener activas tus credenciales y tu sesión personalizada, las guías se abren directamente en una pestaña optimizada a pantalla completa. Utiliza las flechas de navegacion para volver a esta pantalla.
-            </p>
         </div>
     </div>
 </div>
@@ -1503,17 +1692,43 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <script>
 const TODAY_DATE_STR = "{TODAY_DATE_STR}";
+const SPORT_TV_GUIDE_FAV_EVENTS = {SPORT_TV_GUIDE_EVENTS_JSON};
+const EMBEDDED_CHANNELS = {EMBEDDED_CHANNELS_JSON};
 let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
-let currentLetterFilter = 'FAVORITOS';
+let currentLetterFilter = 'EVENTOS';
 let allCatalogChannels = [];
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
   ['m+ laliga', 'LaLiga TV FHD UK'],
   ['m+ la liga', 'LaLiga TV FHD UK'],
+  ['m. laliga', 'LaLiga TV FHD UK'],
   ['teledeporte', 'Teledeporte FHD'],
-  ['m+ deportes', 'Movistar Deportes 1 FHD']
+  ['m+ deportes', 'Movistar Deportes 1 FHD'],
+  ['movistar deportes', 'Movistar Deportes 1 FHD'],
+  ['dazn f1', 'DAZN F1 FHD'],
+  ['dazn laliga', 'DAZN La Liga HD'],
+  ['dazn eleven 1', 'DAZN 1 FHD PT'],
+  ['dazn eleven 2', 'DAZN 2 FHD PT'],
+  ['dazn eleven 3', 'DAZN 3 HD PT'],
+  ['dazn eleven 4', 'DAZN 4 FHD PT'],
+  ['dazn eleven 5', 'DAZN 5 FHD PT'],
+  ['dazn eleven 6', 'DAZN 6 FHD PT'],
+  ['sport tv +', 'Sport TV+ PT'],
+  ['sport tv+', 'Sport TV+ PT'],
+  ['sport tv 1', 'Sport TV 1 FHD PT'],
+  ['sport tv 2', 'Sport TV 2 FHD PT'],
+  ['sport tv 3', 'Sport TV 3 HD PT'],
+  ['sport tv 4', 'Sport TV 4 HD PT'],
+  ['sport tv 5', 'Sport TV 5 HD PT'],
+  ['sport tv 6', 'Sport TV 6 FHD PT'],
+  ['sky sports f1', 'Sky Sports F1 FHD UK'],
+  ['sky sports tennis', 'Sky Sports Tennis FHD UK'],
+  ['v sport motor', 'V Sport Motor SE'],
+  ['espn deportes', 'ESPN Deportes US'],
+  ['dazn 1 deutschland', 'DAZN 1 FHD DE'],
+  ['dazn 2 deutschland', 'DAZN 2 FHD DE']
 ]);
 
 function getFavoriteChannels() {
@@ -1565,7 +1780,6 @@ function cleanStr(str) {
 function normalizeTimeQuery(rawQuery) {
     const q = (rawQuery || '').toLowerCase().trim();
     if (!q) return '';
-    // Si el usuario busca por hora/minutos usando ':', '13', '13:', ':00' o '00'
     const exactTimeMatch = q.match(/^(\d{1,2}):(\d{2})$/);
     if (exactTimeMatch) {
         const hh = exactTimeMatch[1].padStart(2, '0');
@@ -1593,19 +1807,16 @@ function matchesTimeOrTextSearch(tr, rawQuery) {
     const trimmed = (rawQuery || '').trim();
     if (!trimmed) return true;
 
-    const rowTime = (tr.getAttribute('data-time') || '').trim(); // e.g. "13:00"
+    const rowTime = (tr.getAttribute('data-time') || '').trim();
     const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
     const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
     const normQuery = cleanStr(trimmed);
 
     const timeNorm = normalizeTimeQuery(trimmed);
     if (timeNorm && rowTime) {
-        // Si es "13" o "13:" -> coincide con horas que empiezan por "13" (o "01" si pusieran "1", etc.)
         if (/^\d{1,2}$/.test(timeNorm)) {
             const hh = rowTime.split(':')[0] || '';
             const mm = rowTime.split(':')[1] || '';
-            // Coincide si la hora exacta (sin cero inicial o con cero inicial) empieza por timeNorm,
-            // o si los minutos empiezan por timeNorm (ej. "00" -> "13:00")
             if (
                 hh === timeNorm.padStart(2, '0') ||
                 hh.startsWith(timeNorm) ||
@@ -1615,11 +1826,9 @@ function matchesTimeOrTextSearch(tr, rawQuery) {
                 return true;
             }
         } else if (timeNorm.endsWith(':')) {
-            // ej. "13:"
             const hhWanted = timeNorm.slice(0, -1).padStart(2, '0');
             if (rowTime.startsWith(`${hhWanted}:`)) return true;
         } else if (timeNorm.startsWith(':')) {
-            // ej. ":" o ":00"
             if (timeNorm === ':') {
                 if (rowTime.includes(':')) return true;
             } else {
@@ -1628,7 +1837,6 @@ function matchesTimeOrTextSearch(tr, rawQuery) {
                 if (mmActual.startsWith(mmWanted)) return true;
             }
         } else {
-            // ej. "13:00"
             if (rowTime === timeNorm || rowTime.startsWith(timeNorm)) return true;
         }
     }
@@ -1662,7 +1870,6 @@ function handleSportChange(changedSport) {
         sportCheckboxes.forEach(chk => chk.checked = state);
     } else {
         const allChecked = sportCheckboxes.every(chk => chk.checked);
-        const anyChecked = sportCheckboxes.some(chk => chk.checked);
         if (allChecked) {
             chkTodos.checked = true;
         } else {
@@ -1675,10 +1882,10 @@ function handleSportChange(changedSport) {
 function setFilter(filterType) {
     currentFilter = cleanStr(filterType);
     const isFavView = (currentFilter === 'favoritos');
-    
+
     document.body.classList.toggle('favorites-view', isFavView);
     document.querySelectorAll('#futbolenlatv-controls .stat-card').forEach(card => card.classList.remove('active-card'));
-    
+
     const activeCard = document.getElementById('card-' + currentFilter);
     if (activeCard) activeCard.classList.add('active-card');
 
@@ -1743,14 +1950,11 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
-        // Leemos siempre los orígenes marcados en los checkboxes de manera unificada
         const checkedSources = new Set();
         document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
-
-        const searchQuery = cleanStr(document.getElementById('agendaSearch')?.value || '');
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
@@ -1759,7 +1963,6 @@ function updateStatsForActiveView() {
             const source = cleanStr(tr.getAttribute('data-source'));
             const sport = cleanStr(tr.getAttribute('data-sport'));
             const rowDate = tr.getAttribute('data-date');
-            const searchData = cleanStr(tr.getAttribute('data-search'));
             const isToday = (rowDate === TODAY_DATE_STR);
 
             let matchesSource = checkedSources.has(source);
@@ -1801,11 +2004,10 @@ function switchView(viewName) {
     currentActiveView = viewName;
     const btnFutbolenlatv = document.getElementById('btn-view-futbolenlatv');
     const btnChannels = document.getElementById('btn-view-channels');
-    
+
     const futbolenlatvContainer = document.getElementById('futbolenlatv-view-container');
     const channelsContainer = document.getElementById('channels-view-container');
-    const guideContainer = document.getElementById('guide-view-container');
-    
+
     const futbolenlatvControls = document.getElementById('futbolenlatv-controls');
     const channelsControls = document.getElementById('channels-controls');
 
@@ -1814,7 +2016,6 @@ function switchView(viewName) {
 
     futbolenlatvContainer.style.display = 'none';
     channelsContainer.style.display = 'none';
-    guideContainer.style.display = 'none';
     futbolenlatvControls.style.display = 'none';
     channelsControls.style.display = 'none';
 
@@ -1822,38 +2023,17 @@ function switchView(viewName) {
         if (btnFutbolenlatv) btnFutbolenlatv.classList.add('active');
         futbolenlatvContainer.style.display = 'block';
         futbolenlatvControls.style.display = 'block';
-        updateStatsForActiveView();
-        applyFilters();
+        setFilter('favoritos');
     } else if (viewName === 'channels') {
         if (btnChannels) btnChannels.classList.add('active');
         channelsContainer.style.display = 'block';
         channelsControls.style.display = 'block';
+        currentLetterFilter = 'EVENTOS';
+        document.querySelectorAll('.letter-btn').forEach(btn => {
+            btn.classList.toggle('active', (btn.getAttribute('data-mode') || btn.textContent.trim()) === 'EVENTOS');
+        });
         loadChannelsCatalog();
     }
-    updateStickyHeadingOffset();
-}
-
-function openGuideView(title, url) {
-    currentActiveView = 'guide';
-    const btnFutbolenlatv = document.getElementById('btn-view-futbolenlatv');
-    const btnChannels = document.getElementById('btn-view-channels');
-    
-    if (btnFutbolenlatv) btnFutbolenlatv.classList.remove('active');
-    if (btnChannels) btnChannels.classList.remove('active');
-
-    document.getElementById('futbolenlatv-view-container').style.display = 'none';
-    document.getElementById('channels-view-container').style.display = 'none';
-    document.getElementById('guide-view-container').style.display = 'block';
-    
-    document.getElementById('futbolenlatv-controls').style.display = 'none';
-    document.getElementById('channels-controls').style.display = 'none';
-
-    document.getElementById('guide-title').textContent = title;
-    
-    const externalLinkBtn = document.getElementById('guide-external-link');
-    externalLinkBtn.href = url;
-    externalLinkBtn.target = '_self';
-    
     updateStickyHeadingOffset();
 }
 
@@ -1861,24 +2041,28 @@ async function initApp() {
     try {
         const response = await fetch('./channels.json');
         const jsonResult = await response.json();
-        
+
         if (Array.isArray(jsonResult)) {
             allCatalogChannels = jsonResult;
         } else {
             allCatalogChannels = jsonResult.channels || jsonResult.data?.channels || jsonResult.data || [];
         }
-
-        allCatalogChannels.sort((a, b) => {
-            const nameA = (a.name || '').trim();
-            const nameB = (b.name || '').trim();
-            return nameA.localeCompare(nameB, 'es', { sensitivity: 'accent', numeric: true });
-        });
-
-        filterChannels();
-        linkAgendaChannelsToCdn();
     } catch (e) {
-        console.error("Error cargando canales:", e);
+        allCatalogChannels = [];
     }
+
+    if (!Array.isArray(allCatalogChannels) || allCatalogChannels.length === 0) {
+        allCatalogChannels = Array.isArray(EMBEDDED_CHANNELS) ? EMBEDDED_CHANNELS : [];
+    }
+
+    allCatalogChannels.sort((a, b) => {
+        const nameA = (a.name || '').trim();
+        const nameB = (b.name || '').trim();
+        return nameA.localeCompare(nameB, 'es', { sensitivity: 'accent', numeric: true });
+    });
+
+    filterChannels();
+    linkAgendaChannelsToCdn();
 }
 
 async function loadChannelsCatalog() {
@@ -1892,19 +2076,52 @@ async function loadChannelsCatalog() {
 function normalizeChannelName(name) {
     return String(name || '').toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\b(hd|fhd|sd|hevc|4k|us|uk|pt|es)\b/g, '')
+        .replace(/\b(hd|fhd|sd|hevc|4k|us|uk|pt|es|fr|it|de)\b/g, '')
         .replace(/[^a-z0-9]/g, '')
         .trim();
 }
 
-function findCatalogChannel(channelName) {
-    const wanted = normalizeChannelName(channelName);
+function cleanSportTvGuideChannelLabel(rawName) {
+    return String(rawName || '')
+        .replace(/\[\s*\]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function resolveMappedFavoriteName(channelName, countryHint = '') {
+    const cleanKey = cleanStr(cleanSportTvGuideChannelLabel(channelName));
+    const countryUpper = String(countryHint || '').toUpperCase().trim();
+
+    if (cleanKey === 'sky sport tennis' || cleanKey === 'sky sports tennis') {
+        return countryUpper === 'DE' ? 'Sky Sport Tennis FHD DE' : 'Sky Sports Tennis FHD UK';
+    }
+
+    if (AGENDA_CHANNEL_ALIASES.has(cleanKey)) {
+        return AGENDA_CHANNEL_ALIASES.get(cleanKey);
+    }
+    return null;
+}
+
+function findCatalogChannel(channelName, countryHint = '') {
+    const mappedName = resolveMappedFavoriteName(channelName, countryHint);
+    const targetName = mappedName || channelName;
+    const wanted = normalizeChannelName(targetName);
     if (!wanted) return null;
 
-    const aliasTarget = AGENDA_CHANNEL_ALIASES.get(cleanStr(channelName));
-    if (aliasTarget) {
-        const found = allCatalogChannels.find(ch => normalizeChannelName(ch.name) === normalizeChannelName(aliasTarget));
-        if (found) return found;
+    if (mappedName) {
+        const directMapped = allCatalogChannels.find(ch =>
+            cleanStr(ch.name) === cleanStr(mappedName) || normalizeChannelName(ch.name) === wanted
+        );
+        if (directMapped) return directMapped;
+    }
+
+    const hintLower = String(countryHint || '').toLowerCase().trim();
+    if (hintLower) {
+        const exactWithCountry = allCatalogChannels.find(ch => {
+            const rawLower = String(ch.name || '').toLowerCase();
+            return normalizeChannelName(ch.name) === wanted && rawLower.includes(` ${hintLower}`);
+        });
+        if (exactWithCountry) return exactWithCountry;
     }
 
     let found = allCatalogChannels.find(ch => normalizeChannelName(ch.name) === wanted);
@@ -1919,14 +2136,17 @@ function findCatalogChannel(channelName) {
     return null;
 }
 
-function safePlayerUrl(channel) {
-    const value = channel?.player_url || channel?.url;
-    if (!value) return null;
+function safePlayerUrl(ch) {
+    if (!ch) return null;
+    const raw = String(ch.player_url || ch.url || '').trim();
+    if (!raw) return null;
     try {
-        const u = new URL(value);
-        if (u.protocol !== 'https:' || !['cdnlivetv.tv', 'www.cdnlivetv.tv'].includes(u.hostname)) return null;
+        const u = new URL(raw);
+        if (u.protocol !== 'https:' || !['cdnlivetv.tv', 'www.cdnlivetv.tv'].includes(u.hostname)) {
+            return null;
+        }
         return u.href;
-    } catch {
+    } catch (_) {
         return null;
     }
 }
@@ -1954,7 +2174,7 @@ function linkAgendaChannelsToCdn() {
         }
 
         const channelName = textContent.replace(' 🔗', '').replace(' ▶', '').trim();
-        
+
         if (/dazn|disney\+/i.test(channelName)) {
             badge.removeAttribute('href');
             badge.classList.remove('channel-chip-link');
@@ -1981,6 +2201,169 @@ function linkAgendaChannelsToCdn() {
     });
 }
 
+function computeMadridEventTimestamp(dateIso, timeStr) {
+    if (!dateIso || !timeStr || timeStr === 'LIVE') return null;
+    const match = String(timeStr).match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return null;
+    const [y, m, d] = String(dateIso).split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const hh = Number(match[1]);
+    const mm = Number(match[2]);
+
+    const utcGuess = new Date(Date.UTC(y, m - 1, d, hh, mm, 0));
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Madrid',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }).formatToParts(utcGuess);
+    const map = {};
+    for (const p of parts) {
+        if (p.type !== 'literal') map[p.type] = p.value;
+    }
+    const madridAsUtc = Date.UTC(
+        Number(map.year),
+        Number(map.month) - 1,
+        Number(map.day),
+        Number(map.hour),
+        Number(map.minute),
+        Number(map.second)
+    );
+    const offsetMs = madridAsUtc - utcGuess.getTime();
+    return utcGuess.getTime() - offsetMs;
+}
+
+function isEventInPlay(dateIso, timestamp, nowMs = Date.now()) {
+    const TWO_HOURS_MS = 2 * 3600 * 1000;
+    if (dateIso !== TODAY_DATE_STR) return false;
+    return Number.isFinite(timestamp) && timestamp <= nowMs && (nowMs - timestamp) <= TWO_HOURS_MS;
+}
+
+function highlightSportTvGuideLiveEvents() {
+    const now = Date.now();
+    document.querySelectorAll('#sportTvGuideEventsPanel .stg-event-card[data-ts]').forEach(card => {
+        const dateIso = card.getAttribute('data-date') || '';
+        const ts = Number(card.getAttribute('data-ts'));
+        if (isEventInPlay(dateIso, ts, now)) {
+            card.classList.add('previous-event');
+        } else {
+            card.classList.remove('previous-event');
+        }
+    });
+}
+
+function scrollToSportTvGuideTargetEvent() {
+    if (currentActiveView !== 'channels' || currentLetterFilter !== 'EVENTOS') return;
+    const panel = document.getElementById('sportTvGuideEventsPanel');
+    if (!panel || panel.style.display === 'none') return;
+
+    const cards = Array.from(panel.querySelectorAll('.stg-event-card'));
+    if (cards.length === 0) return;
+
+    const liveCard = cards.find(card => card.classList.contains('previous-event'));
+    if (!liveCard) return;
+
+    const stickyPanel = document.getElementById('stickyPanel');
+    const stickyOffset = stickyPanel ? stickyPanel.getBoundingClientRect().height + 12 : 12;
+    const cardTop = liveCard.getBoundingClientRect().top + window.scrollY;
+    const targetScrollTop = Math.max(0, cardTop - stickyOffset);
+
+    window.scrollTo({
+        top: targetScrollTop,
+        behavior: 'smooth'
+    });
+}
+
+function renderSportTvGuideEventsView() {
+    const panel = document.getElementById('sportTvGuideEventsPanel');
+    const grid = document.getElementById('channelsGrid');
+    if (!panel || !grid) return;
+
+    if (currentLetterFilter !== 'EVENTOS') {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        grid.style.display = 'grid';
+        return;
+    }
+
+    grid.style.display = 'none';
+    panel.style.display = 'block';
+
+    const query = cleanStr(document.getElementById('channelSearch')?.value || '');
+    const sortedEvents = [...(Array.isArray(SPORT_TV_GUIDE_FAV_EVENTS) ? SPORT_TV_GUIDE_FAV_EVENTS : [])].sort((a, b) => {
+        const cmpDate = String(a.date_iso || '').localeCompare(String(b.date_iso || ''));
+        if (cmpDate !== 0) return cmpDate;
+        return String(a.hora || '').localeCompare(String(b.hora || ''));
+    });
+
+    const filteredEvents = sortedEvents.filter(ev => {
+        if (!query) return true;
+        const chNames = (ev.canales || []).map(c => c.name || '').join(' ');
+        const haystack = cleanStr(`${ev.fecha_label || ''} ${ev.hora || ''} ${ev.deporte || ''} ${ev.competicion || ''} ${ev.evento || ''} ${chNames}`);
+        return haystack.includes(query);
+    });
+
+    if (filteredEvents.length === 0) {
+        panel.innerHTML = '<div class="empty-state">😴 No hay eventos disponibles en Sport TV Guide.</div>';
+        return;
+    }
+
+    const nowMs = Date.now();
+
+    panel.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            ${filteredEvents.map(ev => {
+                const seenLabels = new Set();
+                const channelButtons = (ev.canales || []).map(chObj => {
+                    const chName = cleanSportTvGuideChannelLabel(chObj.name);
+                    if (!chName) return '';
+
+                    const chCountry = String(chObj.country || '').trim();
+                    const mappedName = resolveMappedFavoriteName(chName, chCountry);
+                    const catalogCh = findCatalogChannel(chName, chCountry);
+                    const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
+                    const displayLabel = catalogCh?.name || mappedName || chName;
+
+                    const dedupKey = cleanStr(displayLabel);
+                    if (seenLabels.has(dedupKey)) return '';
+                    seenLabels.add(dedupKey);
+
+                    const safeTitle = displayLabel.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const safeUrlArg = playerUrl ? playerUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
+
+                    return `<a href="#reproductor" class="channel-action" onclick="event.preventDefault(); openPlayerModal('${safeTitle}', '${safeUrlArg}')">▶ ${displayLabel}</a>`;
+                }).filter(Boolean).join('');
+
+                const evTs = Number.isFinite(Number(ev.ts))
+                    ? Number(ev.ts)
+                    : computeMadridEventTimestamp(ev.date_iso, ev.hora);
+                const liveClass = isEventInPlay(ev.date_iso, evTs, nowMs) ? ' previous-event' : '';
+
+                return `
+                    <div class="stg-event-card${liveClass}" data-date="${ev.date_iso || ''}" data-ts="${Number.isFinite(evTs) ? evTs : ''}">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span class="date-badge ${ev.fecha_label === 'Hoy' ? 'today' : ''}">${ev.fecha_label || 'Hoy'}</span>
+                            <span class="time-badge">${ev.hora}</span>
+                            <span class="sport-tag" style="color: #38bdf8; font-size: 0.82rem;">${ev.icono || ''} ${ev.deporte || ''}</span>
+                            ${ev.competicion ? `<span style="color: var(--text-muted); font-size: 0.8rem;">(${ev.competicion})</span>` : ''}
+                            <strong class="stg-event-title" style="color: #fff; font-size: 0.9rem;">${ev.evento}</strong>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                            ${channelButtons}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+
+    scrollToSportTvGuideTargetEvent();
+}
+
 function renderChannelsGrid(channels) {
     const grid = document.getElementById('channelsGrid');
     if (!grid) return;
@@ -1997,7 +2380,7 @@ function renderChannelsGrid(channels) {
         const url = safePlayerUrl(ch);
         const isFav = favs.includes(ch.name);
         const img = ch.image ? `<img src="${ch.image}" class="channel-logo" alt="" loading="lazy" onerror="this.style.display='none'">` : `<div class="channel-logo"></div>`;
-        
+
         return `
             <div class="channel-card">
                 <div class="channel-info">
@@ -2006,46 +2389,53 @@ function renderChannelsGrid(channels) {
                 </div>
                 <div class="channel-actions">
                     <button class="channel-fav-btn ${isFav ? 'is-fav' : ''}" onclick="toggleChannelFavorite('${ch.name.replace(/'/g, "\\'")}')" title="${isFav ? 'Quitar de favoritos' : 'Añadir a favoritos'}">⭐</button>
-                    ${playable ? `<a href="#reproductor" class="channel-action" onclick="openPlayerModal('${ch.name.replace(/'/g, "\\'")}', '${url}')">▶ Ver</a>` : '<span style="font-size:0.7rem; color:var(--text-muted)">No disponible</span>'}
+                    ${playable ? `<a href="#reproductor" class="channel-action" onclick="event.preventDefault(); openPlayerModal('${ch.name.replace(/'/g, "\\'")}', '${url}')">▶ Ver</a>` : '<span style="font-size:0.7rem; color:var(--text-muted)">No disponible</span>'}
                 </div>
             </div>
         `;
     }).join('');
 }
 
-function filterChannelsByLetter(letter) {
-    currentLetterFilter = letter;
+function filterChannelsByLetter(mode) {
+    currentLetterFilter = mode;
     document.querySelectorAll('.letter-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent.trim() === letter);
+        btn.classList.toggle('active', (btn.getAttribute('data-mode') || btn.textContent.trim()) === mode);
     });
     filterChannels();
 }
 
 function filterChannels() {
-    const query = document.getElementById('channelSearch').value.toLowerCase();
+    if (currentLetterFilter === 'EVENTOS') {
+        renderSportTvGuideEventsView();
+        return;
+    }
+
+    renderSportTvGuideEventsView();
+
+    const query = (document.getElementById('channelSearch')?.value || '').toLowerCase();
     const favs = getFavoriteChannels();
 
     const filtered = allCatalogChannels.filter(ch => {
         const name = (ch.name || '').trim();
         const lowerName = name.toLowerCase();
-        
+
         const matchesQuery = lowerName.includes(query);
-        
+
         let matchesLetter = true;
         if (currentLetterFilter === 'FAVORITOS') {
             matchesLetter = favs.includes(name);
         } else if (currentLetterFilter !== 'Todos') {
             const firstChar = name.charAt(0).toUpperCase();
             if (currentLetterFilter === '#') {
-                matchesLetter = /^[^A-ZÑ]/i.test(firstChar);
+                matchesLetter = /^[^A-Z]/i.test(firstChar);
             } else {
                 matchesLetter = (firstChar === currentLetterFilter);
             }
         }
-        
+
         return matchesQuery && matchesLetter;
     });
-    
+
     filtered.sort((a, b) => {
         const nameA = (a.name || '').trim();
         const nameB = (b.name || '').trim();
@@ -2057,7 +2447,14 @@ function filterChannels() {
 
 function openPlayerModal(name, url) {
     document.getElementById('player-title').textContent = `Reproduciendo: ${name}`;
-    document.getElementById('player-content').innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>`;
+    const validUrl = safePlayerUrl({ url });
+    if (!validUrl) {
+        document.getElementById('player-content').innerHTML =
+            `<div style="display:flex;height:100%;align-items:center;justify-content:center;padding:20px;text-align:center;color:#94a3b8;">No hay URL válida en channels.json para <strong>${name}</strong>.</div>`;
+    } else {
+        document.getElementById('player-content').innerHTML =
+            `<iframe src="${validUrl}" style="width:100%; height:100%; border:none;" allowfullscreen></iframe>`;
+    }
     document.getElementById('player-dialog').showModal();
 }
 
@@ -2069,26 +2466,19 @@ function closePlayerModal() {
 
 function highlightPreviousEvents() {
     const now = Date.now();
-    const TWO_HOURS_MS = 2 * 3600 * 1000; // Ventana estricta de las últimas 2 horas
-
     const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
-    
-    rows.forEach(row => {
-        // Solo evaluamos los eventos que corresponden al día de hoy
-        if (row.getAttribute('data-date') !== TODAY_DATE_STR) {
-            row.classList.remove('previous-event');
-            return;
-        }
 
+    rows.forEach(row => {
+        const dateIso = row.getAttribute('data-date') || '';
         const timestamp = Number(row.getAttribute('data-ts'));
-        
-        // Se marca como EN JUEGO si el evento ya comenzó y su inicio se produjo hace menos de 2 horas
-        if (Number.isFinite(timestamp) && timestamp <= now && (now - timestamp) <= TWO_HOURS_MS) {
+        if (isEventInPlay(dateIso, timestamp, now)) {
             row.classList.add('previous-event');
         } else {
             row.classList.remove('previous-event');
         }
     });
+
+    highlightSportTvGuideLiveEvents();
 }
 
 function scrollToTargetEvent() {
@@ -2097,10 +2487,8 @@ function scrollToTargetEvent() {
     const visibleRows = Array.from(table.getElementsByClassName('event-row')).filter(r => r.style.display !== 'none');
     if (visibleRows.length === 0) return;
 
-    // 1. Primer evento marcado como EN JUEGO
     let targetRow = visibleRows.find(r => r.classList.contains('previous-event'));
 
-    // 2. Si no hay ningún evento marcado como EN JUEGO, buscar el próximo evento (timestamp > ahora)
     if (!targetRow) {
         const now = Date.now();
         targetRow = visibleRows.find(r => {
@@ -2109,7 +2497,6 @@ function scrollToTargetEvent() {
         });
     }
 
-    // 3. Si ya no hay más eventos futuros, el último evento de la lista
     if (!targetRow) {
         targetRow = visibleRows[visibleRows.length - 1];
     }
@@ -2119,30 +2506,11 @@ function scrollToTargetEvent() {
     }
 }
 
-function getCurrentTimeSlot() {
-    const now = new Date();
-    const madridTimeStr = new Intl.DateTimeFormat('es-ES', {
-        timeZone: 'Europe/Madrid',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    }).format(now);
-    
-    const [h, m] = madridTimeStr.split(':').map(Number);
-    const totalMins = h * 60 + m;
-    
-    if (totalMins <= 419) return 'madrugada';
-    if (totalMins <= 779) return 'manana';
-    if (totalMins <= 1229) return 'tarde';
-    return 'noche';
-}
-
 window.addEventListener('load', async () => {
     await initApp();
     highlightPreviousEvents();
     setInterval(highlightPreviousEvents, 60000);
-    const activeSlot = getCurrentTimeSlot();
-    setFilter(activeSlot);
+    setFilter('favoritos');
     updateStickyHeadingOffset();
 });
 
@@ -2168,8 +2536,6 @@ function applyFilters() {
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
 
-        const searchQuery = cleanStr(document.getElementById('agendaSearch')?.value || '');
-
         const table = document.getElementById('futbolenlatvTable');
         if (!table) return;
         const trs = table.getElementsByClassName('event-row');
@@ -2182,9 +2548,8 @@ function applyFilters() {
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
             const isFiltered = tr.getAttribute('data-filtered') === 'true';
             const source = cleanStr(tr.getAttribute('data-source'));
-            const sport = cleanStr(tr.getAttribute('data-sport')); 
+            const sport = cleanStr(tr.getAttribute('data-sport'));
             const rowDate = tr.getAttribute('data-date');
-            const searchData = cleanStr(tr.getAttribute('data-search'));
 
             let matchesFilter = false;
             let matchesSource = checkedSources.has(source);
@@ -2219,8 +2584,8 @@ function applyFilters() {
                 emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección.</td>';
                 table.appendChild(emptyRow);
             } else { emptyRow.style.display = ''; }
-        } else { 
-            if (emptyRow) emptyRow.style.display = 'none'; 
+        } else {
+            if (emptyRow) emptyRow.style.display = 'none';
             scrollToTargetEvent();
         }
     }
@@ -2231,13 +2596,16 @@ function applyFilters() {
 """
 
 
-def generate_html(futbolenlatv_events):
+def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
-    
-    filtered_cnt = sum(1 for event in futbolenlatv_events if event["is_filtered"])
-    slot_counts = Counter(get_time_slot(event["hora"]) for event in futbolenlatv_events if event["date_obj"] == today_date)
+
+    slot_counts = Counter(
+        get_time_slot(event["hora"])
+        for event in futbolenlatv_events
+        if event["date_obj"] == today_date
+    )
     total_cnt = sum(1 for event in futbolenlatv_events if event["date_obj"] > today_date)
 
     def clean_key(s):
@@ -2245,7 +2613,9 @@ def generate_html(futbolenlatv_events):
 
     rows_list = []
     if not futbolenlatv_events:
-        rows_list.append('<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>')
+        rows_list.append(
+            '<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>'
+        )
     else:
         for ev in futbolenlatv_events:
             tv_badges_list = []
@@ -2262,7 +2632,7 @@ def generate_html(futbolenlatv_events):
                 )
 
             tv_badges = "".join(tv_badges_list)
-            
+
             ev_date = ev["date_obj"]
             if ev_date == today_date:
                 date_badge_html = '<span class="date-badge today">Hoy</span>'
@@ -2272,11 +2642,13 @@ def generate_html(futbolenlatv_events):
             slot = get_time_slot(ev["hora"])
             safe_slot = escape(clean_key(slot), quote=True)
 
-            search_text = normalize_search_text(" ".join(
-                [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
-            ))
+            search_text = normalize_search_text(
+                " ".join(
+                    [str(ev_date), ev["hora"], ev["deporte"], ev["competicion"], ev["evento"], *ev["tv_list"]]
+                )
+            )
             safe_search = escape(search_text, quote=True)
-            
+
             if ev["hora"] == "LIVE":
                 safe_time = '<span class="time-badge" style="background:#10b981;">LIVE</span>'
                 event_timestamp = int(datetime.now(spain_tz).timestamp() * 1000)
@@ -2301,7 +2673,7 @@ def generate_html(futbolenlatv_events):
 
             is_filtered_str = str(ev["is_filtered"]).lower()
             is_configured_str = str(ev["is_configured"]).lower()
-            
+
             is_fctv_event = bool(ev.get("fctv_url"))
             favorite_pin_html = (
                 '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
@@ -2317,8 +2689,28 @@ def generate_html(futbolenlatv_events):
                 f'<td class="tv-col cell-tv"><div class="tv-container">{tv_badges}</div></td>'
                 f'</tr>'
             )
-            
+
     futbolenlatv_rows_html = "".join(rows_list)
+    safe_stg_json = json.dumps(sport_tv_guide_events or [], ensure_ascii=False).replace("</", "<\\/")
+
+    embedded_channels = []
+    try:
+        if os.path.exists("channels.json"):
+            with open("channels.json", "r", encoding="utf-8") as f:
+                raw_ch = json.load(f)
+            if isinstance(raw_ch, list):
+                embedded_channels = raw_ch
+            elif isinstance(raw_ch, dict):
+                embedded_channels = (
+                    raw_ch.get("channels")
+                    or raw_ch.get("data", {}).get("channels")
+                    or raw_ch.get("data")
+                    or []
+                )
+    except Exception:
+        embedded_channels = []
+
+    safe_channels_json = json.dumps(embedded_channels, ensure_ascii=False).replace("</", "<\\/")
 
     html = HTML_TEMPLATE.replace("{FECHA_ACT}", fecha_act)
     html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
@@ -2328,17 +2720,16 @@ def generate_html(futbolenlatv_events):
     html = html.replace("{TOTAL_CNT}", str(total_cnt))
     html = html.replace("{TODAY_DATE_STR}", today_date.isoformat())
     html = html.replace("{FUTBOLENLATV_ROWS_HTML}", futbolenlatv_rows_html)
+    html = html.replace("{SPORT_TV_GUIDE_EVENTS_JSON}", safe_stg_json)
+    html = html.replace("{EMBEDDED_CHANNELS_JSON}", safe_channels_json)
     return html
 
 
 if __name__ == "__main__":
     update_channels_json_from_api()
-    
-    futbolenlatv_events = fetch_and_parse_agenda()
-    html_content = generate_html(futbolenlatv_events)
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html_content)
-    print(
-        "Archivo index.html generado con éxito. "
-        f"Eventos totales en la agenda unificada: {len(futbolenlatv_events)}"
-    )
+    agenda_events = fetch_and_parse_agenda()
+    stg_events = fetch_sport_tv_guide_favorite_events()
+    final_html = generate_html(agenda_events, stg_events)
+    with open("index.html", "w", encoding="utf-8") as out_f:
+        out_f.write(final_html)
+    print("index.html generado correctamente.")
