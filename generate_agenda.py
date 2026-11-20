@@ -1524,8 +1524,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <header>
         <div><h1><a href="https://daddylive.pk/" target="_blank" class="icon-link" title="Abrir DaddyLive HD">⚡</a> Agenda Deportiva</h1></div>
         <div class="header-controls">
-            <button class="nav-tab-btn active" id="btn-view-futbolenlatv" onclick="switchView('futbolenlatv')">FUTBOLENLATV / FCTV33</button>
-            <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">CDN LIVE</button>
+            <button class="nav-tab-btn active" id="btn-view-futbolenlatv" onclick="switchView('futbolenlatv')">EVENTOS</button>
+            <button class="nav-tab-btn" id="btn-view-channels" onclick="switchView('channels')">CANALES</button>
             <button class="btn-update" onclick="location.reload()">🔄 Actualizar</button>
         </div>
         <div class="last-update">
@@ -1571,20 +1571,26 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                         <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="applyFilters()"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="applyFilters()"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="applyFilters()"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-cdnlive" value="cdnlive" onchange="applyFilters()"> CDN LIVE</label>
                     </div>
                 </div>
             </div>
         </div>
 
-        <input type="text" id="agendaSearch" placeholder="Buscar por hora, competición o evento..." oninput="applyFilters()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 12px;">
+        <div class="search-wrapper" style="position: relative; margin-bottom: 12px;">
+            <input type="text" id="agendaSearch" placeholder="Buscar por hora, competición o evento..." oninput="toggleClearBtn('agendaSearch', 'clearAgendaSearch'); applyFilters()" style="width: 100%; padding: 10px 36px 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem;">
+            <button type="button" id="clearAgendaSearch" onclick="clearSearchInput('agendaSearch', 'clearAgendaSearch', applyFilters)" title="Borrar búsqueda" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 700; cursor: pointer; padding: 2px 6px; line-height: 1;">✕</button>
+        </div>
     </div>
 
     <div id="channels-controls" style="display: none; margin-bottom: 10px;">
-        <input type="text" id="channelSearch" placeholder="Buscar canal o evento..." oninput="filterChannels()" style="width: 100%; padding: 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem; margin-bottom: 8px;">
+        <div class="search-wrapper" style="position: relative; margin-bottom: 8px;">
+            <input type="text" id="channelSearch" placeholder="Buscar canal..." oninput="toggleClearBtn('channelSearch', 'clearChannelSearch'); filterChannels()" style="width: 100%; padding: 10px 36px 10px 14px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); font-size: 0.9rem;">
+            <button type="button" id="clearChannelSearch" onclick="clearSearchInput('channelSearch', 'clearChannelSearch', filterChannels)" title="Borrar búsqueda" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 700; cursor: pointer; padding: 2px 6px; line-height: 1;">✕</button>
+        </div>
         <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
-            <button class="letter-btn active" data-mode="EVENTOS" onclick="filterChannelsByLetter('EVENTOS')">📅 Ver eventos</button>
-            <button class="letter-btn" data-mode="FAVORITOS" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
+            <button class="letter-btn active" data-mode="FAVORITOS" onclick="filterChannelsByLetter('FAVORITOS')">⭐ Favoritos</button>
             <button class="letter-btn" data-mode="Todos" onclick="filterChannelsByLetter('Todos')">Todos</button>
             <button class="letter-btn" data-mode="#" onclick="filterChannelsByLetter('#')">#</button>
             <button class="letter-btn" data-mode="A" onclick="filterChannelsByLetter('A')">A</button>
@@ -1645,8 +1651,26 @@ const SPORT_TV_GUIDE_FAV_EVENTS = {SPORT_TV_GUIDE_EVENTS_JSON};
 const EMBEDDED_CHANNELS = {EMBEDDED_CHANNELS_JSON};
 let currentFilter = 'favoritos';
 let currentActiveView = 'futbolenlatv';
-let currentLetterFilter = 'EVENTOS';
+let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
+
+function toggleClearBtn(inputId, btnId) {
+    const inp = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    if (!inp || !btn) return;
+    btn.style.display = inp.value.length > 0 ? 'block' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+    const inp = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    if (inp) {
+        inp.value = '';
+        inp.focus();
+    }
+    if (btn) btn.style.display = 'none';
+    if (typeof callback === 'function') callback();
+}
 
 const AGENDA_CHANNEL_ALIASES = new Map([
   ['tennis channel', 'Tennis Channel HD US'],
@@ -1854,6 +1878,7 @@ function setFilter(filterType) {
 
     const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
     const chkFctv = document.getElementById('chk-fctv33');
+    const chkCdnlive = document.getElementById('chk-cdnlive');
 
     if (isFavView) {
         if (chkFutbolenlatv) {
@@ -1863,14 +1888,20 @@ function setFilter(filterType) {
             chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
         }
         if (chkFctv) {
-            chkFctv.checked = true;
+            chkFctv.checked = false;
             chkFctv.disabled = true;
             chkFctv.parentElement.style.opacity = '0.6';
             chkFctv.parentElement.style.cursor = 'not-allowed';
         }
+        if (chkCdnlive) {
+            chkCdnlive.checked = false;
+            chkCdnlive.disabled = true;
+            chkCdnlive.parentElement.style.opacity = '0.6';
+            chkCdnlive.parentElement.style.cursor = 'not-allowed';
+        }
     } else {
         if (chkFutbolenlatv) {
-            chkFutbolenlatv.checked = true;
+            chkFutbolenlatv.checked = false;
             chkFutbolenlatv.disabled = false;
             chkFutbolenlatv.parentElement.style.opacity = '1';
             chkFutbolenlatv.parentElement.style.cursor = 'pointer';
@@ -1880,6 +1911,12 @@ function setFilter(filterType) {
             chkFctv.disabled = false;
             chkFctv.parentElement.style.opacity = '1';
             chkFctv.parentElement.style.cursor = 'pointer';
+        }
+        if (chkCdnlive) {
+            chkCdnlive.checked = true;
+            chkCdnlive.disabled = false;
+            chkCdnlive.parentElement.style.opacity = '1';
+            chkCdnlive.parentElement.style.cursor = 'pointer';
         }
     }
 
@@ -1977,9 +2014,9 @@ function switchView(viewName) {
         if (btnChannels) btnChannels.classList.add('active');
         channelsContainer.style.display = 'block';
         channelsControls.style.display = 'block';
-        currentLetterFilter = 'EVENTOS';
+        currentLetterFilter = 'FAVORITOS';
         document.querySelectorAll('.letter-btn').forEach(btn => {
-            btn.classList.toggle('active', (btn.getAttribute('data-mode') || btn.textContent.trim()) === 'EVENTOS');
+            btn.classList.toggle('active', (btn.getAttribute('data-mode') || btn.textContent.trim()) === 'FAVORITOS');
         });
         loadChannelsCatalog();
     }
@@ -2101,6 +2138,21 @@ function safePlayerUrl(ch) {
 }
 
 function linkAgendaChannelsToCdn() {
+    document.querySelectorAll('#futbolenlatvTable .stg-cdn-channel').forEach(btn => {
+        const rawName = cleanSportTvGuideChannelLabel(btn.getAttribute('data-ch-name') || '');
+        const countryHint = String(btn.getAttribute('data-ch-country') || '').trim();
+        const mappedName = resolveMappedFavoriteName(rawName, countryHint);
+        const catalogCh = findCatalogChannel(rawName, countryHint);
+        const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
+        const displayLabel = catalogCh?.name || mappedName || rawName;
+
+        btn.textContent = '▶ ' + displayLabel;
+        btn.onclick = (e) => {
+            e.preventDefault();
+            openPlayerModal(displayLabel, playerUrl || '');
+        };
+    });
+
     document.querySelectorAll('#futbolenlatvTable .stg-event-card').forEach(row => {
         const source = row.getAttribute('data-source');
         if (source === 'futbolenlatv') {
@@ -2354,12 +2406,15 @@ function filterChannelsByLetter(mode) {
 }
 
 function filterChannels() {
-    if (currentLetterFilter === 'EVENTOS') {
-        renderSportTvGuideEventsView();
-        return;
+    const panel = document.getElementById('sportTvGuideEventsPanel');
+    const grid = document.getElementById('channelsGrid');
+    if (panel) {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
     }
-
-    renderSportTvGuideEventsView();
+    if (grid) {
+        grid.style.display = 'grid';
+    }
 
     const query = (document.getElementById('channelSearch')?.value || '').toLowerCase();
     const favs = getFavoriteChannels();
@@ -2551,6 +2606,45 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
 
+    unified_events = list(futbolenlatv_events or [])
+    for stg in (sport_tv_guide_events or []):
+        try:
+            ev_d = date.fromisoformat(str(stg.get("date_iso", "")))
+        except ValueError:
+            ev_d = today_date
+        sport_up = str(stg.get("deporte", "")).upper()
+        comp_key_map = {
+            "FÚTBOL": "futbol",
+            "BALONCESTO": "baloncesto",
+            "TENIS": "tenis",
+            "MOTOR": "motor",
+        }
+        unified_events.append({
+            "date_obj": ev_d,
+            "hora": str(stg.get("hora", "")),
+            "deporte": sport_up,
+            "icono": str(stg.get("icono", "")),
+            "competicion": str(stg.get("competicion", "")).upper(),
+            "evento": str(stg.get("evento", "")).upper(),
+            "tv_list": [str(c.get("name", "")) for c in (stg.get("canales") or []) if c.get("name")],
+            "stg_channels": stg.get("canales") or [],
+            "fctv_url": "",
+            "is_filtered": False,
+            "is_configured": True,
+            "comp_key": comp_key_map.get(sport_up, ""),
+            "source": "cdnlive",
+        })
+
+    unified_events.sort(
+        key=lambda x: (
+            x["date_obj"],
+            x["hora"],
+            normalize_search_text(x["competicion"]),
+            normalize_search_text(x["evento"]),
+        )
+    )
+    futbolenlatv_events = unified_events
+
     slot_counts = Counter(
         get_time_slot(event["hora"])
         for event in futbolenlatv_events
@@ -2569,11 +2663,23 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     else:
         for ev in futbolenlatv_events:
             tv_badges_list = []
-            for channel in ev["tv_list"]:
-                safe_channel = escape(str(channel), quote=True)
-                tv_badges_list.append(
-                    f'<span class="tv-badge" title="Canal {safe_channel}">{safe_channel}</span>'
-                )
+            if ev.get("source") == "cdnlive":
+                for ch_obj in ev.get("stg_channels", []):
+                    raw_ch_name = str(ch_obj.get("name", "")).strip()
+                    raw_ch_country = str(ch_obj.get("country", "")).strip()
+                    if not raw_ch_name:
+                        continue
+                    safe_ch_name = escape(raw_ch_name, quote=True)
+                    safe_ch_country = escape(raw_ch_country, quote=True)
+                    tv_badges_list.append(
+                        f'<a href="#reproductor" class="channel-action stg-cdn-channel" data-ch-name="{safe_ch_name}" data-ch-country="{safe_ch_country}">▶ {safe_ch_name}</a>'
+                    )
+            else:
+                for channel in ev["tv_list"]:
+                    safe_channel = escape(str(channel), quote=True)
+                    tv_badges_list.append(
+                        f'<span class="tv-badge" title="Canal {safe_channel}">{safe_channel}</span>'
+                    )
 
             if ev.get("fctv_url"):
                 fctv_safe_url = escape(ev["fctv_url"], quote=True)
