@@ -317,16 +317,23 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
                     if sport_key == "futbol":
                         event_sample = page.evaluate("""() => {
-                            const rows = Array.from(document.querySelectorAll('div.row'));
+                            const rows = Array.from(document.querySelectorAll('div.row')).filter(el => !el.querySelector('.filterTypes'));
                             const candidate = rows.find(el =>
-                                el.querySelector('img[src*="tvm-station"], img[data-src*="tvm-station"]') ||
-                                /\\b\\d{1,2}:\\d{2}\\b/.test(el.innerText || '')
+                                el.querySelector('.col-inline') ||
+                                el.querySelector('img[src*="tvm-station"], img[data-src*="tvm-station"]')
                             );
-                            if (!candidate) return { found: false, totalRows: rows.length };
+                            if (!candidate) {
+                                return {
+                                    found: false,
+                                    nonFilterRows: rows.length,
+                                    colInlineCount: document.querySelectorAll('.col-inline').length,
+                                    tvmStationCount: document.querySelectorAll('img[src*="tvm-station"], img[data-src*="tvm-station"]').length
+                                };
+                            }
                             return {
                                 found: true,
                                 className: candidate.className,
-                                innerHTML: candidate.innerHTML.slice(0, 1200)
+                                innerHTML: candidate.innerHTML.slice(0, 1500)
                             };
                         }""")
                         print(f"   -> [{sport_label}] Event row sample: {event_sample}")
