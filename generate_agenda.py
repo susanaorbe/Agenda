@@ -1450,14 +1450,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .comp-checkboxes input[type="checkbox"] { accent-color: var(--accent-blue); width: 16px; height: 16px; cursor: pointer; flex: 0 0 16px; margin: 0; }
 
         .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-        th { position: sticky; top: var(--sticky-panel-height, 0px); z-index: 900; background: #111827; color: var(--text-muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; padding: 12px 10px; border-bottom: 1px solid var(--border-color); }
-        td { padding: 12px 10px; border-bottom: 1px solid #283548; font-size: 0.88rem; word-break: break-word; overflow: visible !important; }
-        tr.event-row:hover { background-color: #243146; }
-        tr.event-row.previous-event td { background: rgba(56, 189, 248, 0.075); border-top: 1px solid rgba(56, 189, 248, 0.42); border-bottom: 1px solid rgba(56, 189, 248, 0.42); }
-        tr.event-row.previous-event td:first-child { border-left: 3px solid #38bdf8; }
-        tr.event-row.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
-        tr.event-row.previous-event .event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
+        .events-stack { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
 
         .stg-event-card { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; }
         .stg-event-card.previous-event { background: rgba(56, 189, 248, 0.075); border-color: rgba(56, 189, 248, 0.42); border-left: 3px solid #38bdf8; }
@@ -1466,20 +1459,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .stg-event-card.previous-event .stg-event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
         .stg-channels-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-start; align-items: center; width: 100%; }
 
-        .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
-        .time-col, .date-col { white-space: nowrap; }
-        .sport-tag { font-weight: 600; white-space: nowrap; }
-        .favorite-pin { display: inline-block; margin-right: 6px; color: #c4b5fd; font-size: 0.88rem; line-height: 1; vertical-align: 1px; }
+        .sport-tag { font-weight: 600; white-space: nowrap; color: #38bdf8; font-size: 0.82rem; }
+        .comp-meta { color: var(--text-muted); font-size: 0.8rem; }
+        .favorite-pin { display: inline-block; margin-right: 4px; color: #c4b5fd; font-size: 0.88rem; line-height: 1; vertical-align: 1px; }
         body.favorites-view .favorite-pin { display: none; }
         .date-badge { display: inline-block; background: #334155; color: #f8fafc; font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; white-space: nowrap; }
         .date-badge.today { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.5); }
         .time-badge { background: #0284c7; color: white; font-weight: 700; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; white-space: nowrap; display: inline-block; }
-        .comp-title { font-weight: 600; color: #38bdf8; font-size: 0.85rem; }
-        .event-title { font-weight: 700; color: #ffffff; font-size: 0.9rem; line-height: 1.35; overflow-wrap: anywhere; }
-        .tv-container { display: flex; flex-direction: column; gap: 4px; }
-        .tv-badge { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); padding: 3px 7px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; }
+        .tv-badge { display: inline-block; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; text-decoration: none; transition: all 0.2s ease; }
         .tv-badge.channel-chip-link { cursor: pointer; }
-        .tv-badge.channel-chip-link:hover { background: rgba(99, 102, 241, 0.35); color: #a5b4fc; border-color: #818cf8; transform: translateY(-1px); }
+        .tv-badge.channel-chip-link:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
         .empty-state { text-align: center; padding: 30px; color: var(--text-muted); font-size: 1rem; }
 
         .channels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 16px; }
@@ -1519,57 +1508,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
             .comp-filter-header > div { width: 100%; justify-content: space-between; }
             .comp-checkboxes { width: 100%; display: grid !important; grid-template-columns: repeat(2, 1fr); gap: 8px !important; }
 
-            .table-card { background: transparent; border: none; box-shadow: none; margin-bottom: 60px; }
-            table, thead, tbody, tr, td { display: block; width: 100% !important; }
-            thead { display: none; }
-
-            tr.event-row {
-                background: var(--card-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 10px;
-                margin-bottom: 10px;
-                padding: 10px 12px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-            }
-            tr.event-row td {
-                padding: 3px 0;
-                border: none;
-                background: transparent !important;
-            }
-
-            .cell-date, .cell-time {
-                display: inline-block;
-                margin-right: 6px;
-                margin-bottom: 4px;
-            }
-            .cell-sport {
-                float: right;
-                font-weight: 600;
-                color: #38bdf8;
-                font-size: 0.82rem;
-            }
-            .cell-comp {
-                clear: both;
-                font-size: 0.78rem;
-                color: var(--text-muted);
-                margin-bottom: 2px;
-            }
-            .cell-event {
-                font-size: 0.9rem;
-                font-weight: 700;
-                color: #fff;
-                margin-bottom: 8px;
-            }
-            .cell-tv {
-                border-top: 1px solid var(--border-color);
-                padding-top: 6px;
-                margin-top: 4px;
-            }
-            .tv-container {
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 5px;
-            }
+            .table-card { margin-bottom: 60px; }
+            .events-stack { padding: 10px 8px; }
             .channels-grid {
                 grid-template-columns: 1fr !important;
                 padding: 8px;
@@ -1678,21 +1618,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
 
     <div class="table-card" id="futbolenlatv-view-container">
-        <table>
-            <thead>
-                <tr>
-                    <th class="date-col" style="width: 70px;">Fecha</th>
-                    <th class="time-col" style="width: 70px;">Hora</th>
-                    <th class="sport-col" style="width: 155px;">Deporte</th>
-                    <th class="comp-col" style="width: 140px;">Competición</th>
-                    <th>Evento</th>
-                    <th style="width: 250px;">Canal TV</th>
-                </tr>
-            </thead>
-            <tbody id="futbolenlatvTable">
-                {FUTBOLENLATV_ROWS_HTML}
-            </tbody>
-        </table>
+        <div class="events-stack" id="futbolenlatvTable">
+            {FUTBOLENLATV_ROWS_HTML}
+        </div>
     </div>
 
     <div class="table-card" id="channels-view-container" style="display: none;">
@@ -1829,8 +1757,8 @@ function matchesTimeOrTextSearch(tr, rawQuery) {
     if (!trimmed) return true;
 
     const rowTime = (tr.getAttribute('data-time') || '').trim();
-    const compText = cleanStr(tr.querySelector('.comp-title')?.textContent || '');
-    const eventText = cleanStr(tr.querySelector('.event-title')?.textContent || '');
+    const compText = cleanStr(tr.querySelector('.comp-meta')?.textContent || '');
+    const eventText = cleanStr(tr.querySelector('.stg-event-title')?.textContent || '');
     const normQuery = cleanStr(trimmed);
 
     const timeNorm = normalizeTimeQuery(trimmed);
@@ -1962,7 +1890,7 @@ function updateStatsForActiveView() {
     if (currentActiveView === 'futbolenlatv') {
         const table = document.getElementById('futbolenlatvTable');
         if (!table) return;
-        const trs = table.getElementsByClassName('event-row');
+        const trs = table.getElementsByClassName('stg-event-card');
 
         let favCount = 0;
         let madCount = 0;
@@ -2173,7 +2101,7 @@ function safePlayerUrl(ch) {
 }
 
 function linkAgendaChannelsToCdn() {
-    document.querySelectorAll('.event-row').forEach(row => {
+    document.querySelectorAll('#futbolenlatvTable .stg-event-card').forEach(row => {
         const source = row.getAttribute('data-source');
         if (source === 'futbolenlatv') {
             row.querySelectorAll('.tv-badge').forEach(badge => {
@@ -2487,7 +2415,7 @@ function closePlayerModal() {
 
 function highlightPreviousEvents() {
     const now = Date.now();
-    const rows = Array.from(document.querySelectorAll('#futbolenlatvTable tr.event-row[data-ts]'));
+    const rows = Array.from(document.querySelectorAll('#futbolenlatvTable .stg-event-card[data-ts]'));
 
     rows.forEach(row => {
         const dateIso = row.getAttribute('data-date') || '';
@@ -2505,7 +2433,7 @@ function highlightPreviousEvents() {
 function scrollToTargetEvent() {
     const table = document.getElementById('futbolenlatvTable');
     if (!table) return;
-    const visibleRows = Array.from(table.getElementsByClassName('event-row')).filter(r => r.style.display !== 'none');
+    const visibleRows = Array.from(table.getElementsByClassName('stg-event-card')).filter(r => r.style.display !== 'none');
     if (visibleRows.length === 0) return;
 
     let targetRow = visibleRows.find(r => r.classList.contains('previous-event'));
@@ -2559,7 +2487,7 @@ function applyFilters() {
 
         const table = document.getElementById('futbolenlatvTable');
         if (!table) return;
-        const trs = table.getElementsByClassName('event-row');
+        const trs = table.getElementsByClassName('stg-event-card');
         let visibleCount = 0;
 
         for (let i = 0; i < trs.length; i++) {
@@ -2600,9 +2528,10 @@ function applyFilters() {
         let emptyRow = table.querySelector('#dynamicEmptyState');
         if (visibleCount === 0) {
             if (!emptyRow) {
-                emptyRow = document.createElement('tr');
+                emptyRow = document.createElement('div');
                 emptyRow.id = 'dynamicEmptyState';
-                emptyRow.innerHTML = '<td colspan="6" class="empty-state">😴 No hay eventos que coincidan con la selección.</td>';
+                emptyRow.className = 'empty-state';
+                emptyRow.textContent = '😴 No hay eventos que coincidan con la selección.';
                 table.appendChild(emptyRow);
             } else { emptyRow.style.display = ''; }
         } else {
@@ -2635,7 +2564,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     rows_list = []
     if not futbolenlatv_events:
         rows_list.append(
-            '<tr><td colspan="6" class="empty-state">😴 No hay eventos disponibles en este momento.</td></tr>'
+            '<div class="empty-state">😴 No hay eventos disponibles en este momento.</div>'
         )
     else:
         for ev in futbolenlatv_events:
@@ -2649,7 +2578,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             if ev.get("fctv_url"):
                 fctv_safe_url = escape(ev["fctv_url"], quote=True)
                 tv_badges_list.append(
-                    f'<a href="{fctv_safe_url}" target="_blank" class="tv-badge channel-chip-link" title="Ver en FCTV33">FCTV33 🔗</a>'
+                    f'<a href="{fctv_safe_url}" target="_blank" class="tv-badge channel-chip-link" title="Ver en FCTV33">▶ FCTV33</a>'
                 )
 
             tv_badges = "".join(tv_badges_list)
@@ -2700,15 +2629,22 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
                 '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
                 if ev["is_filtered"] and not is_fctv_event else ""
             )
+            comp_html = (
+                f'<span class="comp-meta">({favorite_pin_html}{safe_competition})</span>'
+                if safe_competition else ""
+            )
+
             rows_list.append(
-                f'<tr class="event-row" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-source="{safe_source}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
-                f'<td class="date-col cell-date">{date_badge_html}</td>'
-                f'<td class="time-col cell-time">{safe_time}</td>'
-                f'<td class="sport-col cell-sport"><span class="sport-tag">{safe_icon} {safe_sport}</span></td>'
-                f'<td class="comp-col cell-comp"><div class="comp-title">{favorite_pin_html}{safe_competition}</div></td>'
-                f'<td class="event-col cell-event"><div class="event-title">{safe_event}</div></td>'
-                f'<td class="tv-col cell-tv"><div class="tv-container">{tv_badges}</div></td>'
-                f'</tr>'
+                f'<div class="stg-event-card" data-date="{safe_date_str}" data-ts="{safe_timestamp}" data-time="{escape(str(ev["hora"]))}" data-slot="{safe_slot}" data-sport="{safe_sport_key}" data-source="{safe_source}" data-comp-key="{safe_comp_key}" data-filtered="{is_filtered_str}" data-configured="{is_configured_str}" data-search="{safe_search}">'
+                f'<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">'
+                f'{date_badge_html}'
+                f'{safe_time}'
+                f'<span class="sport-tag">{safe_icon} {safe_sport}</span>'
+                f'{comp_html}'
+                f'<strong class="stg-event-title" style="color: #fff; font-size: 0.9rem;">{safe_event}</strong>'
+                f'</div>'
+                f'<div class="stg-channels-row">{tv_badges}</div>'
+                f'</div>'
             )
 
     futbolenlatv_rows_html = "".join(rows_list)
