@@ -163,11 +163,11 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "aus-champ", "austrian-2-liga", "azerbaijan-first-division", "australia-a-league", "australia-w-league", 
         "australian-superbike-championship", "austrian-basketball-superliga", "auto-racing", "azerbaijan-first-division", "azerbaijan-premier-league", 
         
-        "b1-league", "b2-league", "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", 
-        "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-challenger-pro-league", "belgian-pro-league", 
-        "belgian-womens-super-league", "benin-ligue-1", "bermuda-premier-league", "bolivian-copa-lfpb", "brazilian-campeonato-paulista-youth", 
-        "brazilian-paulista-womens-league", "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", "bulgarian-first-league", 
-        "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league", 
+        "b1-league", "b2-league", "bahrain-division-2", "bahrain-premier-league", "basketball-bundesliga", 
+        "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi", "belarusian-first-league", "belgian-challenger-pro-league", 
+        "belgian-pro-league", "belgian-womens-super-league", "benin-ligue-1", "bermuda-premier-league", "bolivian-copa-lfpb", 
+        "brazilian-campeonato-paulista-youth", "brazilian-paulista-womens-league", "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", 
+        "bulgarian-first-league", "bulgarian-vtora-liga", "burkina-faso-division-1", "burundi-premier-league", 
         
         "caf-africa-cup-of-nations", "caf-wc", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", 
         "cfa-womens-super-league", "chi-liga-de-primera", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", 
@@ -192,14 +192,14 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         
         "higher-league", "hunan-football-league", 
         
-        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indo-d4", 
-        "indonesian-championship", "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly", "italian-serie-b", 
-        "italian-serie-c", "italian-womens-serie-a", 
+        "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1", "indian-super-league", "indian-womens-league", 
+        "indo-d4", "indonesian-championship", "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly", 
+        "italian-serie-b", "italian-serie-c", "italian-womens-serie-a", 
         
         "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league", "japanese-football-league", 
         "japanese-j1-league", "japanese-j2-league", "japanese-j3-league", 
         
-        "karnataka-mens-super-division-league-2026-27", "korean-basketball-league", "korean-wk-league", "korean-womens-basketball-league", 
+        "karnataka-mens-super-division-league-2026-27", "korean-basketball-league", "korean-k-league-1", "korean-wk-league", "korean-womens-basketball-league", 
         
         "lebanese-premier-league", "lega-basket-serie-a", "lf-2", "liberia-first-division", "liberian-second-division", 
         "lietuvos-krepsinio-lyga", "liga-espanola-de-baloncesto-oro", "liga-nacional-de-baloncesto-profesional", "liga-nationala-de-baschet-masculin", "liga-nova-kbm", 
@@ -223,7 +223,7 @@ def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
         "qatar-stars-league",
         
         "rmc-grand-finals", "romanian-liga-ii", "romanian-super-liga", "romanian-superliga-feminina", "rotax-grand-finals", 
-        "russian-first-league", "russian-womens-basketball-premier-league", "rwandan-womens-league", 
+        "rus-m-leagu", "russian-first-league", "russian-premier-league", "russian-womens-basketball-premier-league", "rwandan-womens-league", 
         
         "saff-championship", "saint-kitts-nevis-premier-league", "saudi-arabia-division-1", "saudi-professional-league", "scottish-championship", 
         "scottish-league-one", "scottish-league-two", "scottish-womens-premier-league", "segunda-feb", "sierra-leone-premier-league", 
@@ -1146,11 +1146,14 @@ def fetch_and_parse_agenda() -> list[dict]:
         synonyms = {
             "euroleague": "euroliga",
             "national basketball association": "nba",
+            "french ligue 1": "ligue 1",
+            "spanish la liga": "laliga ea sports",
+            "spanish primera division rfef": "espana - primera federacion",
             "uefa women's champions league": "uefa womens champions league",
 
             "ax olimpia milano": "milano",
             "barca basket": "barcelona",
-            "barça": "barcelona",
+            "barca": "barcelona",
             "baskonia": "baskonia",
             "bosnia and herzegovina": "bosnia",
             "crvena zvezda": "red star",
