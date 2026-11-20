@@ -238,6 +238,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
             page.wait_for_load_state("domcontentloaded", timeout=20000)
             page.wait_for_timeout(2500)
             dismiss_consent_banner(page)
+            print(f"   -> URL tras login en sport-tv-guide.live: {page.url}")
 
             still_on_login = "/user/login" in page.url and page.locator("form input[type='password']").count() > 0
             if still_on_login:
@@ -306,6 +307,14 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         return out;
                     }""")
 
+                    debug_info = page.evaluate("""() => ({
+                        url: location.href,
+                        rows: document.querySelectorAll('div.row').length,
+                        imgs: document.querySelectorAll('img').length,
+                        bodyLen: (document.body.innerText || '').trim().length
+                    })""")
+                    print(f"   -> [{sport_label}] Debug página: {debug_info}")
+
                     sport_count = 0
                     for item in raw_items:
                         hora = clean_time(item.get("hora", ""))
@@ -371,7 +380,6 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
     events.sort(key=lambda x: (x["date_iso"], x["hora"], normalize_search_text(x["evento"])))
     return events
-
 
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
