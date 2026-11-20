@@ -321,24 +321,24 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 !el.querySelector('.filterTypes') && !el.querySelector('#hot-scroll')
                             );
                             const candidate = rows.find(el =>
-                                el.querySelector('img[src*="tvm-station"], img[data-src*="tvm-station"]') ||
-                                /\\b\\d{1,2}:\\d{2}\\b/.test(el.innerText || '')
+                                el.querySelector('.col-inline') && /\\b\\d{1,2}:\\d{2}\\s*(?:AM|PM)?\\b/i.test(el.innerText || '')
                             );
-                            if (!candidate) {
-                                return {
-                                    found: false,
-                                    filteredRows: rows.length,
-                                    colInlineCount: document.querySelectorAll('.col-inline').length,
-                                    tvmStationCount: document.querySelectorAll('img[src*="tvm-station"], img[data-src*="tvm-station"]').length
-                                };
-                            }
+                            if (!candidate) return { found: false };
+                            const imgs = Array.from(candidate.querySelectorAll('img')).map(img => ({
+                                title: img.getAttribute('title') || '',
+                                alt: img.getAttribute('alt') || '',
+                                src: img.getAttribute('src') || '',
+                                dataSrc: img.getAttribute('data-src') || '',
+                                parentCls: img.parentElement ? img.parentElement.className : ''
+                            }));
                             return {
                                 found: true,
-                                className: candidate.className,
-                                innerHTML: candidate.innerHTML.slice(0, 1500)
+                                timeRaw: (candidate.querySelector('.main.time b, .main b')?.textContent || '').trim(),
+                                inlineTexts: Array.from(candidate.querySelectorAll('.col-inline > div')).map(d => (d.innerText || d.textContent || '').trim()),
+                                imgs
                             };
                         }""")
-                        print(f"   -> [{sport_label}] Event row sample: {event_sample}")
+                        print(f"   -> [{sport_label}] Event row detail: {event_sample}")
 
                     sport_count = 0
                     for item in raw_items:
