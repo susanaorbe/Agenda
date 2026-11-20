@@ -317,15 +317,17 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
                     if sport_key == "futbol":
                         event_sample = page.evaluate("""() => {
-                            const rows = Array.from(document.querySelectorAll('div.row')).filter(el => !el.querySelector('.filterTypes'));
+                            const rows = Array.from(document.querySelectorAll('div.row')).filter(el =>
+                                !el.querySelector('.filterTypes') && !el.querySelector('#hot-scroll')
+                            );
                             const candidate = rows.find(el =>
-                                el.querySelector('.col-inline') ||
-                                el.querySelector('img[src*="tvm-station"], img[data-src*="tvm-station"]')
+                                el.querySelector('img[src*="tvm-station"], img[data-src*="tvm-station"]') ||
+                                /\\b\\d{1,2}:\\d{2}\\b/.test(el.innerText || '')
                             );
                             if (!candidate) {
                                 return {
                                     found: false,
-                                    nonFilterRows: rows.length,
+                                    filteredRows: rows.length,
                                     colInlineCount: document.querySelectorAll('.col-inline').length,
                                     tvmStationCount: document.querySelectorAll('img[src*="tvm-station"], img[data-src*="tvm-station"]').length
                                 };
