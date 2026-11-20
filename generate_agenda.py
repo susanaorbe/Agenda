@@ -183,6 +183,31 @@ def dismiss_consent_banner(page) -> None:
         pass
 
 
+def _parse_sport_tv_time(raw_time: str) -> str:
+    txt = re.sub(r"\s+", "", str(raw_time or "")).upper()
+    if not txt:
+        return ""
+    m12 = re.match(r"^(\d{1,2}):(\d{2})(AM|PM)$", txt)
+    if m12:
+        hour = int(m12.group(1))
+        minute = int(m12.group(2))
+        period = m12.group(3)
+        if not (1 <= hour <= 12 and 0 <= minute <= 59):
+            return ""
+        if period == "AM":
+            hour = 0 if hour == 12 else hour
+        else:
+            hour = 12 if hour == 12 else hour + 12
+        return f"{hour:02d}:{minute:02d}"
+    m24 = re.match(r"^(\d{1,2}):(\d{2})$", txt)
+    if m24:
+        hour = int(m24.group(1))
+        minute = int(m24.group(2))
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            return f"{hour:02d}:{minute:02d}"
+    return clean_time(raw_time)
+
+
 def fetch_sport_tv_guide_favorite_events() -> list[dict]:
     """Inicia sesión en sport-tv-guide.live y extrae eventos, fecha/hora, competición y canales."""
     username = (os.environ.get("SPORT_TV_GUIDE_USER") or "").strip()
@@ -238,7 +263,6 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
             page.wait_for_load_state("domcontentloaded", timeout=20000)
             page.wait_for_timeout(2500)
             dismiss_consent_banner(page)
-            print(f"   -> URL tras login en sport-tv-guide.live: {page.url}")
 
             still_on_login = "/user/login" in page.url and page.locator("form input[type='password']").count() > 0
             if still_on_login:
@@ -307,42 +331,9 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         return out;
                     }""")
 
-                    debug_info = page.evaluate("""() => ({
-                        url: location.href,
-                        rows: document.querySelectorAll('div.row').length,
-                        imgs: document.querySelectorAll('img').length,
-                        bodyLen: (document.body.innerText || '').trim().length
-                    })""")
-                    print(f"   -> [{sport_label}] Debug página: {debug_info}")
-
-                    if sport_key == "futbol":
-                        event_sample = page.evaluate("""() => {
-                            const rows = Array.from(document.querySelectorAll('div.row')).filter(el =>
-                                !el.querySelector('.filterTypes') && !el.querySelector('#hot-scroll')
-                            );
-                            const candidate = rows.find(el =>
-                                el.querySelector('.col-inline') && /\\b\\d{1,2}:\\d{2}\\s*(?:AM|PM)?\\b/i.test(el.innerText || '')
-                            );
-                            if (!candidate) return { found: false };
-                            const imgs = Array.from(candidate.querySelectorAll('img')).map(img => ({
-                                title: img.getAttribute('title') || '',
-                                alt: img.getAttribute('alt') || '',
-                                src: img.getAttribute('src') || '',
-                                dataSrc: img.getAttribute('data-src') || '',
-                                parentCls: img.parentElement ? img.parentElement.className : ''
-                            }));
-                            return {
-                                found: true,
-                                timeRaw: (candidate.querySelector('.main.time b, .main b')?.textContent || '').trim(),
-                                inlineTexts: Array.from(candidate.querySelectorAll('.col-inline > div')).map(d => (d.innerText || d.textContent || '').trim()),
-                                imgs
-                            };
-                        }""")
-                        print(f"   -> [{sport_label}] Event row detail: {event_sample}")
-
                     sport_count = 0
                     for item in raw_items:
-                        hora = clean_time(item.get("hora", ""))
+                        hora = _parse_sport_tv_time(item.get("hora", ""))
                         evento = re.sub(r"\s+", " ", str(item.get("evento", ""))).strip()
                         competicion = re.sub(r"\s+", " ", str(item.get("competicion", ""))).strip()
                         canales = item.get("canales") or []
@@ -405,6 +396,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
     events.sort(key=lambda x: (x["date_iso"], x["hora"], normalize_search_text(x["evento"])))
     return events
+
 
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
     """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
