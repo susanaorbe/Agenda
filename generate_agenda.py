@@ -2115,7 +2115,7 @@ function linkAgendaChannelsToCdn() {
 
     document.querySelectorAll('.tv-badge').forEach(badge => {
         const textContent = badge.textContent.trim();
-        if (textContent.startsWith('FCTV33')) return;
+        if (textContent.includes('FCTV33')) return;
 
         const row = badge.closest('.event-row');
         if (row && row.getAttribute('data-source') === 'futbolenlatv') {
@@ -2578,7 +2578,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             if ev.get("fctv_url"):
                 fctv_safe_url = escape(ev["fctv_url"], quote=True)
                 tv_badges_list.append(
-                    f'<a href="{fctv_safe_url}" target="_blank" class="tv-badge channel-chip-link" title="Ver en FCTV33">▶ FCTV33</a>'
+                    f'<a href="{fctv_safe_url}" target="_blank" class="channel-action" title="Ver en FCTV33">▶ FCTV33</a>'
                 )
 
             tv_badges = "".join(tv_badges_list)
