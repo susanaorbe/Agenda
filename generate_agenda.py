@@ -1464,11 +1464,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         tr.event-row.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
         tr.event-row.previous-event .event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
 
-        .stg-event-card { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; flex-wrap: wrap; }
+        .stg-event-card { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; }
         .stg-event-card.previous-event { background: rgba(56, 189, 248, 0.075); border-color: rgba(56, 189, 248, 0.42); border-left: 3px solid #38bdf8; }
         .stg-event-card.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
         .stg-event-title::before { content: none; }
         .stg-event-card.previous-event .stg-event-title::before { content: "EN JUEGO"; display: block; color: #38bdf8; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.65px; margin-bottom: 4px; }
+        .stg-channels-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-start; align-items: center; width: 100%; }
 
         .sport-col { width: 155px !important; min-width: 155px !important; white-space: nowrap; }
         .time-col, .date-col { white-space: nowrap; }
@@ -2377,7 +2378,7 @@ function renderSportTvGuideEventsView() {
                             ${ev.competicion ? `<span style="color: var(--text-muted); font-size: 0.8rem;">(${ev.competicion})</span>` : ''}
                             <strong class="stg-event-title" style="color: #fff; font-size: 0.9rem;">${ev.evento}</strong>
                         </div>
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                        <div class="stg-channels-row">
                             ${channelButtons}
                         </div>
                     </div>
