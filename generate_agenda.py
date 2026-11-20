@@ -316,23 +316,20 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     print(f"   -> [{sport_label}] Debug página: {debug_info}")
 
                     if sport_key == "futbol":
-                        sample_debug = page.evaluate("""() => {
+                        event_sample = page.evaluate("""() => {
                             const rows = Array.from(document.querySelectorAll('div.row'));
-                            return rows.slice(0, 3).map(el => ({
-                                className: el.className,
-                                timeText: (el.querySelector('.main.time b, .main b')?.textContent || '').trim(),
-                                inlineColsCount: el.querySelectorAll('.col-inline > div').length,
-                                inlineColsText: Array.from(el.querySelectorAll('.col-inline > div')).map(d => (d.textContent || '').trim().slice(0, 60)),
-                                imgs: Array.from(el.querySelectorAll('img')).map(img => ({
-                                    cls: img.className,
-                                    title: img.getAttribute('title') || '',
-                                    alt: img.getAttribute('alt') || '',
-                                    src: img.getAttribute('src') || '',
-                                    dataSrc: img.getAttribute('data-src') || ''
-                                }))
-                            }));
+                            const candidate = rows.find(el =>
+                                el.querySelector('img[src*="tvm-station"], img[data-src*="tvm-station"]') ||
+                                /\\b\\d{1,2}:\\d{2}\\b/.test(el.innerText || '')
+                            );
+                            if (!candidate) return { found: false, totalRows: rows.length };
+                            return {
+                                found: true,
+                                className: candidate.className,
+                                innerHTML: candidate.innerHTML.slice(0, 1200)
+                            };
                         }""")
-                        print(f"   -> [{sport_label}] Sample rows: {sample_debug}")
+                        print(f"   -> [{sport_label}] Event row sample: {event_sample}")
 
                     sport_count = 0
                     for item in raw_items:
