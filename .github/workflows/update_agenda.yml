@@ -52,10 +52,14 @@ jobs:
             echo "Navegador Playwright ya encontrado en caché. Omitiendo instalación."
           else
             echo "Navegador no encontrado o caché vacía. Instalando Chromium..."
-            playwright install chromium
+            playwright install chromium --with-deps
           fi
 
       - name: Ejecutar script de actualización
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: /home/runner/.cache/ms-playwright
+          SPORT_TV_GUIDE_USER: ${{ secrets.SPORT_TV_GUIDE_USER }}
+          SPORT_TV_GUIDE_PASS: ${{ secrets.SPORT_TV_GUIDE_PASS }}
         run: |
           python generate_agenda.py
 
