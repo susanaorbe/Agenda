@@ -505,6 +505,8 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "ETHIOPIA PREMIER LEAGUE",
         "FA WSL (F)",
         "FIFA U17 WORLD CUP",
+        "FIFA MUNDIAL SUB-17",
+        "FIFA MUNDIAL SUB 17",
         "FRENCH LIGUE 2",
         "GER JBH",
         "GERMAN 3 LIGA",
@@ -569,6 +571,38 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "SLOVENIA 1 LIGA",
         "SWEDEN ALLSVENSKAN",
         "SWITZERLAND NLB",
+        "ADMIRALBET ABA LEAGUE",
+        "ARGENTINE DIVISION 1",
+        "ARGENTINE GROUP B TEBOLIDUN LEAGUE MANCHESTER",
+        "AUSTRIA B BASKETBALL LEAGUE",
+        "AUSTRIAN BUNDESLIGA",
+        "BASKETBALL BUNDESLIGA",
+        "BBL",
+        "EREDIVISIE",
+        "FIRST DIVISION",
+        "FRENCH DIVISION 1 FEMININE",
+        "GREEK BASKET LEAGUE",
+        "GREEK SUPER LEAGUE",
+        "JUPILER PRO LEAGUE",
+        "LEGA BASKET SERIE A",
+        "LF 2",
+        "LIGA ESPANOLA DE BALONCESTO ORO",
+        "LIGA FEMENINA CHALLENGE",
+        "FEMININA DE BASQUETEBOL",
+        "LIGAT HAAL",
+        "LIGUE NATIONALE DE BASKET PRO A",
+        "MALI PREMIERE DIVISION",
+        "NETHERLANDS EREDIVISIE",
+        "NIGER PREMIER LEAGUE",
+        "PORTUGAL LIGA DE BASQUETEBOL",
+        "SCOTTISH LEAGUE ONE",
+        "SCOTTISH PREMIERSHIP",
+        "SEGUNDA FEB",
+        "SWITZERLAND SUPER LEAGUE",
+        "SWISS BASKETBALL LEAGUE",
+        "SUPERLIGA FEMENINA",
+        "ZENSKA BASKETBALOVA LIGA",
+        "CUP U17",
     ]
 }
 
@@ -591,6 +625,8 @@ EXCLUDED_EVENT_SUBSTRINGS = {
         "FIA FR WORLD CUP – QUALIFICATION RACE",
         "FIA FR WORLD CUP - QUALIFICATION RACE",
         "FIA FR WORLD CUP QUALIFYING RACE",
+        "SUB 17 CAMP. NACIONAL 1.ª DIVISÃO",
+        "SUB 17 CAMP. NACIONAL 1.a DIVISÃO",
     ]
 }
 
@@ -648,9 +684,11 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "euroliga": "Euroliga",
     "euroleague": "Euroliga",
     "euro league": "Euroliga",
-    "liga endesa": "Liga Endesa",
-    "acb": "Liga Endesa",
-    "liga endesa / acb": "Liga Endesa",
+    "liga endesa": "Liga Endesa / ACB",
+    "acb": "Liga Endesa / ACB",
+    "liga endesa / acb": "Liga Endesa / ACB",
+    "liga asociacion de clubs de baloncesto": "Liga Endesa / ACB",
+    "liga asociacion de clubes de baloncesto": "Liga Endesa / ACB",
     "copa acb": "Copa ACB",
     "supercopa endesa": "Supercopa Endesa",
     # Tenis
@@ -1114,7 +1152,7 @@ EXCLUDED_CHANNELS = {
     "rfef.es", "rtve play", "sefutbol youtube", "sevilla fc +",
     "siroko tv", "tv 3", "tv footballclub(acceder)", "tv footballclub", "tv canaria",
     "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tv footballclub ▾",
-    "tvg", "tv5monde", "uefa tv", "uefa youtube",
+    "tv melilla", "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
     "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
@@ -1394,7 +1432,12 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     competition_terms = (
         "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "portugal", "portuguesa"
+        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "portugal", "portuguesa",
+        "mundial", "fifa", "uefa", "eurocopa", "nations league"
+    )
+    stage_lines_re = re.compile(
+        r"^(?:fase\s+de\s+grupos|octavos\s+de\s+final|cuartos\s+de\s+final|semifinales?|final|tercer\s+(?:y\s+cuarto\s+)?puesto|play[-\s]?offs?|jornada(?:\s+\d+)?|ronda(?:\s+\d+)?|ida|vuelta)$",
+        re.IGNORECASE,
     )
 
     for part in raw_parts:
@@ -1481,6 +1524,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     matchup_candidates = []
     for part in text_lines:
         part_lower = normalize_search_text(part)
+        if stage_lines_re.fullmatch(part_lower):
+            continue
         is_competition_line = any(term in part_lower for term in competition_terms)
         has_match_separator = bool(
             re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
@@ -1658,6 +1703,10 @@ def fetch_and_parse_agenda() -> list[dict]:
             "la liga ea sports": "laliga ea sports",
             "english premier league": "premier league",
             "italian serie a": "serie a",
+            "liga asociacion de clubs de baloncesto": "liga endesa acb",
+            "liga asociacion de clubes de baloncesto": "liga endesa acb",
+            "liga endesa / acb": "liga endesa acb",
+            "liga endesa": "liga endesa acb",
             "spanish primera division de la liga de futbol femenino": "liga f",
             "spanish primera division rfef": "espana - primera federacion",
             "uefa women's champions league": "uefa womens champions league",
