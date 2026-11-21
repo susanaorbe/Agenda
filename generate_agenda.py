@@ -650,6 +650,32 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "UNITED STATES WOMENS PREMIER LEAGUE",
         "VENEZUELA SEGUNDA DIVISION",
         "NHL",
+        "ALBANIAN DIVISION 1",
+        "BRAZILIAN CAMPEONATO PAULISTA YOUTH",
+        "BRAZILIAN SERIE B",
+        "BURKINA FASO DIVISION 1",
+        "COSTA RICA 2 LIGA",
+        "CZECH CHANCE LIGA",
+        "DANISH SUPERLIGA",
+        "DIVISIÓN HONOR INFANTIL",
+        "DIVISIÓN HONOR JUVENIL",
+        "GERMAN WOMENS BUNDESLIGA II",
+        "JAMAICA PREMIER LEAGUE",
+        "JORNADA 8 BALONCESTO",
+        "LIGA U",
+        "LITHUANIAN I LYGA",
+        "PARAGUAYAN PRIMERA DIVISION",
+        "PORTUGAL CAMPEONATO NACIONAL FEMININO",
+        "PRIMERA DIVISIÓN ARGENTINA",
+        "SERIE A2 BASKET",
+        "SIERRA LEONE PREMIER LEAGUE",
+        "SLOVAK NIKE LIGA",
+        "SWEDEN DAMALLSVENSKAN",
+        "SWITZERLAND DIVISON 2 LEAGUE",
+        "SWITZERLAND DIVISION 2 LEAGUE",
+        "TC 2000",
+        "UNITED STATES WOMENS NATIONAL SOCCER LEAGUE",
+        "ZANZIBAR PREMIER LEAGUE",
     ]
 }
 
@@ -1233,6 +1259,8 @@ def is_excluded_channel(channel: str) -> bool:
     key = channel_exclusion_key(channel)
     if not key:
         return True
+    if "movistargolf" in key:
+        return True
     return key in EXCLUDED_CHANNEL_KEYS
 
 
@@ -1249,7 +1277,7 @@ EXCLUDED_SPORTS_RE = rx(
     r" hockey ", r" nhl ", r" ahl ", r" khl ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
     r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
     r" ehf ", r" ihf ", r"\bfutsal\b", r"\bfutbol\s+sala\b", r"\bfs\b", r" golf ", r" beisbol ",
-    r" padel ", r" padell "
+    r" padel ", r" padell ", r"\bgolf\b", r"\blpga\b", r"\bpga\s+tour\b", r"\bdp\s+world\s+tour\b"
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
@@ -1298,7 +1326,7 @@ JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galic
 EVENT_CLEANUP_TRAIL_RE = re.compile(r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$", re.IGNORECASE)
 
 TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
-GOLF_RE = rx(r" golf ")
+GOLF_RE = rx(r"\bgolf\b", r"\blpga\b", r"\bpga\s+tour\b", r"\bdp\s+world\s+tour\b")
 NBA_RE = rx(r" nba ")
 EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
 BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
@@ -1670,8 +1698,8 @@ def fetch_and_parse_agenda() -> list[dict]:
             if not time_clean or not channels:
                 continue
 
-            tv_blob = " ".join(channels).lower()
-            blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
+            tv_blob = " " + " ".join(channels).lower() + " "
+            blob = " " + normalize_search_text(" ".join(text_lines) + " " + tournament + " " + tv_blob) + " "
 
             comp_name, motor_event_title, is_motor_fav = parse_motor_event(blob, tournament, text_lines)
             sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
