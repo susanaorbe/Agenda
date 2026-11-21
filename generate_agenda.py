@@ -447,6 +447,17 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
     return events
 
 
+def normalize_search_text(text: str) -> str:
+    value = str(text or "").lower().replace("\u00a0", " ").replace("\u200b", "").replace("\ufeff", "")
+    value = (
+        value.replace("á", "a").replace("é", "e").replace("í", "i")
+        .replace("ó", "o").replace("ú", "u").replace("ç", "c")
+        .replace("ñ", "n").replace("º", "ª")
+    )
+    value = re.sub(r"[|,;:/]+", " ", value)
+    return re.sub(r"\s+", " ", value).strip()
+
+
 EXCLUDED_COMPETITIONS_EXACT = {
     normalize_search_text(c) for c in [
         "FORMULA 4",
@@ -929,15 +940,7 @@ def get_time_slot(time_str: str) -> str:
         return "noche"
 
 
-def normalize_search_text(text: str) -> str:
-    value = str(text or "").lower().replace("\u00a0", " ").replace("\u200b", "").replace("\ufeff", "")
-    value = (
-        value.replace("á", "a").replace("é", "e").replace("í", "i")
-        .replace("ó", "o").replace("ú", "u").replace("ç", "c")
-        .replace("ñ", "n").replace("º", "ª")
-    )
-    value = re.sub(r"[|,;:/]+", " ", value)
-    return re.sub(r"\s+", " ", value).strip()
+
 
 
 def clean_time(time_str: str) -> str:
