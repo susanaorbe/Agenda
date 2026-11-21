@@ -380,12 +380,16 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         ]
 
                         comp_norm = normalize_search_text(competicion)
+                        event_norm = normalize_search_text(evento)
+                        norm_all = normalize_search_text(f"{evento} {competicion}")
+                        excluded_cdn_event_terms_norm = {
+                            normalize_search_text(sub) for sub in excluded_cdn_exact_event_substrings
+                        }
+
                         if comp_norm in excluded_cdn_competitions_norm:
                             continue
-                        if any(sub in evento for sub in excluded_cdn_exact_event_substrings):
+                        if any(term in event_norm for term in excluded_cdn_event_terms_norm):
                             continue
-
-                        norm_all = normalize_search_text(f"{evento} {competicion}")
                         if any(term in norm_all for term in ["f1 academy", "premier padel", "padel"]):
                             continue
 
