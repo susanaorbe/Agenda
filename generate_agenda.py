@@ -341,6 +341,50 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         if not hora or not evento or not canales:
                             continue
 
+                        excluded_cdn_competitions_norm = {
+                            normalize_search_text(c) for c in [
+                                "FORMULA 4",
+                                "MOTORSPORT: FR WORLD CUP",
+                                "FERRARI CHALLENGE EUROPE",
+                                "2. BUNDESLIGA",
+                                "CHAMPIONSHIP",
+                                "FA WSL (F)",
+                                "LIGUE 2",
+                                "SUPER LIG",
+                                "BUNDESLIGA (F)",
+                                "BBL",
+                                "A-LEAGUE",
+                                "FREE PRACTICE 2 AND QUALIFYING",
+                                "LIGA 2",
+                                "TAÇA DE PORTUGAL",
+                                "PRIMERA DIVISION",
+                                "NINJA A-LEAGUE",
+                            ]
+                        }
+                        excluded_cdn_exact_event_substrings = [
+                            "F1 ACADÉMIE",
+                            "FIA GT CAMP. MUNDO",
+                            "FIA FR CAMP. MUNDO",
+                            "WARM UP",
+                            "MOTO3",
+                            "MOTO2",
+                            "GT CAMP. MUNDO",
+                            "FIA GT WORLD CUP",
+                            "FR CAMP. MUNDO",
+                            "FIA FR WORLD CUP",
+                            "MOTO2 AND MOTO3",
+                            "TREINOS LIVRES 2",
+                            "PREVIO LIBRES 3",
+                            "LIBRES 3",
+                            "PREVIO CLASIFICACIÓN",
+                        ]
+
+                        comp_norm = normalize_search_text(competicion)
+                        if comp_norm in excluded_cdn_competitions_norm:
+                            continue
+                        if any(sub in evento for sub in excluded_cdn_exact_event_substrings):
+                            continue
+
                         norm_all = normalize_search_text(f"{evento} {competicion}")
                         if any(term in norm_all for term in ["f1 academy", "premier padel", "padel"]):
                             continue
