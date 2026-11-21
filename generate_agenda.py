@@ -500,102 +500,25 @@ EXCLUDED_EVENT_SUBSTRINGS = {
     ]
 }
 
+UNIFIED_EXCLUDED_TERMS_NORM = EXCLUDED_EVENT_SUBSTRINGS | {
+    normalize_search_text(t) for t in ["f1 academy", "premier padel", "padel"]
+}
+
+
 def is_globally_excluded_event(competicion: str, evento: str) -> bool:
     comp_norm = normalize_search_text(competicion)
     event_norm = normalize_search_text(evento)
+    norm_all = normalize_search_text(f"{evento} {competicion}")
     if comp_norm in EXCLUDED_COMPETITIONS_EXACT:
         return True
-    if any(term in event_norm for term in EXCLUDED_EVENT_SUBSTRINGS):
+    if any(term in event_norm or term in norm_all for term in UNIFIED_EXCLUDED_TERMS_NORM):
         return True
     return False
 
 
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
-    """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
-    allowed_sports = {"football", "basketball", "tennis", "motorsport"}
-    if sport_key not in allowed_sports:
-        return False
-
-    path_lower = parsed_url_path.lower()
-    excluded_url_patterns = [
-        "/american-football/", "/aussie-rules/", "/badminton/", "/baseball/", "/cricket/",
-        "/cycling/", "/fighting/", "/handball/", "/hockey/", "/others/",
-        "/rugby/", "/volleyball/", "2026-fiba-3x3-americup", "3x3basketball", "admiralbet-aba-league",
-        "adriatic-basketball-d2", "afc-awards-2026", "afc-beach-soccer-2026", "afc-u17-asian-cup", "albanian-cup",
-        "albanian-super-league", "alms-cup", "andorran-primera-divisio", "andorran-second-division", "antigua-barbuda-premier-division",
-        "arg-primera-nacional", "argentina-supercopa", "argentine-division-1", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester",
-        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "armenian-premier-league",
-        "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series",
-        "associao-portuguesa-de-sim-racing", "atp-challenger-champaign--usa-men-double", "atp-challenger-helsinki--finland-men-double", "atp-challenger-helsinki--finland-men-singles", "atp-challenger-orleans",
-        "aus-champ", "australia-a-league", "australia-w-league", "australian-superbike-championship", "austria-b-basketball-league",
-        "austrian-2-liga", "austrian-3-liga", "austrian-basketball-superliga", "austrian-bundesliga", "auto-racing",
-        "azerbaijan-first-division", "azerbaijan-premier-league", "b1-league", "b2-league", "bahrain-division-2",
-        "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi",
-        "belarusian-first-league", "belgian-challenger-pro-league", "belgian-pro-league", "belgian-womens-super-league", "benin-ligue-1",
-        "bermuda-premier-league", "bolivian-copa-lfpb", "bosnia-and-herzegovina-premier-league", "brazilian-campeonato-paulista-youth", "brazilian-paulista-womens-league",
-        "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", "bulgarian-first-league", "bulgarian-vtora-liga",
-        "burkina-faso-division-1", "burundi-premier-league", "caf-africa-cup-of-nations", "caf-wc", "cambodian-premier-league",
-        "canadian-premier-league", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", "cfa-womens-super-league",
-        "chi-liga-de-primera", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", "china-womens-basketball-association",
-        "chinese-fa-cup", "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor",
-        "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "congo-premier-league", "conmebol-copa-sudamericana", "copa-argentina",
-        "copa-espaa-feb-2026-27", "copa-intercontinental", "costa-rica-2-liga", "croatian-cup", "croatian-football-league",
-        "cypriot-2nd-division", "cypriot-first-division", "czech-chance-liga", "czech-cup", "czech-third-league",
-        "czech-womens-liga1", "danish-1st-division", "danish-superliga", "danish-womens-divison-1", "division-1-feminin",
-        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20",
-        "english-conference-south-division", "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-championship", "english-football-league-one",
-        "english-football-league-trophy", "english-football-league-two", "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league",
-        "english-southern-football-league", "english-southern-league-central-division", "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopia-premier-league",
-        "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", "europe-womens-challenge-basketball", "f1-academy",
-        "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fia-f4-world-cup", "fia-tcr-world-tour",
-        "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", "fifa-u17-world-cup",
-        "french-division-1-feminine", "french-ligue-2", "french-ligue-3", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off",
-        "georgia-erovnuli-liga", "ger-jbh", "german-3-liga", "german-bundesliga-2", "german-frauen-bundesliga",
-        "grand-prix-de-duba", "greek-basket-league", "greek-womens-super-league", "higher-league", "honduras-primera-division",
-        "hunan-football-league", "hungary-fizz-liga", "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1",
-        "indian-super-league", "indian-womens-league", "indo-d4", "indonesia-womens-league-26-27", "indonesian-championship",
-        "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly", "italian-serie-b", "italian-serie-c",
-        "italian-womens-serie-a", "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league",
-        "japanese-football-league", "japanese-j1-league", "japanese-j2-league", "japanese-j3-league", "karnataka-mens-super-division-league-2026-27",
-        "kenya-womens-football", "korean-basketball-league", "korean-k-league-1", "korean-k-league-2", "korean-wk-league",
-        "korean-womens-basketball-league", "lebanese-premier-league", "lega-basket-serie-a", "lf-2", "liberia-first-division",
-        "liberian-second-division", "libyan-premier-league", "lietuvos-krepsinio-lyga", "liga-espanola-de-baloncesto-oro", "liga-femenina-challenge",
-        "liga-feminina-de-basquetebol", "liga-nacional-de-baloncesto-profesional", "liga-nacional-de-futsal-cresol", "liga-nationala-de-baschet-masculin", "liga-nova-kbm",
-        "liga-nusantara-2026-27", "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal",
-        "ligue-2-bkt---13e-journe", "ligue-nationale-de-basket-pro-a", "ligue-nationale-de-basket-pro-b", "lithuania-cup", "lithuanian-i-lyga",
-        "live-u18s-26-27", "macau-grand-prix", "malawi-premier-league", "malaysian-super-league", "mali-premiere-division",
-        "malta-first-division-league", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil",
-        "moldovan-super-liga", "mongolia-premier-league", "mozzart-serbian-cup", "narodni-basketbalova-liga", "nascar-local-racing-series",
-        "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen",
-        "netherlands-tweede-divisie", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "nexzter-bric-superbike-2026-round-4",
-        "nhra-drag-racing", "nicaragua-liga-primera", "niger-national-league", "niger-premier-league", "oman-tamkeen-league",
-        "panda-cup", "paraguayan-cup", "paraguayan-primera-division", "perseden-denpasar", "peruvian-liga-1",
-        "philippine-basketball-governors-cup", "philippines-mpbl", "philippines-university-athletic-association", "pko-bank-polski-ekstraklasa", "poland-liga-1",
-        "poland-liga-2", "poland-womens-ekstraliga", "portugal-campeonato-nacional-feminino", "portugal-liga-de-basquetebol", "portuguese-cup",
-        "portuguese-u23-league", "premier-padel", "pro-padel-league", "putra-sang-fajar-fc", "qatar-stars-league",
-        "rmc-grand-finals", "romanian-liga-ii", "romanian-super-liga", "romanian-superliga-feminina", "rotax-grand-finals",
-        "rus-m-leagu", "russian-first-league", "russian-premier-league", "russian-womens-basketball-premier-league", "rwandan-womens-league",
-        "s-r-c", "saff-championship", "saint-kitts-nevis-premier-league", "san-marino-campionato-di-calcio", "sand2",
-        "saudi-arabia-division-1", "saudi-professional-league", "scottish-championship", "scottish-league-one", "scottish-league-two",
-        "scottish-premiership", "scottish-womens-premier-league", "segunda-feb", "serbian-mozzart-bet-superliga", "sierra-leone-premier-league",
-        "singapore-premier-league", "slovak-2-liga", "slovak-nike-liga", "slovak-womens-basketball-extraliga", "slovenia-1-liga",
-        "slovenia-2-liga", "slovenia-basketball-cup", "slovenia-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division",
-        "spanish-segunda-division-rfef", "spanish-tercera-division", "supercross-de-paris", "superettan-basket", "suriname-major-league",
-        "svenska-basketligan", "sweden-allsvenskan", "sweden-damallsvenskan", "swiss-basketball-league", "switzerland-challenge-league",
-        "switzerland-nlb", "switzerland-super-league", "syc-pr", "thai-kings-cup", "thai-league-1",
-        "thai-league-2", "thai-league-3", "the-f1-show-2026", "turkey-basketball-league-2", "turkish-first-league",
-        "turkish-super-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship",
-        "uefa-european-u21-championship-qualification", "uganda-premier-league", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league",
-        "ukrainian-premier-league", "ukrainian-second-league", "ukrainian-u19-liga", "united-arab-emirates-adib-cup", "united-arab-emirates-adnoc-pro-league",
-        "united-arab-emirates-division-1-group-a", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uruguay-cup", "usac-racing",
-        "usl-championship", "uzbekistan-super-league", "venezuela-primera-division", "venezuela-segunda-division", "vietnam-national-champion-league",
-        "vietnam-national-first-class-league", "vtb-united-league", "vtl-2027", "women-empowerment-league", "zambia-super-league",
-        "zenska-basketbalova-liga"
-    ]
-    for pat in excluded_url_patterns:
-        if pat in path_lower:
-            return False
-    return True
+    """Permite los 4 deportes de la agenda (Fútbol, Baloncesto, Tenis y Motor) sin criba previa por competición."""
+    return sport_key in {"football", "basketball", "tennis", "motorsport"}
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
@@ -653,6 +576,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 return links;
             }""")
 
+            non_target_cat_tokens = (
+                "american-football", "aussie-rules", "badminton", "baseball", "cricket",
+                "cycling", "fighting", "handball", "hockey", "others", "rugby", "volleyball", "padel"
+            )
             valid_categories = set()
             for link in category_links:
                 if link.startswith("mailto:") or "javascript:" in link or "taplink" in link:
@@ -660,6 +587,9 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 parsed_l = urlparse(link)
                 path_l = parsed_l.path.strip("/")
                 if path_l and "." in path_l and not path_l.endswith(".html"):
+                    continue
+                path_low = path_l.lower()
+                if any(tok in path_low for tok in non_target_cat_tokens):
                     continue
                 if path_l and path_l not in valid_categories:
                     valid_categories.add(path_l)
@@ -1396,86 +1326,71 @@ def fetch_and_parse_agenda() -> list[dict]:
             tv_blob = " ".join(channels).lower()
             blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-            comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
-            if comp_name:
-                event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
-                if event_key in seen_events:
-                    continue
-                seen_events.add(event_key)
-
-                if is_globally_excluded_event(comp_name, motor_event_title):
-                    continue
-                futbolenlatv_results.append({
-                    "date_obj": current_date_obj,
-                    "hora": time_clean,
-                    "deporte": "MOTOR",
-                    "icono": "🏆",
-                    "competicion": comp_name.upper(),
-                    "evento": motor_event_title.upper(),
-                    "tv_list": channels,
-                    "fctv_url": "",
-                    "is_filtered": is_fav,
-                    "is_configured": True,
-                    "comp_key": "motor",
-                    "source": "futbolenlatv"
-                })
-                continue
-
+            comp_name, motor_event_title, is_motor_fav = parse_motor_event(blob, tournament, text_lines)
             sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
                 blob, tournament, tv_blob, text_lines
             )
 
-            is_movistar_plus_channel = any(normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"} for ch in channels)
-            if not sport and is_movistar_plus_channel:
-                sport = "Otros"
-                icon = "📺"
-                competition = tournament if tournament else "Movistar Plus+"
-                is_favorite = True
-                is_configured = True
-                comp_key = "other_movistar"
+            in_four_sports = bool(comp_name or sport)
+            if not in_four_sports:
+                if TENNIS_EVENT_RE.search(blob):
+                    sport, icon, comp_key = "Tenis", "🎾", "tenis"
+                    in_four_sports = True
+                elif BASKET_CONTEXT_RE.search(blob) or NBA_RE.search(blob) or EUROLIGA_RE.search(blob):
+                    sport, icon, comp_key = "Baloncesto", "🏀", "baloncesto"
+                    in_four_sports = True
+                else:
+                    if not EXCLUDED_SPORTS_RE.search(blob) and not GOLF_RE.search(blob):
+                        sport, icon, comp_key = "Fútbol", "⚽", "futbol"
+                        in_four_sports = True
 
-            if not sport:
+            if not in_four_sports:
                 continue
 
-            normalized_competition = normalize_search_text(competition)
-            if (
-                not is_movistar_plus_channel and (
-                    normalized_competition == "brasil serie a"
-                    or ("brasil" in normalized_competition and "serie a" in normalized_competition)
-                )
-            ):
-                continue
-
-            final_event = custom_event if custom_event else event_str
-            if competition:
-                comp_clean_pattern = re.compile(re.escape(competition), re.IGNORECASE)
-                final_event = comp_clean_pattern.sub("", final_event)
-
-            final_event = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", final_event).strip()
-            final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
+            if comp_name:
+                final_sport = "MOTOR"
+                final_icon = "🏆"
+                final_comp = comp_name.upper()
+                final_event = motor_event_title.upper()
+                final_fav = bool(is_motor_fav or is_favorite)
+                final_comp_key = "motor"
+            else:
+                final_sport = sport.upper()
+                final_icon = icon
+                raw_comp = competition if competition else (tournament if tournament else sport)
+                final_comp = raw_comp.upper()
+                raw_ev = custom_event if custom_event else event_str
+                if raw_comp:
+                    raw_ev = re.compile(re.escape(raw_comp), re.IGNORECASE).sub("", raw_ev)
+                raw_ev = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", raw_ev).strip()
+                raw_ev = EVENT_CLEANUP_TRAIL_RE.sub("", raw_ev).strip()
+                final_event = raw_ev.upper()
+                final_fav = bool(is_favorite)
+                final_comp_key = comp_key
 
             if not EVENT_TEXT_RE.search(final_event):
                 continue
 
-            event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+            if is_globally_excluded_event(final_comp, final_event):
+                continue
+
+            event_key = (current_date_obj, time_clean, normalize_search_text(final_comp), normalize_search_text(final_event))
             if event_key in seen_events:
                 continue
             seen_events.add(event_key)
 
-            if is_globally_excluded_event(competition, final_event):
-                continue
             futbolenlatv_results.append({
                 "date_obj": current_date_obj,
                 "hora": time_clean,
-                "deporte": sport.upper(),
-                "icono": icon,
-                "competicion": competition.upper(),
-                "evento": final_event.upper(),
+                "deporte": final_sport,
+                "icono": final_icon,
+                "competicion": final_comp,
+                "evento": final_event,
                 "tv_list": channels,
                 "fctv_url": "",
-                "is_filtered": is_favorite,
-                "is_configured": is_configured,
-                "comp_key": comp_key,
+                "is_filtered": final_fav,
+                "is_configured": True,
+                "comp_key": final_comp_key,
                 "source": "futbolenlatv"
             })
 
@@ -2008,24 +1923,14 @@ function setFilter(filterType) {
             chkCdnlive.parentElement.style.cursor = 'not-allowed';
         }
     } else {
-        if (chkFutbolenlatv) {
-            chkFutbolenlatv.checked = false;
-            chkFutbolenlatv.disabled = false;
-            chkFutbolenlatv.parentElement.style.opacity = '1';
-            chkFutbolenlatv.parentElement.style.cursor = 'pointer';
-        }
-        if (chkFctv) {
-            chkFctv.checked = true;
-            chkFctv.disabled = false;
-            chkFctv.parentElement.style.opacity = '1';
-            chkFctv.parentElement.style.cursor = 'pointer';
-        }
-        if (chkCdnlive) {
-            chkCdnlive.checked = true;
-            chkCdnlive.disabled = false;
-            chkCdnlive.parentElement.style.opacity = '1';
-            chkCdnlive.parentElement.style.cursor = 'pointer';
-        }
+        [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
+            if (chk) {
+                chk.checked = true;
+                chk.disabled = false;
+                chk.parentElement.style.opacity = '1';
+                chk.parentElement.style.cursor = 'pointer';
+            }
+        });
     }
 
     applyFilters();
@@ -2044,13 +1949,7 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
-        const checkedSources = new Set();
-        if (currentFilter === 'favoritos') {
-            checkedSources.add('fctv33');
-            checkedSources.add('cdnlive');
-        } else {
-            document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
-        }
+        const checkedSources = new Set(['futbolenlatv', 'fctv33', 'cdnlive']);
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
@@ -2843,13 +2742,8 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             is_filtered_str = str(ev["is_filtered"]).lower()
             is_configured_str = str(ev["is_configured"]).lower()
 
-            is_fctv_event = bool(ev.get("fctv_url"))
-            favorite_pin_html = (
-                '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
-                if ev["is_filtered"] and not is_fctv_event else ""
-            )
             comp_html = (
-                f'<span class="comp-meta">({favorite_pin_html}{safe_competition})</span>'
+                f'<span class="comp-meta">({safe_competition})</span>'
                 if safe_competition else ""
             )
 
