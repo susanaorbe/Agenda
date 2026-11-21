@@ -335,7 +335,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
                         evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
-                        competicion = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("competicion", ""))).strip()
+                        competicion = canonical_competition_name(item.get("competicion", ""))
                         canales = item.get("canales") or []
 
                         if not hora or not evento or not canales:
@@ -407,52 +407,135 @@ def normalize_search_text(text: str) -> str:
 
 EXCLUDED_COMPETITIONS_EXACT = {
     normalize_search_text(c) for c in [
+        "NCAA",
+        "BWF HONG KONG OPEN",
+        "AFLW",
+        "NCAA WOMEN",
         "FORMULA 4",
-        "MOTORSPORT: FR WORLD CUP",
-        "FERRARI CHALLENGE EUROPE",
-        "2. BUNDESLIGA",
-        "CHAMPIONSHIP",
-        "FA WSL (F)",
-        "LIGUE 2",
-        "SUPER LIG",
-        "BUNDESLIGA (F)",
-        "BBL",
         "A-LEAGUE",
-        "FREE PRACTICE 2 AND QUALIFYING",
-        "LIGA 2",
-        "TAÇA DE PORTUGAL",
-        "PRIMERA DIVISION",
+        "PRO PADEL LEAGUE",
+        "JAPANESE J3 LEAGUE",
         "NINJA A-LEAGUE",
     ]
 }
 
 EXCLUDED_EVENT_SUBSTRINGS = {
     normalize_search_text(sub) for sub in [
-        "F1 ACADÉMIE",
-        "FIA GT CAMP. MUNDO",
-        "FIA FR CAMP. MUNDO",
-        "WARM UP",
-        "MOTO3",
-        "MOTO2",
-        "GT CAMP. MUNDO",
-        "FIA GT WORLD CUP",
-        "FR CAMP. MUNDO",
-        "FIA FR WORLD CUP",
-        "MOTO2 AND MOTO3",
-        "TREINOS LIVRES 2",
-        "PREVIO LIBRES 3",
-        "LIBRES 3",
-        "PREVIO CLASIFICACIÓN",
-        "PREVIO CARRERA",
+        "UWC 60",
     ]
 }
 
+COMPETITION_SYNONYMS: dict[str, str] = {
+    # Fútbol
+    "laliga": "LaLiga EA Sports",
+    "laliga ea sports": "LaLiga EA Sports",
+    "liga ea sports": "LaLiga EA Sports",
+    "liga ea": "LaLiga EA Sports",
+    "primera division": "LaLiga EA Sports",
+    "espana - la liga": "LaLiga EA Sports",
+    "spanish la liga": "LaLiga EA Sports",
+    "laliga hypermotion": "LaLiga Hypermotion",
+    "segunda division": "LaLiga Hypermotion",
+    "hypermotion": "LaLiga Hypermotion",
+    "liga f": "Liga F",
+    "primera division femenina": "Liga F",
+    "spanish primera division de la liga de futbol femenino": "Liga F",
+    "uefa champions league": "UEFA Champions League",
+    "champions league": "UEFA Champions League",
+    "champions": "UEFA Champions League",
+    "women's champions league": "UEFA Women's Champions League",
+    "uefa women's champions league": "UEFA Women's Champions League",
+    "champions league femenina": "UEFA Women's Champions League",
+    "copa del rey": "Copa del Rey",
+    "copa de la reina": "Copa de la Reina",
+    "premier league": "Premier League",
+    "premier": "Premier League",
+    "inglaterra - premier league": "Premier League",
+    "serie a": "Serie A",
+    "bundesliga": "Bundesliga",
+    "alemania - bundesliga": "Bundesliga",
+    "ligue 1": "Ligue 1",
+    "french ligue 1": "Ligue 1",
+    "francia - ligue 1": "Ligue 1",
+    "eredivisie": "Eredivisie",
+    "liga portugal betclic": "Liga Portugal Betclic",
+    "liga portuguesa": "Liga Portugal Betclic",
+    "portuguesa": "Liga Portugal Betclic",
+    "betclic": "Liga Portugal Betclic",
+    "primera federacion": "Primera Federación",
+    "primera rfef": "Primera Federación",
+    "espana - primera federacion": "Primera Federación",
+    "spanish primera division rfef": "Primera Federación",
+    "nations league": "UEFA Nations League",
+    "uefa nations league": "UEFA Nations League",
+    "eurocopa": "Eurocopa",
+    "copa mundial de la fifa": "Copa Mundial de la FIFA",
+    "world cup": "Copa Mundial de la FIFA",
+    # Baloncesto
+    "nba": "NBA",
+    "national basketball association": "NBA",
+    "euroliga": "Euroliga",
+    "euroleague": "Euroliga",
+    "euro league": "Euroliga",
+    "liga endesa": "Liga Endesa",
+    "acb": "Liga Endesa",
+    "liga endesa / acb": "Liga Endesa",
+    "copa acb": "Copa ACB",
+    "supercopa endesa": "Supercopa Endesa",
+    # Tenis
+    "atp": "ATP Tour",
+    "atp tour": "ATP Tour",
+    "wta": "WTA Tour",
+    "wta tour": "WTA Tour",
+    "masters": "ATP Masters 1000",
+    "atp masters 1000": "ATP Masters 1000",
+    # Motor
+    "formula 1": "Fórmula 1",
+    "f1": "Fórmula 1",
+    "motogp": "MotoGP",
+    "formula e": "Fórmula E",
+    "fórmula e": "Fórmula E",
+    "indycar": "IndyCar",
+    "indy car": "IndyCar",
+}
+
+
+def canonical_competition_name(raw_comp: str) -> str:
+    cleaned = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(raw_comp or "")).strip()
+    if not cleaned:
+        return ""
+    norm = normalize_search_text(cleaned)
+    if norm in COMPETITION_SYNONYMS:
+        return COMPETITION_SYNONYMS[norm]
+    for syn_key, canonical in COMPETITION_SYNONYMS.items():
+        if re.search(rf"\b{re.escape(syn_key)}\b", norm):
+            return canonical
+    return cleaned.upper()
+
+
 def is_globally_excluded_event(competicion: str, evento: str) -> bool:
+    comp_norm = normalize_search_text(competicion)
+    event_norm = normalize_search_text(evento)
+    combined_norm = normalize_search_text(f"{evento} {competicion}")
+    if comp_norm and comp_norm in EXCLUDED_COMPETITIONS_EXACT:
+        return True
+    for exc_comp in EXCLUDED_COMPETITIONS_EXACT:
+        if exc_comp and re.search(rf"\b{re.escape(exc_comp)}\b", combined_norm):
+            return True
+    for sub in EXCLUDED_EVENT_SUBSTRINGS:
+        if sub and (sub in event_norm or sub in combined_norm):
+            return True
     return False
 
 
+FCTV_ALLOWED_URL_SEGMENTS = ("/football/", "/basketball/", "/tennis/", "/motorsport/")
+
+
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
-    """Permite los 4 deportes de la agenda (Fútbol, Baloncesto, Tenis y Motor) sin criba previa por competición."""
+    """Excluye automáticamente eventos de FCTV33 cuya URL no contenga /football/, /basketball/, /tennis/ o /motorsport/."""
+    path_low = str(parsed_url_path or "").lower()
+    if not any(seg in path_low for seg in FCTV_ALLOWED_URL_SEGMENTS):
+        return False
     return sport_key in {"football", "basketball", "tennis", "motorsport"}
 
 
@@ -736,7 +819,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                 comp_segment = path_parts[-2] if len(path_parts) >= 2 else ""
                                 raw_comp_slug = re.sub(r"-\d{4,}$", "", comp_segment)
 
-                            comp_str = re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " ").upper().strip()
+                            comp_str = canonical_competition_name(re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " "))
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
                             clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
                             clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
@@ -748,7 +831,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if not event_str or event_str == "EVENTO FCTV33":
                             continue
                         if normalize_search_text(comp_str) == normalize_search_text(event_str):
-                            comp_str = detected_sport_label
+                            comp_str = canonical_competition_name(detected_sport_label)
 
                         query = parsed_url.query
                         if "icg=" not in query:
@@ -1092,6 +1175,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     return ("", "", "", False, False, "", "")
 
 
+COMBAT_SPORT_RE = re.compile(
+    r"\b(?:velada|boxeo|boxing|ufc|mma|artes\s+marciales|peso\s+(?:mosca|gallo|pluma|ligero|superligero|welter|superwelter|medio|supermedio|semipesado|pesado|crucero)|combat|fight|wrestling|wwe)\b",
+    re.IGNORECASE,
+)
+
+
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     if item is None or not hasattr(item, "get_text"):
         return "", "", [], "", []
@@ -1207,6 +1296,10 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     matchup = " - ".join(event_lines) if event_lines else tournament
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
+    full_row_norm = normalize_search_text(f"{text_full} {tournament} {matchup}")
+    if COMBAT_SPORT_RE.search(full_row_norm):
+        return "", "", [], "", []
+
     return time_clean, matchup, channels, tournament, text_lines
 
 
@@ -1266,6 +1359,9 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob, tournament, tv_blob, text_lines
             )
 
+            if COMBAT_SPORT_RE.search(blob):
+                continue
+
             in_four_sports = bool(comp_name or sport)
             if not in_four_sports:
                 if TENNIS_EVENT_RE.search(blob):
@@ -1293,7 +1389,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 final_sport = sport.upper()
                 final_icon = icon
                 raw_comp = competition if competition else (tournament if tournament else sport)
-                final_comp = raw_comp.upper()
+                final_comp = canonical_competition_name(raw_comp)
                 raw_ev = custom_event if custom_event else event_str
                 if raw_comp:
                     raw_ev = re.compile(re.escape(raw_comp), re.IGNORECASE).sub("", raw_ev)
@@ -2569,12 +2665,14 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             "TENIS": "tenis",
             "MOTOR": "motor",
         }
+        if is_globally_excluded_event(canonical_competition_name(stg.get("competicion", "")), str(stg.get("evento", ""))):
+            continue
         unified_events.append({
             "date_obj": ev_d,
             "hora": str(stg.get("hora", "")),
             "deporte": sport_up,
             "icono": str(stg.get("icono", "")),
-            "competicion": str(stg.get("competicion", "")).upper(),
+            "competicion": canonical_competition_name(stg.get("competicion", "")),
             "evento": str(stg.get("evento", "")).upper(),
             "tv_list": [str(c.get("name", "")) for c in (stg.get("canales") or []) if c.get("name")],
             "stg_channels": stg.get("canales") or [],
