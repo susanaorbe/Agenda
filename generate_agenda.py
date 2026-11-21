@@ -337,7 +337,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     sport_count = 0
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
-                        evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
+                        evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip().upper()
                         raw_stg_comp = str(item.get("competicion", "")).strip()
                         stg_href_low = str(item.get("href", "")).lower()
                         if (
@@ -349,7 +349,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         elif "2-bundesliga" in stg_href_low or re.search(r"\b2\.?\s*bundesliga\b", raw_stg_comp, flags=re.IGNORECASE):
                             competicion = "2. Bundesliga"
                         else:
-                            competicion = canonical_competition_name(raw_stg_comp)
+                            competicion = canonical_competition_name(raw_stg_comp).upper()
                         canales = item.get("canales") or []
 
                         if not hora or not evento or not canales:
@@ -486,6 +486,56 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "ASSOCIAO PORTUGUESA DE SIM RACING",
         "RUSSIAN WOMENS BASKETBALL PREMIER LEAGUE",
         "CHINA WOMENS BASKETBALL ASSOCIATION",
+        "AUSTRIAN 3 LIGA",
+        "BELGIAN WOMENS SUPER LEAGUE",
+        "BOSNIA AND HERZEGOVINA PREMIER LEAGUE",
+        "BULGARIAN FIRST LEAGUE",
+        "BUNDESLIGA (F)",
+        "BUNDESLIGA FEMENINA",
+        "2. BUNDESLIGA",
+        "CHAMPIONSHIP",
+        "CONGO PREMIER LEAGUE",
+        "DANISH 1ST DIVISION",
+        "DANISH WOMENS DIVISON 1",
+        "ENGLISH FA WOMENS SUPER LEAGUE",
+        "ENGLISH FOOTBALL LEAGUE CHAMPIONSHIP",
+        "ENGLISH NATIONAL LEAGUE",
+        "ETHIOPIA PREMIER LEAGUE",
+        "FA WSL (F)",
+        "FIFA U17 WORLD CUP",
+        "FRENCH LIGUE 2",
+        "GER JBH",
+        "GERMAN 3 LIGA",
+        "GERMAN BUNDESLIGA 2",
+        "GREEK WOMENS SUPER LEAGUE",
+        "HUNGARY FIZZ LIGA",
+        "KENYA WOMENS FOOTBALL LEAGUE",
+        "LALIGA HYPERMOTION",
+        "LEBANESE PREMIER LEAGUE",
+        "LIGA 1",
+        "LIGA PRIME FUTSAL",
+        "LIGUE 2",
+        "LIBYAN PREMIER LEAGUE",
+        "MALAWI PREMIER LEAGUE",
+        "MALAYSIAN SUPER LEAGUE",
+        "MALTA FIRST DIVISION LEAGUE",
+        "MOLDOVAN SUPER LIGA",
+        "NATIONAL LEAGUE",
+        "NETHERLANDS TWEEDE DIVISIE",
+        "QATAR STARS LEAGUE",
+        "ROMANIAN SUPER LIGA",
+        "SAND2",
+        "SERIE A FEMMINILE",
+        "SERBIAN MOZZART BET SUPERLIGA",
+        "SPANISH SEGUNDA DIVISION",
+        "SUPER LIG",
+        "S R C",
+        "SVK WD1",
+        "UNITED ARAB EMIRATES ADNOC PRO LEAGUE",
+        "UNITED ARAB EMIRATES DIVISION 1 GROUP A",
+        "UGANDA PREMIER LEAGUE",
+        "UZBEKISTAN SUPER LEAGUE",
+        "ZAMBIA SUPER LEAGUE",
     ]
 }
 
@@ -548,10 +598,9 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "liga portuguesa": "Liga Portugal Betclic",
     "portuguesa": "Liga Portugal Betclic",
     "betclic": "Liga Portugal Betclic",
-    "primera federacion": "Primera Federación",
-    "primera rfef": "Primera Federación",
-    "espana - primera federacion": "Primera Federación",
-    "spanish primera division rfef": "Primera Federación",
+    "primera federacion": "PRIMERA FEDERACIÓN",
+    "primera rfef": "PRIMERA FEDERACIÓN",
+    "espana - primera federacion": "PRIMERA FEDERACIÓN",
     "nations league": "UEFA Nations League",
     "uefa nations league": "UEFA Nations League",
     "eurocopa": "Eurocopa",
@@ -592,11 +641,11 @@ def canonical_competition_name(raw_comp: str) -> str:
         return ""
     norm = normalize_search_text(cleaned)
     if re.search(r"\bbundesliga\s*\(f\)|\bbundesliga\s+femenina\b|\bfrauen\s*bundesliga\b", norm):
-        return "Bundesliga (F)" if "(f)" in norm else "Bundesliga Femenina"
+        return "BUNDESLIGA (F)" if "(f)" in norm else "BUNDESLIGA FEMENINA"
     if re.search(r"\b2\.?\s*bundesliga\b", norm):
-        return "2. Bundesliga"
+        return "2. BUNDESLIGA"
     if norm in COMPETITION_SYNONYMS:
-        return COMPETITION_SYNONYMS[norm]
+        return COMPETITION_SYNONYMS[norm].upper()
     return cleaned.upper()
 
 
@@ -1275,9 +1324,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Fútbol", "⚽", "UEFA Nations League", is_fav, True, "", "nationsleague")
 
     if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if CASTILLA_RE.search(blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
-        return ("", "", "", False, False, "", "")
+        comp_rfef = canonical_competition_name(raw_tournament) if raw_tournament else "PRIMERA FEDERACIÓN"
+        is_castilla = bool(CASTILLA_RE.search(blob))
+        return ("Fútbol", "⚽", comp_rfef, is_castilla, True, "", "other_football")
 
     return ("", "", "", False, False, "", "")
 
@@ -1325,20 +1374,27 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         if re.fullmatch(r"\(?[mo]\+?\d+.*\)?", part_lower):
             continue
 
-        is_primera_federacion_channel = part_lower == "primera federacion"
+        has_dial_suffix = bool(re.search(r"\(\s*[mo]\+?\d+", part_lower))
+        is_primera_federacion_comp_header = bool(re.fullmatch(r"primera\s+federaci[oó]n(?:\s*(?:[-–—]\s*)?grupo\s*\d+)?", part_lower))
+        is_primera_federacion_channel = bool(re.match(r"^primera\s+federaci[oó]n\b", part_lower)) and (has_dial_suffix or len(text_lines) >= 2)
         is_laliga_competition = "laliga" in part_lower and not any(token in part_lower for token in (" tv", "m+", "movistar", "dazn"))
         is_tennis_tv_channel = bool(re.fullmatch(r"(?:atp|wta)\s+tennis\s+tv", part_lower))
 
         looks_like_channel = (
             is_primera_federacion_channel
-            or is_tennis_tv_channel
-            or (TV_IDENTIFIERS_RE.search(part) and not is_laliga_competition)
-            or CHANNEL_LINE_RE.search(part_lower)
-            or any(term in part_lower for term in (
-                "m+", "dazn", "youtube", "fanatiz", "onefootball",
-                "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
-            ))
+            or (
+                not is_primera_federacion_comp_header
+                and (
+                    is_tennis_tv_channel
+                    or (TV_IDENTIFIERS_RE.search(part) and not is_laliga_competition)
+                    or CHANNEL_LINE_RE.search(part_lower)
+                    or any(term in part_lower for term in (
+                        "m+", "dazn", "youtube", "fanatiz", "onefootball",
+                        "siroko", "tv footballclub", "aragon tv", "aragon play",
+                        "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
+                    ))
+                )
+            )
         )
         if looks_like_channel:
             clean_part = CLEAN_TV_RE.sub("", part).strip()
@@ -1367,6 +1423,23 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
 
     if not text_lines or not channels:
         return "", "", [], "", []
+
+    merged_text_lines = []
+    idx_line = 0
+    while idx_line < len(text_lines):
+        curr_line = text_lines[idx_line]
+        curr_norm = normalize_search_text(curr_line)
+        if (
+            curr_norm == "primera federacion"
+            and idx_line + 1 < len(text_lines)
+            and re.fullmatch(r"grupo\s*\d+", normalize_search_text(text_lines[idx_line + 1]))
+        ):
+            merged_text_lines.append(f"{curr_line} {text_lines[idx_line + 1]}")
+            idx_line += 2
+            continue
+        merged_text_lines.append(curr_line)
+        idx_line += 1
+    text_lines = merged_text_lines
 
     tournament_candidates = []
     matchup_candidates = []
@@ -1498,7 +1571,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 final_sport = sport.upper()
                 final_icon = icon
                 raw_comp = competition if competition else (tournament if tournament else sport)
-                final_comp = canonical_competition_name(raw_comp)
+                final_comp = canonical_competition_name(raw_comp).upper()
                 raw_ev = custom_event if custom_event else event_str
                 if raw_comp:
                     raw_ev = re.compile(re.escape(raw_comp), re.IGNORECASE).sub("", raw_ev)
@@ -2800,7 +2873,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             "hora": str(stg.get("hora", "")),
             "deporte": sport_up,
             "icono": str(stg.get("icono", "")),
-            "competicion": canonical_competition_name(stg.get("competicion", "")),
+            "competicion": canonical_competition_name(stg.get("competicion", "")).upper(),
             "evento": str(stg.get("evento", "")).upper(),
             "tv_list": [str(c.get("name", "")) for c in (stg.get("canales") or []) if c.get("name")],
             "stg_channels": stg.get("canales") or [],
