@@ -290,6 +290,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 const hora = (timeEl.innerText || timeEl.textContent || '').trim();
                                 const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
                                 const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const linkEl = el.querySelector('a[href]');
+                                const href = linkEl ? (linkEl.getAttribute('href') || '') : '';
 
                                 const channelImgs = el.querySelectorAll('.col-xs-4.mobile-normal img, img[data-src*="tvm-station"], img[src*="tvm-station"]');
                                 const canales = [];
@@ -319,6 +321,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                     hora,
                                     evento,
                                     competicion,
+                                    href,
                                     canales
                                 });
                             } else {
@@ -335,7 +338,14 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
                         evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
-                        competicion = canonical_competition_name(item.get("competicion", ""))
+                        raw_stg_comp = str(item.get("competicion", "")).strip()
+                        stg_href_low = str(item.get("href", "")).lower()
+                        if "bundesliga-f" in stg_href_low or re.search(r"\bbundesliga\s*\(f\)", raw_stg_comp, flags=re.IGNORECASE):
+                            competicion = "Bundesliga (F)"
+                        elif "2-bundesliga" in stg_href_low or re.search(r"\b2\.?\s*bundesliga\b", raw_stg_comp, flags=re.IGNORECASE):
+                            competicion = "2. Bundesliga"
+                        else:
+                            competicion = canonical_competition_name(raw_stg_comp)
                         canales = item.get("canales") or []
 
                         if not hora or not evento or not canales:
@@ -446,6 +456,32 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "INDONESIA WOMENS LEAGUE 26 27",
         "TAÇA DE PORTUGAL",
         "BELARUSIAN FIRST LEAGUE",
+        "SEGUNDA FEDERACIÓN",
+        "TERCERA FEDERACIÓN",
+        "LIGA VASCA CADETE",
+        "LIGA NUSANTARA 2026 27",
+        "INTERNATIONAL FRIENDLY VIETNAM WOMENS FUTSAL TEAM",
+        "RUSSIAN PREMIER LEAGUE",
+        "AZERBAIJAN PREMIER LEAGUE",
+        "ARMENIAN PREMIER LEAGUE",
+        "BELARUSIAN PREMIER LEAGUE",
+        "BURUNDI PREMIER LEAGUE",
+        "CAMBODIAN PREMIER LEAGUE",
+        "THAI LEAGUE 1",
+        "THAI LEAGUE 2",
+        "UKRAINIAN PREMIER LEAGUE",
+        "VIETNAM NATIONAL CHAMPION LEAGUE",
+        "AFC BEACH SOCCER 2026",
+        "INDIAN SUPER LEAGUE",
+        "ITALIAN WOMENS SERIE A",
+        "SINGAPORE PREMIER LEAGUE",
+        "HUNAN FOOTBALL LEAGUE",
+        "LIVE U18S 26 27",
+        "FIA F4 WORLD CUP",
+        "GRAND PRIX DE DUBA",
+        "ASSOCIAO PORTUGUESA DE SIM RACING",
+        "RUSSIAN WOMENS BASKETBALL PREMIER LEAGUE",
+        "CHINA WOMENS BASKETBALL ASSOCIATION",
     ]
 }
 
@@ -988,7 +1024,9 @@ EXCLUDED_CHANNELS = {
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
     "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
     "valencia cf youtube", "valencia cf app", "à punt", "à punt mèdia", "osasuna tv",
-    "fip - international padel federation youtube", "fip youtube"
+    "fip - international padel federation youtube", "fip youtube",
+    "cd tenerife youtube", "real betis balompié youtube", "real betis balompie youtube",
+    "real betis tv", "real sociedad tv youtube"
 }
 
 
@@ -1169,6 +1207,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
     if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
+        if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob):
+            is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
+            return ("Fútbol", "⚽", "Bundesliga Femenina", is_fav, True, "", "other_football")
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
             if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
@@ -1177,6 +1218,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if comp_match and (REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized):
             return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
         return ("", "", "", False, False, "", "")
+
+    if BUNDESLIGA_2_RE.search(blob):
+        return ("Fútbol", "⚽", "2. Bundesliga", False, True, "", "other_football")
 
     if COPA_DEL_REY_RE.search(blob) and not WOMEN_RE.search(blob) and not BASKET_CONTEXT_RE.search(blob):
         is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob))
@@ -2057,8 +2101,13 @@ function updateStatsForActiveView() {
 
         const checkedSources = getActiveSourcesSet();
         const checkedSports = getActiveSportsSet();
+        const allSourcesSet = new Set(['futbolenlatv', 'fctv33', 'cdnlive']);
+        const allSportsSet = new Set(['futbol', 'baloncesto', 'tenis', 'motor', 'todos']);
         const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
         const isFavView = (currentFilter === 'favoritos');
+
+        const slotSources = isFavView ? allSourcesSet : checkedSources;
+        const slotSports = isFavView ? allSportsSet : checkedSports;
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
@@ -2071,18 +2120,20 @@ function updateStatsForActiveView() {
             const isToday = (rowDate === TODAY_DATE_STR);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
-            const matchesSelectedSource = checkedSources.has(source);
-            const matchesSelectedSport = isFavView ? true : checkedSports.has(sport);
-
-            if (isFiltered && matchesSelectedSource && matchesSelectedSport && matchesSearch) {
+            const matchesFavSource = checkedSources.has(source);
+            const matchesFavSport = isFavView ? true : checkedSports.has(sport);
+            if (isFiltered && matchesFavSource && matchesFavSport && matchesSearch) {
                 favCount++;
             }
 
-            if (rowDate > TODAY_DATE_STR && matchesSelectedSource && matchesSelectedSport && matchesSearch) {
+            const matchesSlotSource = slotSources.has(source);
+            const matchesSlotSport = slotSports.has(sport);
+
+            if (rowDate > TODAY_DATE_STR && matchesSlotSource && matchesSlotSport && matchesSearch) {
                 proxCount++;
             }
 
-            if (isToday && matchesSelectedSource && matchesSelectedSport && matchesSearch) {
+            if (isToday && matchesSlotSource && matchesSlotSport && matchesSearch) {
                 if (rowSlot === 'madrugada') madCount++;
                 else if (rowSlot === 'manana') manCount++;
                 else if (rowSlot === 'tarde') tarCount++;
