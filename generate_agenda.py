@@ -354,6 +354,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
                         if not hora or not evento or not canales:
                             continue
+                        if EXCLUDED_SPORTS_RE.search(f" {normalize_search_text(evento)} {normalize_search_text(competicion)} "):
+                            continue
 
                         ev_date = today_date
                         day_txt = str(item.get("dayText", ""))
@@ -513,6 +515,7 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "LALIGA HYPERMOTION",
         "LEBANESE PREMIER LEAGUE",
         "LIGA 1",
+        "LIGA PRIME",
         "LIGA PRIME FUTSAL",
         "LIGUE 2",
         "LIBYAN PREMIER LEAGUE",
@@ -536,6 +539,36 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "UGANDA PREMIER LEAGUE",
         "UZBEKISTAN SUPER LEAGUE",
         "ZAMBIA SUPER LEAGUE",
+        "ALBANIAN SUPER LEAGUE",
+        "AUSTRIAN 2 LIGA",
+        "BASKETBOL SUPER LIGI",
+        "BELGIAN CHALLENGER PRO LEAGUE",
+        "BELGIAN PRO LEAGUE",
+        "BENIN LIGUE 1",
+        "BRAZILIAN PAULISTA WOMENS LEAGUE",
+        "CHI LIGA DE PRIMERA",
+        "CROATIAN FOOTBALL LEAGUE",
+        "CYPRIOT FIRST DIVISION",
+        "CZECH WOMENS LIGA1",
+        "D1 FÉMININE",
+        "DIVISION 1 FEMININ",
+        "ENGLISH CONFERENCE SOUTH DIVISION",
+        "ENGLISH FOOTBALL LEAGUE ONE",
+        "ENGLISH FOOTBALL LEAGUE TWO",
+        "ENGLISH NORTHERN PREMIER LEAGUE",
+        "FIBA 3X3 BASKETBALL WORLD TOUR",
+        "ITALIAN SERIE B",
+        "ITALIAN SERIE C",
+        "EKSTRAKLASA",
+        "FRENCH LIGUE 3",
+        "NARODNI BASKETBALOVA LIGA",
+        "PFL",
+        "PKO BANK POLSKI EKSTRAKLASA",
+        "PORTUGUESE CUP",
+        "SAN MARINO CAMPIONATO DI CALCIO",
+        "SLOVENIA 1 LIGA",
+        "SWEDEN ALLSVENSKAN",
+        "SWITZERLAND NLB",
     ]
 }
 
@@ -565,6 +598,7 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     # Fútbol
     "laliga": "LaLiga EA Sports",
     "laliga ea sports": "LaLiga EA Sports",
+    "la liga ea sports": "LaLiga EA Sports",
     "liga ea sports": "LaLiga EA Sports",
     "liga ea": "LaLiga EA Sports",
     "primera division": "LaLiga EA Sports",
@@ -585,9 +619,11 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "copa del rey": "Copa del Rey",
     "copa de la reina": "Copa de la Reina",
     "premier league": "Premier League",
+    "english premier league": "Premier League",
     "premier": "Premier League",
     "inglaterra - premier league": "Premier League",
     "serie a": "Serie A",
+    "italian serie a": "Serie A",
     "bundesliga": "Bundesliga",
     "alemania - bundesliga": "Bundesliga",
     "ligue 1": "Ligue 1",
@@ -1116,7 +1152,7 @@ SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
 EXCLUDED_SPORTS_RE = rx(
     r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
     r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
-    r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ",
+    r" ehf ", r" ihf ", r"\bfutsal\b", r"\bfutbol\s+sala\b", r"\bfs\b", r" golf ", r" beisbol ",
     r" padel ", r" padell "
 )
 
@@ -1619,6 +1655,9 @@ def fetch_and_parse_agenda() -> list[dict]:
             "national basketball association": "nba",
             "french ligue 1": "ligue 1",
             "spanish la liga": "laliga ea sports",
+            "la liga ea sports": "laliga ea sports",
+            "english premier league": "premier league",
+            "italian serie a": "serie a",
             "spanish primera division de la liga de futbol femenino": "liga f",
             "spanish primera division rfef": "espana - primera federacion",
             "uefa women's champions league": "uefa womens champions league",
