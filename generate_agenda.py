@@ -451,6 +451,8 @@ EXCLUDED_COMPETITIONS_EXACT = {
 
 EXCLUDED_EVENT_SUBSTRINGS = {
     normalize_search_text(sub) for sub in [
+        "PREVIO",
+        "LIBRES 3",
         "UWC 60",
         "LIBRES 2",
         "TREINOS LIVRES",
@@ -848,8 +850,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             continue
 
                         path_parts = [part for part in parsed_url.path.split("/") if part]
-                        comp_str = detected_sport_label
-                        event_str = "EVENTO FCTV33"
+                        comp_str = ""
+                        event_str = ""
                         try:
                             match_idx = next((i for i, part in enumerate(path_parts) if "-match-" in part), -1)
                             if match_idx >= 0:
@@ -859,21 +861,23 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             else:
                                 filename = path_parts[-1] if path_parts else ""
                                 comp_segment = path_parts[-2] if len(path_parts) >= 2 else ""
-                                raw_comp_slug = re.sub(r"-\d{4,}$", "", comp_segment)
+                                raw_comp_slug = re.sub(r"-match-\d+$", "", comp_segment, flags=re.IGNORECASE)
 
-                            comp_str = canonical_competition_name(re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " "))
+                            raw_comp_clean = raw_comp_slug.replace("-", " ").strip().upper()
+                            comp_str = re.sub(r"\s+", " ", raw_comp_clean).strip() if raw_comp_clean else detected_sport_label
+
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
                             clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
                             clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
-                            event_str = clean_slug.replace("-", " ").replace("@VS_SEP@", "-").upper()
+                            event_str = clean_slug.replace("-", " ").replace("@VS_SEP@", " - ").upper()
                             event_str = re.sub(r"\s+", " ", event_str).strip()
                         except Exception:
                             pass
 
                         if not event_str or event_str == "EVENTO FCTV33":
                             continue
-                        if normalize_search_text(comp_str) == normalize_search_text(event_str):
-                            comp_str = canonical_competition_name(detected_sport_label)
+                        if not comp_str:
+                            comp_str = detected_sport_label
 
                         query = parsed_url.query
                         if "icg=" not in query:
@@ -1084,6 +1088,13 @@ WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
 EUROCUP_RE = rx(r" eurocup ")
 EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
 NATIONS_LEAGUE_RE = rx(r" nations league ")
+
+
+MOTOR_CONTEXT_RE = rx(
+    r" formula 1 ", r" f1 ", r" f1 academy ", r" motogp ", r" formula e ", r" formula e ",
+    r" indycar ", r" indy car ", r" motor ", r" automovilismo ", r" motociclismo ",
+    r" g\.?\s*p\.?\s+", r" gran premio ", r" carrera ", r" clasificacion ", r" sprint ", r" libres "
+)
 
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
@@ -1412,6 +1423,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                 elif BASKET_CONTEXT_RE.search(blob) or NBA_RE.search(blob) or EUROLIGA_RE.search(blob):
                     sport, icon, comp_key = "Baloncesto", "🏀", "baloncesto"
                     in_four_sports = True
+                elif MOTOR_CONTEXT_RE.search(blob):
+                    continue
                 else:
                     if not EXCLUDED_SPORTS_RE.search(blob) and not GOLF_RE.search(blob):
                         sport, icon, comp_key = "Fútbol", "⚽", "futbol"
@@ -2009,6 +2022,26 @@ function setFilter(filterType) {
     applyFilters();
 }
 
+function getActiveSourcesSet() {
+    const set = new Set();
+    if (currentFilter === 'favoritos') {
+        set.add('futbolenlatv');
+        return set;
+    }
+    document.querySelectorAll('.source-chk:checked').forEach(chk => {
+        set.add(cleanStr(chk.value));
+    });
+    return set;
+}
+
+function getActiveSportsSet() {
+    const set = new Set();
+    document.querySelectorAll('.comp-chk:checked').forEach(chk => {
+        set.add(cleanStr(chk.value));
+    });
+    return set;
+}
+
 function updateStatsForActiveView() {
     if (currentActiveView === 'futbolenlatv') {
         const table = document.getElementById('futbolenlatvTable');
@@ -2022,7 +2055,10 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
+        const checkedSources = getActiveSourcesSet();
+        const checkedSports = getActiveSportsSet();
         const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
+        const isFavView = (currentFilter === 'favoritos');
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
@@ -2030,17 +2066,23 @@ function updateStatsForActiveView() {
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
             const isFiltered = tr.getAttribute('data-filtered') === 'true';
             const source = cleanStr(tr.getAttribute('data-source'));
+            const sport = cleanStr(tr.getAttribute('data-sport'));
             const rowDate = tr.getAttribute('data-date');
             const isToday = (rowDate === TODAY_DATE_STR);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
-            if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
+            const matchesSelectedSource = checkedSources.has(source);
+            const matchesSelectedSport = isFavView ? true : checkedSports.has(sport);
+
+            if (isFiltered && matchesSelectedSource && matchesSelectedSport && matchesSearch) {
                 favCount++;
             }
 
-            if (rowDate > TODAY_DATE_STR && matchesSearch) proxCount++;
+            if (rowDate > TODAY_DATE_STR && matchesSelectedSource && matchesSelectedSport && matchesSearch) {
+                proxCount++;
+            }
 
-            if (isToday && matchesSearch) {
+            if (isToday && matchesSelectedSource && matchesSelectedSport && matchesSearch) {
                 if (rowSlot === 'madrugada') madCount++;
                 else if (rowSlot === 'manana') manCount++;
                 else if (rowSlot === 'tarde') tarCount++;
@@ -2608,15 +2650,8 @@ if ('ResizeObserver' in window) {
 
 function applyFilters() {
     if (currentActiveView === 'futbolenlatv') {
-        const checkedSources = new Set();
-        if (currentFilter === 'favoritos') {
-            checkedSources.add('futbolenlatv');
-        } else {
-            document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
-        }
-
-        const checkedSports = new Set();
-        document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
+        const checkedSources = getActiveSourcesSet();
+        const checkedSports = getActiveSportsSet();
 
         const table = document.getElementById('futbolenlatvTable');
         if (!table) return;
