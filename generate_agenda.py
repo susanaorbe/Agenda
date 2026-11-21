@@ -416,12 +416,54 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "PRO PADEL LEAGUE",
         "JAPANESE J3 LEAGUE",
         "NINJA A-LEAGUE",
+        "B2 LEAGUE",
+        "NATIONAL BASKETBALL LEAGUE",
+        "NEW ZEALAND BASKETBALL LEAGUE WOMENS",
+        "JAPANESE J1 LEAGUE",
+        "NEXZTER BRIC SUPERBIKE 2026 ROUND 4",
+        "CBA CLUB CUP",
+        "KOREAN K LEAGUE 1",
+        "KOREAN K LEAGUE 2",
+        "INDONESIAN WOMENS LIGA 1",
+        "JAPAN WOMENS BASKETBALL LEAGUE",
+        "WOMENS NATIONAL BASKETBALL LEAGUE",
+        "INDONESIAN CHAMPIONSHIP",
+        "INDONESIAN SUPER LEAGUE",
+        "THAI LEAGUE 3",
+        "VIETNAM NATIONAL FIRST CLASS LEAGUE",
+        "AUSTRALIA A LEAGUE",
+        "MYANMAR PROFESSIONAL LEAGUE",
+        "VTB UNITED LEAGUE",
+        "FUTSAL TL 2026 PLAY OFF",
+        "ANDORRAN PRIMERA DIVISIO",
+        "FREE PRACTICE 2 AND QUALIFYING",
+        "ITALIAN CAMPIONATO PRIMAVERA 1",
+        "LIGA 2",
+        "RUSSIAN FIRST LEAGUE",
+        "TURKISH FIRST LEAGUE",
+        "TURKISH SUPER LEAGUE",
+        "SYC PR",
+        "INDONESIA WOMENS LEAGUE 26 27",
+        "TAÇA DE PORTUGAL",
+        "BELARUSIAN FIRST LEAGUE",
     ]
 }
 
 EXCLUDED_EVENT_SUBSTRINGS = {
     normalize_search_text(sub) for sub in [
         "UWC 60",
+        "LIBRES 2",
+        "TREINOS LIVRES",
+        "PRACTICE 3",
+        "MOTO2 AND MOTO3",
+        "AUTOMOBILISMO: GT CAMP. MUNDO",
+        "FIA GT WORLD CUP – QUALIFICATION RACE",
+        "FIA GT WORLD CUP - QUALIFICATION RACE",
+        "FIA GT WORLD CUP QUALIFICATION RACE",
+        "AUTOMOBILISMO: FR CAMP. MUNDO",
+        "FIA FR WORLD CUP – QUALIFICATION RACE",
+        "FIA FR WORLD CUP - QUALIFICATION RACE",
+        "FIA FR WORLD CUP QUALIFYING RACE",
     ]
 }
 
@@ -941,7 +983,7 @@ EXCLUDED_CHANNELS = {
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
     "the afc hub youtube", "hc eivissa youtube", "vinxtv youtube",
-    "valencia cf youtube", "valencia cf app", "à punt", "à punt mèdia",
+    "valencia cf youtube", "valencia cf app", "à punt", "à punt mèdia", "osasuna tv",
     "fip - international padel federation youtube", "fip youtube"
 }
 
@@ -1143,7 +1185,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if SERIE_A_RE.search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
         return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
 
-    if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob):
+    if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob) and not WOMEN_RE.search(blob):
         return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
 
     if LIGUE1_RE.search(blob):
@@ -1980,35 +2022,25 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
-        const checkedSources = new Set();
-        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
-
-        const checkedSports = new Set();
-        document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
+        const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
+            if (tr.id === 'dynamicEmptyState') continue;
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
             const isFiltered = tr.getAttribute('data-filtered') === 'true';
             const source = cleanStr(tr.getAttribute('data-source'));
-            const sport = cleanStr(tr.getAttribute('data-sport'));
             const rowDate = tr.getAttribute('data-date');
             const isToday = (rowDate === TODAY_DATE_STR);
-
-            let matchesSource = checkedSources.has(source);
-            let matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
-            const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
             if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
-                if (currentFilter === 'favoritos' || checkedSources.has('futbolenlatv')) {
-                    favCount++;
-                }
+                favCount++;
             }
 
-            if (rowDate > TODAY_DATE_STR && matchesSport && matchesSource && matchesSearch) proxCount++;
+            if (rowDate > TODAY_DATE_STR && matchesSearch) proxCount++;
 
-            if (isToday && matchesSport && matchesSource && matchesSearch) {
+            if (isToday && matchesSearch) {
                 if (rowSlot === 'madrugada') madCount++;
                 else if (rowSlot === 'manana') manCount++;
                 else if (rowSlot === 'tarde') tarCount++;
