@@ -334,8 +334,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     sport_count = 0
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
-                        evento = re.sub(r"\s+", " ", str(item.get("evento", ""))).strip()
-                        competicion = re.sub(r"\s+", " ", str(item.get("competicion", ""))).strip()
+                        evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
+                        competicion = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("competicion", ""))).strip()
                         canales = item.get("canales") or []
 
                         if not hora or not evento or not canales:
@@ -377,6 +377,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                             "PREVIO LIBRES 3",
                             "LIBRES 3",
                             "PREVIO CLASIFICACIÓN",
+                            "PREVIO CARRERA",
                         ]
 
                         comp_norm = normalize_search_text(competicion)
@@ -384,11 +385,11 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         norm_all = normalize_search_text(f"{evento} {competicion}")
                         excluded_cdn_event_terms_norm = {
                             normalize_search_text(sub) for sub in excluded_cdn_exact_event_substrings
-                        }
+                        } | EXCLUDED_EVENT_SUBSTRINGS
 
-                        if comp_norm in excluded_cdn_competitions_norm:
+                        if comp_norm in excluded_cdn_competitions_norm or comp_norm in EXCLUDED_COMPETITIONS_EXACT:
                             continue
-                        if any(term in event_norm for term in excluded_cdn_event_terms_norm):
+                        if any(term in event_norm or term in norm_all for term in excluded_cdn_event_terms_norm):
                             continue
                         if any(term in norm_all for term in ["f1 academy", "premier padel", "padel"]):
                             continue
@@ -444,6 +445,58 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
     events.sort(key=lambda x: (x["date_iso"], x["hora"], normalize_search_text(x["evento"])))
     return events
+
+
+EXCLUDED_COMPETITIONS_EXACT = {
+    normalize_search_text(c) for c in [
+        "FORMULA 4",
+        "MOTORSPORT: FR WORLD CUP",
+        "FERRARI CHALLENGE EUROPE",
+        "2. BUNDESLIGA",
+        "CHAMPIONSHIP",
+        "FA WSL (F)",
+        "LIGUE 2",
+        "SUPER LIG",
+        "BUNDESLIGA (F)",
+        "BBL",
+        "A-LEAGUE",
+        "FREE PRACTICE 2 AND QUALIFYING",
+        "LIGA 2",
+        "TAÇA DE PORTUGAL",
+        "PRIMERA DIVISION",
+        "NINJA A-LEAGUE",
+    ]
+}
+
+EXCLUDED_EVENT_SUBSTRINGS = {
+    normalize_search_text(sub) for sub in [
+        "F1 ACADÉMIE",
+        "FIA GT CAMP. MUNDO",
+        "FIA FR CAMP. MUNDO",
+        "WARM UP",
+        "MOTO3",
+        "MOTO2",
+        "GT CAMP. MUNDO",
+        "FIA GT WORLD CUP",
+        "FR CAMP. MUNDO",
+        "FIA FR WORLD CUP",
+        "MOTO2 AND MOTO3",
+        "TREINOS LIVRES 2",
+        "PREVIO LIBRES 3",
+        "LIBRES 3",
+        "PREVIO CLASIFICACIÓN",
+        "PREVIO CARRERA",
+    ]
+}
+
+def is_globally_excluded_event(competicion: str, evento: str) -> bool:
+    comp_norm = normalize_search_text(competicion)
+    event_norm = normalize_search_text(evento)
+    if comp_norm in EXCLUDED_COMPETITIONS_EXACT:
+        return True
+    if any(term in event_norm for term in EXCLUDED_EVENT_SUBSTRINGS):
+        return True
+    return False
 
 
 def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
@@ -829,6 +882,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             query += "&ilang=es"
                         normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
+                        if is_globally_excluded_event(comp_str, event_str):
+                            continue
                         fctv_events_by_sport[detected_sport_key].append({
                             "date_obj": current_event_date,
                             "hora": extracted_time,
@@ -875,7 +930,7 @@ def get_time_slot(time_str: str) -> str:
 
 
 def normalize_search_text(text: str) -> str:
-    value = (text or "").lower()
+    value = str(text or "").lower().replace("\u00a0", " ").replace("\u200b", "").replace("\ufeff", "")
     value = (
         value.replace("á", "a").replace("é", "e").replace("í", "i")
         .replace("ó", "o").replace("ú", "u").replace("ç", "c")
@@ -1345,6 +1400,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                     continue
                 seen_events.add(event_key)
 
+                if is_globally_excluded_event(comp_name, motor_event_title):
+                    continue
                 futbolenlatv_results.append({
                     "date_obj": current_date_obj,
                     "hora": time_clean,
@@ -1402,6 +1459,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                 continue
             seen_events.add(event_key)
 
+            if is_globally_excluded_event(competition, final_event):
+                continue
             futbolenlatv_results.append({
                 "date_obj": current_date_obj,
                 "hora": time_clean,
