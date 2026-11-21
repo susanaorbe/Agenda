@@ -603,6 +603,53 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "SUPERLIGA FEMENINA",
         "ZENSKA BASKETBALOVA LIGA",
         "CUP U17",
+        "ANDORRAN SECOND DIVISION",
+        "ANTIGUA BARBUDA PREMIER DIVISION",
+        "ARUBA DIVISION DI HONOR",
+        "ARG PRIMERA NACIONAL",
+        "AUS CHAMP",
+        "AUSTRALIA W LEAGUE",
+        "BOLIVIAN PRIMERA DIVISION",
+        "BRAZILIAN SERIE A",
+        "BRITISH BASKETBALL LEAGUE",
+        "CANADIAN PREMIER LEAGUE",
+        "CATEGORIA PRIMERA A",
+        "CFA WOMENS SUPER LEAGUE",
+        "CHINA TAIPEI PROFESSIONAL BASKETBALL LEAGUE",
+        "CHINESE FOOTBALL LEAGUE 1",
+        "CONMEBOL COPA SUDAMERICANA",
+        "COPA SUDAMERICANA",
+        "COSTA RICA PRIMERA DIVISION",
+        "DIVISION 1 (F)",
+        "EL SALVADOR PRIMERA DIVISION",
+        "FERRARI CHALLENGE EUROPE",
+        "HONDURAS PRIMERA DIVISION",
+        "J LEAGUE U 21",
+        "JAPANESE FOOTBALL LEAGUE",
+        "JAPANESE J2 LEAGUE",
+        "KOREAN WOMENS BASKETBALL LEAGUE",
+        "LIGA FEMENINA DE BALONCESTO",
+        "LIGA FEMENINA ENDESA",
+        "NACIONAL DE FUTSAL CRESOL",
+        "LIGAPRO SERIE A",
+        "MEXICO ASCENSO MX",
+        "MEXICO LIGA MX",
+        "MOTORSPORT: FR WORLD CUP",
+        "NASCAR LOCAL RACING SERIES",
+        "PREMIERSHIP",
+        "NATIONAL BASKETBALL ASSOCIATION G LEAGUE",
+        "NEW ZEALAND WOMENS PREMIER DIVISION",
+        "NICARAGUA LIGA PRIMERA",
+        "PHILIPPINES FOOTBALL LEAGUE",
+        "PRIMERA FEB",
+        "RWANDAN WOMENS LEAGUE",
+        "SAINT KITTS NEVIS PREMIER LEAGUE",
+        "SERIE A BRASIL",
+        "SUPERCROSS DE PARIS",
+        "SURINAME MAJOR LEAGUE",
+        "UNITED STATES WOMENS PREMIER LEAGUE",
+        "VENEZUELA SEGUNDA DIVISION",
+        "NHL",
     ]
 }
 
@@ -627,6 +674,16 @@ EXCLUDED_EVENT_SUBSTRINGS = {
         "FIA FR WORLD CUP QUALIFYING RACE",
         "SUB 17 CAMP. NACIONAL 1.ª DIVISÃO",
         "SUB 17 CAMP. NACIONAL 1.a DIVISÃO",
+        "F1 ACADÉMIE",
+        "F1 ACADEMIE",
+        "FIA FR CAMP. MUNDO",
+        "FIA FR WORLD CUP",
+        "FIA GT CAMP. MUNDO",
+        "FIA GT WORLD CUP",
+        "FÚTBOL COLOMBIANO PRIMERA DIVISIÓN",
+        "MOTO2",
+        "MOTO3",
+        "WARM UP",
     ]
 }
 
@@ -673,6 +730,7 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "primera federacion": "PRIMERA FEDERACIÓN",
     "primera rfef": "PRIMERA FEDERACIÓN",
     "espana - primera federacion": "PRIMERA FEDERACIÓN",
+    "spanish primera division rfef": "PRIMERA FEDERACIÓN",
     "nations league": "UEFA Nations League",
     "uefa nations league": "UEFA Nations League",
     "eurocopa": "Eurocopa",
@@ -1188,7 +1246,7 @@ YOUTH_BASKET_RE = rx(r" sub\s*[-]?\d+ ", r" junior ", r" cadete ", r" infantil "
 SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
 
 EXCLUDED_SPORTS_RE = rx(
-    r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
+    r" hockey ", r" nhl ", r" ahl ", r" khl ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
     r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
     r" ehf ", r" ihf ", r"\bfutsal\b", r"\bfutbol\s+sala\b", r"\bfs\b", r" golf ", r" beisbol ",
     r" padel ", r" padell "
@@ -1436,7 +1494,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
         "mundial", "fifa", "uefa", "eurocopa", "nations league"
     )
     stage_lines_re = re.compile(
-        r"^(?:fase\s+de\s+grupos|octavos\s+de\s+final|cuartos\s+de\s+final|semifinales?|final|tercer\s+(?:y\s+cuarto\s+)?puesto|play[-\s]?offs?|jornada(?:\s+\d+)?|ronda(?:\s+\d+)?|ida|vuelta)$",
+        r"^(?:liga\s+regular|regular\s+season|fase\s+regular|fase\s+de\s+grupos|octavos\s+de\s+final|cuartos\s+de\s+final|semifinales?|final|tercer\s+(?:y\s+cuarto\s+)?puesto|play[-\s]?offs?|jornada(?:\s+\d+)?|ronda(?:\s+\d+)?|ida|vuelta)$",
         re.IGNORECASE,
     )
 
