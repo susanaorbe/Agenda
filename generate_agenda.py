@@ -341,59 +341,6 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         if not hora or not evento or not canales:
                             continue
 
-                        excluded_cdn_competitions_norm = {
-                            normalize_search_text(c) for c in [
-                                "FORMULA 4",
-                                "MOTORSPORT: FR WORLD CUP",
-                                "FERRARI CHALLENGE EUROPE",
-                                "2. BUNDESLIGA",
-                                "CHAMPIONSHIP",
-                                "FA WSL (F)",
-                                "LIGUE 2",
-                                "SUPER LIG",
-                                "BUNDESLIGA (F)",
-                                "BBL",
-                                "A-LEAGUE",
-                                "FREE PRACTICE 2 AND QUALIFYING",
-                                "LIGA 2",
-                                "TAÇA DE PORTUGAL",
-                                "PRIMERA DIVISION",
-                                "NINJA A-LEAGUE",
-                            ]
-                        }
-                        excluded_cdn_exact_event_substrings = [
-                            "F1 ACADÉMIE",
-                            "FIA GT CAMP. MUNDO",
-                            "FIA FR CAMP. MUNDO",
-                            "WARM UP",
-                            "MOTO3",
-                            "MOTO2",
-                            "GT CAMP. MUNDO",
-                            "FIA GT WORLD CUP",
-                            "FR CAMP. MUNDO",
-                            "FIA FR WORLD CUP",
-                            "MOTO2 AND MOTO3",
-                            "TREINOS LIVRES 2",
-                            "PREVIO LIBRES 3",
-                            "LIBRES 3",
-                            "PREVIO CLASIFICACIÓN",
-                            "PREVIO CARRERA",
-                        ]
-
-                        comp_norm = normalize_search_text(competicion)
-                        event_norm = normalize_search_text(evento)
-                        norm_all = normalize_search_text(f"{evento} {competicion}")
-                        excluded_cdn_event_terms_norm = {
-                            normalize_search_text(sub) for sub in excluded_cdn_exact_event_substrings
-                        } | EXCLUDED_EVENT_SUBSTRINGS
-
-                        if comp_norm in excluded_cdn_competitions_norm or comp_norm in EXCLUDED_COMPETITIONS_EXACT:
-                            continue
-                        if any(term in event_norm or term in norm_all for term in excluded_cdn_event_terms_norm):
-                            continue
-                        if any(term in norm_all for term in ["f1 academy", "premier padel", "padel"]):
-                            continue
-
                         ev_date = today_date
                         day_txt = str(item.get("dayText", ""))
                         day_num_match = re.search(r"\b(\d{1,2})\b", day_txt)
@@ -500,19 +447,7 @@ EXCLUDED_EVENT_SUBSTRINGS = {
     ]
 }
 
-UNIFIED_EXCLUDED_TERMS_NORM = EXCLUDED_EVENT_SUBSTRINGS | {
-    normalize_search_text(t) for t in ["f1 academy", "premier padel", "padel"]
-}
-
-
 def is_globally_excluded_event(competicion: str, evento: str) -> bool:
-    comp_norm = normalize_search_text(competicion)
-    event_norm = normalize_search_text(evento)
-    norm_all = normalize_search_text(f"{evento} {competicion}")
-    if comp_norm in EXCLUDED_COMPETITIONS_EXACT:
-        return True
-    if any(term in event_norm or term in norm_all for term in UNIFIED_EXCLUDED_TERMS_NORM):
-        return True
     return False
 
 
@@ -1949,7 +1884,8 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
-        const checkedSources = new Set(['futbolenlatv', 'fctv33', 'cdnlive']);
+        const checkedSources = new Set();
+        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
@@ -1969,7 +1905,9 @@ function updateStatsForActiveView() {
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
             if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
-                favCount++;
+                if (currentFilter === 'favoritos' || checkedSources.has('futbolenlatv')) {
+                    favCount++;
+                }
             }
 
             if (rowDate > TODAY_DATE_STR && matchesSport && matchesSource && matchesSearch) proxCount++;
