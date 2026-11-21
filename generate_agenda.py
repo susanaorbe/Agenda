@@ -491,6 +491,8 @@ EXCLUDED_COMPETITIONS_EXACT = {
 
 EXCLUDED_EVENT_SUBSTRINGS = {
     normalize_search_text(sub) for sub in [
+        "F1 ACADEMY",
+        "ATP CHALLENGER",
         "PREVIO",
         "LIBRES 3",
         "UWC 60",
@@ -595,9 +597,6 @@ def canonical_competition_name(raw_comp: str) -> str:
         return "2. Bundesliga"
     if norm in COMPETITION_SYNONYMS:
         return COMPETITION_SYNONYMS[norm]
-    for syn_key, canonical in COMPETITION_SYNONYMS.items():
-        if re.search(rf"\b{re.escape(syn_key)}\b", norm):
-            return canonical
     return cleaned.upper()
 
 
@@ -909,6 +908,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                             raw_comp_clean = raw_comp_slug.replace("-", " ").strip().upper()
                             raw_comp_clean = re.sub(r"\s+", " ", raw_comp_clean).strip()
+                            if raw_comp_clean and is_globally_excluded_event(raw_comp_clean, ""):
+                                continue
                             comp_str = canonical_competition_name(raw_comp_clean) if raw_comp_clean else detected_sport_label
 
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
