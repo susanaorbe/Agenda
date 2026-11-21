@@ -290,8 +290,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 const hora = (timeEl.innerText || timeEl.textContent || '').trim();
                                 const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
                                 const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
-                                const linkEl = el.querySelector('a[href]');
-                                const href = linkEl ? (linkEl.getAttribute('href') || '') : '';
+                                const linkEl = el.querySelector('a[href]') || el.closest('a[href]');
+                                const href = linkEl ? (linkEl.href || linkEl.getAttribute('href') || '') : '';
 
                                 const channelImgs = el.querySelectorAll('.col-xs-4.mobile-normal img, img[data-src*="tvm-station"], img[src*="tvm-station"]');
                                 const canales = [];
@@ -340,7 +340,11 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
                         raw_stg_comp = str(item.get("competicion", "")).strip()
                         stg_href_low = str(item.get("href", "")).lower()
-                        if "bundesliga-f" in stg_href_low or re.search(r"\bbundesliga\s*\(f\)", raw_stg_comp, flags=re.IGNORECASE):
+                        if (
+                            "bundesliga-f" in stg_href_low
+                            or re.search(r"\bbundesliga\s*\(f\)", raw_stg_comp, flags=re.IGNORECASE)
+                            or (re.search(r"\bbundesliga\b", raw_stg_comp, flags=re.IGNORECASE) and re.search(r"\(f\)|\(w\)|frauen|femenin", evento, flags=re.IGNORECASE))
+                        ):
                             competicion = "Bundesliga (F)"
                         elif "2-bundesliga" in stg_href_low or re.search(r"\b2\.?\s*bundesliga\b", raw_stg_comp, flags=re.IGNORECASE):
                             competicion = "2. Bundesliga"
@@ -585,6 +589,10 @@ def canonical_competition_name(raw_comp: str) -> str:
     if not cleaned:
         return ""
     norm = normalize_search_text(cleaned)
+    if re.search(r"\bbundesliga\s*\(f\)|\bbundesliga\s+femenina\b|\bfrauen\s*bundesliga\b", norm):
+        return "Bundesliga (F)" if "(f)" in norm else "Bundesliga Femenina"
+    if re.search(r"\b2\.?\s*bundesliga\b", norm):
+        return "2. Bundesliga"
     if norm in COMPETITION_SYNONYMS:
         return COMPETITION_SYNONYMS[norm]
     for syn_key, canonical in COMPETITION_SYNONYMS.items():
@@ -900,7 +908,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                 raw_comp_slug = re.sub(r"-match-\d+$", "", comp_segment, flags=re.IGNORECASE)
 
                             raw_comp_clean = raw_comp_slug.replace("-", " ").strip().upper()
-                            comp_str = re.sub(r"\s+", " ", raw_comp_clean).strip() if raw_comp_clean else detected_sport_label
+                            raw_comp_clean = re.sub(r"\s+", " ", raw_comp_clean).strip()
+                            comp_str = canonical_competition_name(raw_comp_clean) if raw_comp_clean else detected_sport_label
 
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
                             clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
