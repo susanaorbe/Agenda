@@ -208,8 +208,308 @@ def _parse_sport_tv_time(raw_time: str) -> str:
     return clean_time(raw_time)
 
 
+def normalize_search_text(text: str) -> str:
+    value = str(text or "").lower().replace("\u00a0", " ").replace("\u200b", "").replace("\ufeff", "")
+    value = (
+        value.replace("á", "a").replace("é", "e").replace("í", "i")
+        .replace("ó", "o").replace("ú", "u").replace("ç", "c")
+        .replace("ñ", "n").replace("º", "ª")
+    )
+    value = re.sub(r"[|,;:/]+", " ", value)
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def rx(*patterns: str) -> re.Pattern:
+    return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
+
+
+REAL_MADRID_RE = rx(r" real madrid ", r" rm castilla ", r" r\.?\s*madrid ")
+CASTILLA_RE = rx(r" real madrid castilla ", r" rm castilla ", r" castilla ")
+YOUTH_BASKET_RE = rx(r" sub\s*[-]?\d+ ", r" junior ", r" cadete ", r" infantil ")
+SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
+
+EXCLUDED_SPORTS_RE = rx(
+    r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
+    r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
+    r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ",
+    r" padel ", r" padell "
+)
+
+EXCLUDED_COMPETITIONS_RE = rx(
+    r" national league ", r" vanarama national league ", r" liga u ",
+    r" tercera ", r" 3[ªa]\s*(?:rfef|federacion|division|grupo) ", r" grupo 8 ", r" tercera federacion ",
+    r" basketball champions league ", r" futsal champions ",
+    r" 2\.?\s*bundesliga ", r" serie a fem+inile ", r" serie a femminile ",
+    r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
+    r" brasil\s*[-–—]?\s*serie\s+a ",
+    r" argentina ", r" torneo clausura ", r" torneo apertura ",
+    r" liga profesional ", r" primera division argentina ",
+    r" international cup ", r" eurocup "
+)
+
+SPANISH_TENNIS_PLAYERS_RE = rx(
+    r" carlos alcaraz ", r" alcaraz ", r" alejandro davidovich ", r" davidovich ",
+    r" cristina bucsa ", r" bucsa ", r" paula badosa ", r" badosa ",
+    r" jaume munar ", r" munar ", r" rafael jodar ", r" jodar ",
+    r" dani merida ", r" merida "
+)
+
+WTA_RE = re.compile(r" wta ", re.IGNORECASE)
+WOMEN_RE = rx(r" femenina ", r" femenino ", r" frauen ", r" women ", r"\(f\) ", r"\(w\) ")
+PRIMERA_RFEF_RE = rx(r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ")
+LALIGA_RE = rx(r" liga ea sports ", r" liga ea ", r" primera division ", r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ")
+BASKET_ALLOWED_COMPETITIONS_RE = rx(r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ", r" copa acb ", r" supercopa endesa ", r" supercopa de espana ", r" nba ")
+
+WOMEN_FOOTBALL_COMPETITIONS = (
+    (rx(r" liga f ", r" primera division femenina "), "Liga F"),
+    (rx(r" copa de la reina "), "Copa de la Reina"),
+    (rx(r" supercopa de espana femenina ", r" supercopa femenina "), "Supercopa de España Femenina"),
+    (rx(r" women'?s champions league ", r" champions league femenina "), "UEFA Women's Champions League"),
+)
+
+TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
+DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
+
+CLEAN_TV_RE = re.compile(
+    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder",
+    re.IGNORECASE
+)
+EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
+TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt)")
+CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ")
+JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)", r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)", r"\(\s*\d+\s*\)")
+EVENT_CLEANUP_TRAIL_RE = re.compile(r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$", re.IGNORECASE)
+
+TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
+GOLF_RE = rx(r" golf ")
+NBA_RE = rx(r" nba ")
+EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
+BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
+COPA_DEL_REY_RE = rx(r" copa del rey ")
+BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
+CHAMPIONS_RE = rx(r" champions league ", r" champions ")
+CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
+PREMIER_RE = rx(r" premier league ", r" premier ", r" inglaterra - premier league ")
+SERIE_A_RE = rx(r" serie a ")
+BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
+BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
+LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
+EREDIVISIE_RE = rx(r" eredivisie ")
+LIGA_PORTUGAL_RE = rx(r" liga portugues[ae] ", r" portugues[ae] ", r" betclic ")
+WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
+EUROCUP_RE = rx(r" eurocup ")
+EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
+NATIONS_LEAGUE_RE = rx(r" nations league ")
+
+
+def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
+    blob_lower = normalize_search_text(blob)
+    if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
+        return ("", "", False)
+    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
+        return ("", "", False)
+
+    comp_name = ""
+    if "formula 1" in blob_lower or "f1" in blob_lower:
+        comp_name = "Fórmula 1"
+    elif "motogp" in blob_lower:
+        comp_name = "MotoGP"
+    elif "formula e" in blob_lower or "fórmula e" in blob_lower:
+        comp_name = "Fórmula E"
+    elif "indycar" in blob_lower or "indy car" in blob_lower:
+        comp_name = "Indycar"
+
+    if not comp_name:
+        return ("", "", False)
+
+    valid_lines = [l for l in text_lines if normalize_search_text(l) not in {normalize_search_text(comp_name), "motor", "automovilismo", "motociclismo"}]
+    clean_desc = " - ".join(valid_lines).strip()
+    clean_desc = EVENT_CLEANUP_TRAIL_RE.sub("", clean_desc).strip()
+
+    if not clean_desc or clean_desc == "-":
+        clean_desc = "Carrera"
+
+    event_title = f"{comp_name} - {clean_desc}"
+    clean_norm = normalize_search_text(event_title)
+
+    is_fav = False
+    if comp_name == "Fórmula 1":
+        is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
+    else:
+        is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
+
+    return (comp_name, event_title, is_fav)
+
+
+def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
+    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in blob:
+        return ("", "", "", False, False, "", "")
+    competition_filter_blob = re.sub(r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", blob, flags=re.IGNORECASE)
+    if EXCLUDED_COMPETITIONS_RE.search(competition_filter_blob):
+        return ("", "", "", False, False, "", "")
+
+    blob_normalized = normalize_search_text(blob)
+
+    if TENNIS_EVENT_RE.search(blob):
+        if GOLF_RE.search(tv_blob) or "movistar golf" in blob:
+            return ("", "", "", False, False, "", "")
+        tour = "WTA" if WTA_RE.search(blob) else "ATP"
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
+        is_fav = bool(SPANISH_TENNIS_PLAYERS_RE.search(blob))
+        return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
+
+    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
+        if WOMEN_RE.search(blob) or BASKET_WOMEN_RE.search(blob):
+            return ("", "", "", False, False, "", "")
+        if NBA_RE.search(blob):
+            comp_name = "NBA"
+            comp_key = "nba"
+        elif EUROLIGA_RE.search(blob):
+            comp_name = "Euroliga"
+            comp_key = "euroliga"
+        else:
+            comp_name = "Liga Endesa / ACB"
+            comp_key = "ligaendesa"
+        is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
+        return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
+
+    if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
+        comp_match = None
+        for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
+            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
+                comp_match = name
+                break
+        if comp_match and (REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized):
+            return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
+        return ("", "", "", False, False, "", "")
+
+    if COPA_DEL_REY_RE.search(blob) and not WOMEN_RE.search(blob) and not BASKET_CONTEXT_RE.search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob))
+        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
+
+    if CHAMPIONS_RE.search(blob) and not WOMEN_RE.search(blob) and not CHAMPIONS_NON_FOOTBALL_RE.search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob))
+        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
+
+    if LALIGA_RE.search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob))
+        return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
+
+    if PREMIER_RE.search(blob):
+        return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
+
+    if SERIE_A_RE.search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
+        return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
+
+    if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob):
+        return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
+
+    if LIGUE1_RE.search(blob):
+        return ("Fútbol", "⚽", "Ligue 1", False, True, "", "ligue1")
+
+    if EREDIVISIE_RE.search(blob):
+        return ("Fútbol", "⚽", "Eredivisie", False, True, "", "eredivisie")
+
+    if LIGA_PORTUGAL_RE.search(blob):
+        return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
+
+    if WORLD_CUP_RE.search(blob):
+        is_fav = bool(SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
+        return ("Fútbol", "⚽", "Copa Mundial de la FIFA", is_fav, True, "", "mundial")
+
+    if EURO_FINAL_RE.search(blob) and not EUROCUP_RE.search(blob):
+        is_fav = bool(SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
+        return ("Fútbol", "⚽", "Eurocopa", is_fav, True, "", "eurocopa")
+
+    if NATIONS_LEAGUE_RE.search(blob):
+        is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
+        return ("Fútbol", "⚽", "UEFA Nations League", is_fav, True, "", "nationsleague")
+
+    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
+        if CASTILLA_RE.search(blob):
+            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
+        return ("", "", "", False, False, "", "")
+
+    return ("", "", "", False, False, "", "")
+
+
+def apply_futbolenlatv_criteria_to_event(
+    raw_sport_label: str,
+    raw_icon: str,
+    raw_competition: str,
+    raw_event: str,
+    raw_channels: list[str] | None = None,
+) -> dict | None:
+    """Aplica los criterios de la agenda FUTBOLENLATV a cualquier evento extraído de cualquier fuente."""
+    channels = list(raw_channels or [])
+    tv_blob = normalize_search_text(" ".join(channels))
+    text_lines = [line.strip() for line in [raw_competition, raw_event] if line and str(line).strip()]
+    blob = normalize_search_text(f"{' '.join(text_lines)} {raw_competition} {raw_event} {tv_blob}")
+
+    comp_name, motor_event_title, is_fav = parse_motor_event(blob, raw_competition, text_lines)
+    if comp_name:
+        return {
+            "deporte": "MOTOR",
+            "icono": "🏆",
+            "competicion": comp_name.upper(),
+            "evento": motor_event_title.upper(),
+            "is_filtered": is_fav,
+            "is_configured": True,
+            "comp_key": "motor",
+        }
+
+    sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
+        blob, raw_competition, tv_blob, text_lines
+    )
+
+    is_movistar_plus_channel = any(
+        normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"}
+        for ch in channels
+    )
+    if not sport and is_movistar_plus_channel:
+        sport = "Otros"
+        icon = "📺"
+        competition = raw_competition if raw_competition else "Movistar Plus+"
+        is_favorite = True
+        is_configured = True
+        comp_key = "other_movistar"
+
+    if not sport:
+        return None
+
+    normalized_competition = normalize_search_text(competition)
+    if (
+        not is_movistar_plus_channel and (
+            normalized_competition == "brasil serie a"
+            or ("brasil" in normalized_competition and "serie a" in normalized_competition)
+        )
+    ):
+        return None
+
+    final_event = custom_event if custom_event else (raw_event or " - ".join(text_lines))
+    if competition:
+        comp_clean_pattern = re.compile(re.escape(competition), re.IGNORECASE)
+        final_event = comp_clean_pattern.sub("", final_event)
+
+    final_event = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", final_event).strip()
+    final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
+
+    if not EVENT_TEXT_RE.search(final_event):
+        return None
+
+    return {
+        "deporte": (sport or raw_sport_label or "").upper(),
+        "icono": icon or raw_icon or "🏆",
+        "competicion": (competition or raw_competition or "").upper(),
+        "evento": final_event.upper(),
+        "is_filtered": is_favorite,
+        "is_configured": is_configured,
+        "comp_key": comp_key,
+    }
+
+
 def fetch_sport_tv_guide_favorite_events() -> list[dict]:
-    """Inicia sesión en sport-tv-guide.live y extrae eventos, fecha/hora, competición y canales."""
+    """Inicia sesión en sport-tv-guide.live y extrae eventos filtrados según criterios de FUTBOLENLATV."""
     username = (os.environ.get("SPORT_TV_GUIDE_USER") or "").strip()
     password = os.environ.get("SPORT_TV_GUIDE_PASS") or ""
 
@@ -334,64 +634,18 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     sport_count = 0
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
-                        evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
-                        competicion = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("competicion", ""))).strip()
+                        evento_raw = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
+                        competicion_raw = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("competicion", ""))).strip()
                         canales = item.get("canales") or []
 
-                        if not hora or not evento or not canales:
+                        if not hora or not evento_raw or not canales:
                             continue
 
-                        excluded_cdn_competitions_norm = {
-                            normalize_search_text(c) for c in [
-                                "FORMULA 4",
-                                "MOTORSPORT: FR WORLD CUP",
-                                "FERRARI CHALLENGE EUROPE",
-                                "2. BUNDESLIGA",
-                                "CHAMPIONSHIP",
-                                "FA WSL (F)",
-                                "LIGUE 2",
-                                "SUPER LIG",
-                                "BUNDESLIGA (F)",
-                                "BBL",
-                                "A-LEAGUE",
-                                "FREE PRACTICE 2 AND QUALIFYING",
-                                "LIGA 2",
-                                "TAÇA DE PORTUGAL",
-                                "PRIMERA DIVISION",
-                                "NINJA A-LEAGUE",
-                            ]
-                        }
-                        excluded_cdn_exact_event_substrings = [
-                            "F1 ACADÉMIE",
-                            "FIA GT CAMP. MUNDO",
-                            "FIA FR CAMP. MUNDO",
-                            "WARM UP",
-                            "MOTO3",
-                            "MOTO2",
-                            "GT CAMP. MUNDO",
-                            "FIA GT WORLD CUP",
-                            "FR CAMP. MUNDO",
-                            "FIA FR WORLD CUP",
-                            "MOTO2 AND MOTO3",
-                            "TREINOS LIVRES 2",
-                            "PREVIO LIBRES 3",
-                            "LIBRES 3",
-                            "PREVIO CLASIFICACIÓN",
-                            "PREVIO CARRERA",
-                        ]
-
-                        comp_norm = normalize_search_text(competicion)
-                        event_norm = normalize_search_text(evento)
-                        norm_all = normalize_search_text(f"{evento} {competicion}")
-                        excluded_cdn_event_terms_norm = {
-                            normalize_search_text(sub) for sub in excluded_cdn_exact_event_substrings
-                        } | EXCLUDED_EVENT_SUBSTRINGS
-
-                        if comp_norm in excluded_cdn_competitions_norm or comp_norm in EXCLUDED_COMPETITIONS_EXACT:
-                            continue
-                        if any(term in event_norm or term in norm_all for term in excluded_cdn_event_terms_norm):
-                            continue
-                        if any(term in norm_all for term in ["f1 academy", "premier padel", "padel"]):
+                        channel_names = [str(c.get("name", "")).strip() for c in canales if c.get("name")]
+                        mapped = apply_futbolenlatv_criteria_to_event(
+                            sport_label, sport_icon, competicion_raw, evento_raw, channel_names
+                        )
+                        if not mapped:
                             continue
 
                         ev_date = today_date
@@ -409,7 +663,12 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                             except ValueError:
                                 ev_date = today_date
 
-                        dedup_key = (ev_date.isoformat(), hora, sport_key, normalize_search_text(evento))
+                        dedup_key = (
+                            ev_date.isoformat(),
+                            hora,
+                            normalize_search_text(mapped["competicion"]),
+                            normalize_search_text(mapped["evento"]),
+                        )
                         if dedup_key in seen:
                             continue
                         seen.add(dedup_key)
@@ -425,11 +684,14 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                             "ts": ev_ts,
                             "fecha_label": "Hoy" if ev_date == today_date else ev_date.strftime("%d/%m"),
                             "hora": hora,
-                            "deporte": sport_label,
-                            "icono": sport_icon,
-                            "competicion": competicion,
-                            "evento": evento,
+                            "deporte": mapped["deporte"],
+                            "icono": mapped["icono"],
+                            "competicion": mapped["competicion"],
+                            "evento": mapped["evento"],
                             "canales": canales,
+                            "is_filtered": mapped["is_filtered"],
+                            "is_configured": mapped["is_configured"],
+                            "comp_key": mapped["comp_key"],
                         })
                         sport_count += 1
 
@@ -447,158 +709,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
     return events
 
 
-def normalize_search_text(text: str) -> str:
-    value = str(text or "").lower().replace("\u00a0", " ").replace("\u200b", "").replace("\ufeff", "")
-    value = (
-        value.replace("á", "a").replace("é", "e").replace("í", "i")
-        .replace("ó", "o").replace("ú", "u").replace("ç", "c")
-        .replace("ñ", "n").replace("º", "ª")
-    )
-    value = re.sub(r"[|,;:/]+", " ", value)
-    return re.sub(r"\s+", " ", value).strip()
-
-
-EXCLUDED_COMPETITIONS_EXACT = {
-    normalize_search_text(c) for c in [
-        "FORMULA 4",
-        "MOTORSPORT: FR WORLD CUP",
-        "FERRARI CHALLENGE EUROPE",
-        "2. BUNDESLIGA",
-        "CHAMPIONSHIP",
-        "FA WSL (F)",
-        "LIGUE 2",
-        "SUPER LIG",
-        "BUNDESLIGA (F)",
-        "BBL",
-        "A-LEAGUE",
-        "FREE PRACTICE 2 AND QUALIFYING",
-        "LIGA 2",
-        "TAÇA DE PORTUGAL",
-        "PRIMERA DIVISION",
-        "NINJA A-LEAGUE",
-    ]
-}
-
-EXCLUDED_EVENT_SUBSTRINGS = {
-    normalize_search_text(sub) for sub in [
-        "F1 ACADÉMIE",
-        "FIA GT CAMP. MUNDO",
-        "FIA FR CAMP. MUNDO",
-        "WARM UP",
-        "MOTO3",
-        "MOTO2",
-        "GT CAMP. MUNDO",
-        "FIA GT WORLD CUP",
-        "FR CAMP. MUNDO",
-        "FIA FR WORLD CUP",
-        "MOTO2 AND MOTO3",
-        "TREINOS LIVRES 2",
-        "PREVIO LIBRES 3",
-        "LIBRES 3",
-        "PREVIO CLASIFICACIÓN",
-        "PREVIO CARRERA",
-    ]
-}
-
-def is_globally_excluded_event(competicion: str, evento: str) -> bool:
-    comp_norm = normalize_search_text(competicion)
-    event_norm = normalize_search_text(evento)
-    if comp_norm in EXCLUDED_COMPETITIONS_EXACT:
-        return True
-    if any(term in event_norm for term in EXCLUDED_EVENT_SUBSTRINGS):
-        return True
-    return False
-
-
-def is_fctv_event_allowed(parsed_url_path: str, sport_key: str) -> bool:
-    """Filtra estrictamente los eventos de FCTV33 validando directamente la ruta URL."""
-    allowed_sports = {"football", "basketball", "tennis", "motorsport"}
-    if sport_key not in allowed_sports:
-        return False
-
-    path_lower = parsed_url_path.lower()
-    excluded_url_patterns = [
-        "/american-football/", "/aussie-rules/", "/badminton/", "/baseball/", "/cricket/",
-        "/cycling/", "/fighting/", "/handball/", "/hockey/", "/others/",
-        "/rugby/", "/volleyball/", "2026-fiba-3x3-americup", "3x3basketball", "admiralbet-aba-league",
-        "adriatic-basketball-d2", "afc-awards-2026", "afc-beach-soccer-2026", "afc-u17-asian-cup", "albanian-cup",
-        "albanian-super-league", "alms-cup", "andorran-primera-divisio", "andorran-second-division", "antigua-barbuda-premier-division",
-        "arg-primera-nacional", "argentina-supercopa", "argentine-division-1", "argentine-group-b-tebolidun-league-manchester", "argentine-group-c-tebolidun-league-manchester",
-        "argentine-liga-nacional-de-bosquetbol", "argentine-reserve-league", "argentine-womens-league", "argentinian-liga-nacional-de-bosquetbol", "armenian-premier-league",
-        "aruba-division-di-honor", "asean-club-championship-shopee-cup", "asian-le-mans-cup", "asian-le-mans-cup-2026-27", "asian-le-mans-series",
-        "associao-portuguesa-de-sim-racing", "atp-challenger-champaign--usa-men-double", "atp-challenger-helsinki--finland-men-double", "atp-challenger-helsinki--finland-men-singles", "atp-challenger-orleans",
-        "aus-champ", "australia-a-league", "australia-w-league", "australian-superbike-championship", "austria-b-basketball-league",
-        "austrian-2-liga", "austrian-3-liga", "austrian-basketball-superliga", "austrian-bundesliga", "auto-racing",
-        "azerbaijan-first-division", "azerbaijan-premier-league", "b1-league", "b2-league", "bahrain-division-2",
-        "bahrain-premier-league", "basketball-bundesliga", "basketball-champions-league", "basketball-super-league-1", "basketbol-super-ligi",
-        "belarusian-first-league", "belgian-challenger-pro-league", "belgian-pro-league", "belgian-womens-super-league", "benin-ligue-1",
-        "bermuda-premier-league", "bolivian-copa-lfpb", "bosnia-and-herzegovina-premier-league", "brazilian-campeonato-paulista-youth", "brazilian-paulista-womens-league",
-        "brazilian-serie-a", "brazilian-serie-b", "british-basketball-league", "bulgarian-first-league", "bulgarian-vtora-liga",
-        "burkina-faso-division-1", "burundi-premier-league", "caf-africa-cup-of-nations", "caf-wc", "cambodian-premier-league",
-        "canadian-premier-league", "categoria-primera-a", "cba-club-cup", "cfa-team-china-international-tournament", "cfa-womens-super-league",
-        "chi-liga-de-primera", "chile-liga-nacional-basketball", "china-hong-kong-basketball-league", "china-taipei-professional-basketball-league", "china-womens-basketball-association",
-        "chinese-fa-cup", "chinese-football-assorciation-u-20-league", "chinese-football-league-1", "college-soccer", "colombian-copa-betplay-dimayor",
-        "colombian-torneo-betplay-dimayor", "concacaf-nations-league", "congo-premier-league", "conmebol-copa-sudamericana", "copa-argentina",
-        "copa-espaa-feb-2026-27", "copa-intercontinental", "costa-rica-2-liga", "croatian-cup", "croatian-football-league",
-        "cypriot-2nd-division", "cypriot-first-division", "czech-chance-liga", "czech-cup", "czech-third-league",
-        "czech-womens-liga1", "danish-1st-division", "danish-superliga", "danish-womens-divison-1", "division-1-feminin",
-        "east-asia-super-league", "egyptian-scores-cup", "el-salvador-primera-division", "el-salvador-reserves-league", "elite-league-u20",
-        "english-conference-south-division", "english-fa-trophy", "english-fa-womens-super-league", "english-football-league-championship", "english-football-league-one",
-        "english-football-league-trophy", "english-football-league-two", "english-isthmian-premier-league", "english-national-league", "english-northern-premier-league",
-        "english-southern-football-league", "english-southern-league-central-division", "epa-one-u18", "estonia-and-latvia-basketball-league", "ethiopia-premier-league",
-        "ethiopian-higher-league", "eurocup-basketball", "europe-womens-basketball-championship-qualifier", "europe-womens-challenge-basketball", "f1-academy",
-        "fa-womens-league-cup", "ferrari-challenge-europe", "ferrari-challenge-north-america", "fia-f4-world-cup", "fia-tcr-world-tour",
-        "fiba-3x3-basketball-world-tour", "fiba-africa-basketball-league", "fiba-europe-cup", "fiba-u16-womens-americup-2027-south-american-qualifiers", "fifa-u17-world-cup",
-        "french-division-1-feminine", "french-ligue-2", "french-ligue-3", "ftbol-sala-primera-divisin", "futsal-tl-2026-play-off",
-        "georgia-erovnuli-liga", "ger-jbh", "german-3-liga", "german-bundesliga-2", "german-frauen-bundesliga",
-        "grand-prix-de-duba", "greek-basket-league", "greek-womens-super-league", "higher-league", "honduras-primera-division",
-        "hunan-football-league", "hungary-fizz-liga", "icpd-division-1", "indian-bangalore-super-division", "indian-league-division-1",
-        "indian-super-league", "indian-womens-league", "indo-d4", "indonesia-womens-league-26-27", "indonesian-championship",
-        "indonesian-super-league", "indonesian-womens-liga-1", "international-friendly", "italian-serie-b", "italian-serie-c",
-        "italian-womens-serie-a", "j-league-u-21", "j-league-yamazaki-biscuit-levain-cup", "jamaica-premier-league", "japan-womens-basketball-league",
-        "japanese-football-league", "japanese-j1-league", "japanese-j2-league", "japanese-j3-league", "karnataka-mens-super-division-league-2026-27",
-        "kenya-womens-football", "korean-basketball-league", "korean-k-league-1", "korean-k-league-2", "korean-wk-league",
-        "korean-womens-basketball-league", "lebanese-premier-league", "lega-basket-serie-a", "lf-2", "liberia-first-division",
-        "liberian-second-division", "libyan-premier-league", "lietuvos-krepsinio-lyga", "liga-espanola-de-baloncesto-oro", "liga-femenina-challenge",
-        "liga-feminina-de-basquetebol", "liga-nacional-de-baloncesto-profesional", "liga-nacional-de-futsal-cresol", "liga-nationala-de-baschet-masculin", "liga-nova-kbm",
-        "liga-nusantara-2026-27", "liga-portugal-2", "liga-prime-futsal", "liga-u", "ligat-haal",
-        "ligue-2-bkt---13e-journe", "ligue-nationale-de-basket-pro-a", "ligue-nationale-de-basket-pro-b", "lithuania-cup", "lithuanian-i-lyga",
-        "live-u18s-26-27", "macau-grand-prix", "malawi-premier-league", "malaysian-super-league", "mali-premiere-division",
-        "malta-first-division-league", "mauritania-ligue-1", "mexico-ascenso-mx", "mexico-liga-mx", "mexico-liga-mx-femenil",
-        "moldovan-super-liga", "mongolia-premier-league", "mozzart-serbian-cup", "narodni-basketbalova-liga", "nascar-local-racing-series",
-        "national-basketball-association-g-league", "national-basketball-league", "national-collegiate-athletic-association", "netherlands-eerste-divisie", "netherlands-eredivisie-vrouwen",
-        "netherlands-tweede-divisie", "new-zealand-basketball-league-womens", "new-zealand-football-championship", "new-zealand-womens-premier-division", "nexzter-bric-superbike-2026-round-4",
-        "nhra-drag-racing", "nicaragua-liga-primera", "niger-national-league", "niger-premier-league", "oman-tamkeen-league",
-        "panda-cup", "paraguayan-cup", "paraguayan-primera-division", "perseden-denpasar", "peruvian-liga-1",
-        "philippine-basketball-governors-cup", "philippines-mpbl", "philippines-university-athletic-association", "pko-bank-polski-ekstraklasa", "poland-liga-1",
-        "poland-liga-2", "poland-womens-ekstraliga", "portugal-campeonato-nacional-feminino", "portugal-liga-de-basquetebol", "portuguese-cup",
-        "portuguese-u23-league", "premier-padel", "pro-padel-league", "putra-sang-fajar-fc", "qatar-stars-league",
-        "rmc-grand-finals", "romanian-liga-ii", "romanian-super-liga", "romanian-superliga-feminina", "rotax-grand-finals",
-        "rus-m-leagu", "russian-first-league", "russian-premier-league", "russian-womens-basketball-premier-league", "rwandan-womens-league",
-        "s-r-c", "saff-championship", "saint-kitts-nevis-premier-league", "san-marino-campionato-di-calcio", "sand2",
-        "saudi-arabia-division-1", "saudi-professional-league", "scottish-championship", "scottish-league-one", "scottish-league-two",
-        "scottish-premiership", "scottish-womens-premier-league", "segunda-feb", "serbian-mozzart-bet-superliga", "sierra-leone-premier-league",
-        "singapore-premier-league", "slovak-2-liga", "slovak-nike-liga", "slovak-womens-basketball-extraliga", "slovenia-1-liga",
-        "slovenia-2-liga", "slovenia-basketball-cup", "slovenia-cup", "spanish-futsal-division-de-honor", "spanish-segunda-division",
-        "spanish-segunda-division-rfef", "spanish-tercera-division", "supercross-de-paris", "superettan-basket", "suriname-major-league",
-        "svenska-basketligan", "sweden-allsvenskan", "sweden-damallsvenskan", "swiss-basketball-league", "switzerland-challenge-league",
-        "switzerland-nlb", "switzerland-super-league", "syc-pr", "thai-kings-cup", "thai-league-1",
-        "thai-league-2", "thai-league-3", "the-f1-show-2026", "turkey-basketball-league-2", "turkish-first-league",
-        "turkish-super-league", "uefa-el-w", "uefa-european-u17-football-championship", "uefa-european-u17-womens-championship", "uefa-european-u19-football-championship",
-        "uefa-european-u21-championship-qualification", "uganda-premier-league", "uim-e1-world-championship-presented-by-pif", "ukrainian-basketball-super-league", "ukrainian-first-league",
-        "ukrainian-premier-league", "ukrainian-second-league", "ukrainian-u19-liga", "united-arab-emirates-adib-cup", "united-arab-emirates-adnoc-pro-league",
-        "united-arab-emirates-division-1-group-a", "united-states-womens-national-soccer-league", "united-states-womens-premier-league", "uruguay-cup", "usac-racing",
-        "usl-championship", "uzbekistan-super-league", "venezuela-primera-division", "venezuela-segunda-division", "vietnam-national-champion-league",
-        "vietnam-national-first-class-league", "vtb-united-league", "vtl-2027", "women-empowerment-league", "zambia-super-league",
-        "zenska-basketbalova-liga"
-    ]
-    for pat in excluded_url_patterns:
-        if pat in path_lower:
-            return False
-    return True
-
-
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
+    """Extrae eventos de FCTV33 sin exclusiones previas por URL y aplica criterios de FUTBOLENLATV."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -824,26 +936,19 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
                         detected_icon = "⚽"
-                        detected_comp_key = "futbol"
 
                         if any(k in path_lower for k in ["/tennis/", "/es/tennis/", "/tenis/", "/es/tenis/"]):
                             detected_sport_key = "tennis"
                             detected_sport_label = "TENIS"
                             detected_icon = "🎾"
-                            detected_comp_key = "tenis"
                         elif any(k in path_lower for k in ["/basketball/", "/es/basketball/", "/baloncesto/", "/es/baloncesto/"]):
                             detected_sport_key = "basketball"
                             detected_sport_label = "BALONCESTO"
                             detected_icon = "🏀"
-                            detected_comp_key = "baloncesto"
                         elif any(k in path_lower for k in ["/motorsport/", "/es/motorsport/", "/motor/", "/es/motor/"]):
                             detected_sport_key = "motorsport"
                             detected_sport_label = "MOTOR"
                             detected_icon = "🏆"
-                            detected_comp_key = "motor"
-
-                        if not is_fctv_event_allowed(parsed_url.path, detected_sport_key):
-                            continue
 
                         canonical_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
                         if canonical_url in global_seen_urls:
@@ -885,6 +990,12 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if normalize_search_text(comp_str) == normalize_search_text(event_str):
                             comp_str = detected_sport_label
 
+                        mapped = apply_futbolenlatv_criteria_to_event(
+                            detected_sport_label, detected_icon, comp_str, event_str, []
+                        )
+                        if not mapped:
+                            continue
+
                         query = parsed_url.query
                         if "icg=" not in query:
                             query = f"{query}&" if query else ""
@@ -893,20 +1004,26 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             query += "&ilang=es"
                         normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
-                        if is_globally_excluded_event(comp_str, event_str):
-                            continue
-                        fctv_events_by_sport[detected_sport_key].append({
+                        sport_to_bucket = {
+                            "FÚTBOL": "football",
+                            "BALONCESTO": "basketball",
+                            "TENIS": "tennis",
+                            "MOTOR": "motorsport",
+                        }
+                        bucket = sport_to_bucket.get(mapped["deporte"], detected_sport_key)
+
+                        fctv_events_by_sport[bucket].append({
                             "date_obj": current_event_date,
                             "hora": extracted_time,
-                            "deporte": detected_sport_label,
-                            "icono": detected_icon,
-                            "competicion": comp_str,
-                            "evento": event_str,
+                            "deporte": mapped["deporte"],
+                            "icono": mapped["icono"],
+                            "competicion": mapped["competicion"],
+                            "evento": mapped["evento"],
                             "tv_list": [],
                             "fctv_url": normalized_url,
-                            "is_filtered": False,
-                            "is_configured": True,
-                            "comp_key": detected_comp_key,
+                            "is_filtered": mapped["is_filtered"],
+                            "is_configured": mapped["is_configured"],
+                            "comp_key": mapped["comp_key"],
                             "source": "fctv33"
                         })
                 except Exception as e:
@@ -1008,220 +1125,6 @@ def is_excluded_channel(channel: str) -> bool:
     if not key:
         return True
     return key in EXCLUDED_CHANNEL_KEYS
-
-
-def rx(*patterns: str) -> re.Pattern:
-    return re.compile(r"(?:%s)" % "|".join(patterns), re.IGNORECASE)
-
-
-REAL_MADRID_RE = rx(r" real madrid ", r" rm castilla ", r" r\.?\s*madrid ")
-CASTILLA_RE = rx(r" real madrid castilla ", r" rm castilla ", r" castilla ")
-YOUTH_BASKET_RE = rx(r" sub\s*[-]?\d+ ", r" junior ", r" cadete ", r" infantil ")
-SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
-
-EXCLUDED_SPORTS_RE = rx(
-    r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
-    r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
-    r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ",
-    r" padel ", r" padell "
-)
-
-EXCLUDED_COMPETITIONS_RE = rx(
-    r" national league ", r" vanarama national league ", r" liga u ",
-    r" tercera ", r" 3[ªa]\s*(?:rfef|federacion|division|grupo) ", r" grupo 8 ", r" tercera federacion ",
-    r" basketball champions league ", r" futsal champions ",
-    r" 2\.?\s*bundesliga ", r" serie a fem+inile ", r" serie a femminile ",
-    r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
-    r" brasil\s*[-–—]?\s*serie\s+a ",
-    r" argentina ", r" torneo clausura ", r" torneo apertura ",
-    r" liga profesional ", r" primera division argentina ",
-    r" international cup ", r" eurocup "
-)
-
-SPANISH_TENNIS_PLAYERS_RE = rx(
-    r" carlos alcaraz ", r" alcaraz ", r" alejandro davidovich ", r" davidovich ",
-    r" cristina bucsa ", r" bucsa ", r" paula badosa ", r" badosa ",
-    r" jaume munar ", r" munar ", r" rafael jodar ", r" jodar ",
-    r" dani merida ", r" merida "
-)
-
-WTA_RE = re.compile(r" wta ", re.IGNORECASE)
-WOMEN_RE = rx(r" femenina ", r" femenino ", r" frauen ", r" women ", r"\(f\) ", r"\(w\) ")
-PRIMERA_RFEF_RE = rx(r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ")
-LALIGA_RE = rx(r" liga ea sports ", r" liga ea ", r" primera division ", r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ")
-BASKET_ALLOWED_COMPETITIONS_RE = rx(r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ", r" copa acb ", r" supercopa endesa ", r" supercopa de espana ", r" nba ")
-
-WOMEN_FOOTBALL_COMPETITIONS = (
-    (rx(r" liga f ", r" primera division femenina "), "Liga F"),
-    (rx(r" copa de la reina "), "Copa de la Reina"),
-    (rx(r" supercopa de espana femenina ", r" supercopa femenina "), "Supercopa de España Femenina"),
-    (rx(r" women'?s champions league ", r" champions league femenina "), "UEFA Women's Champions League"),
-)
-
-TIME_RE = re.compile(r"\b\d{1,2}:\d{2}\b")
-DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
-
-CLEAN_TV_RE = re.compile(
-    r"\(ver en directo\)|\(ver gratis\)|\(acceder\)|\(ver\)|\(m\d+[^)]*\)|ver partido|acceder",
-    re.IGNORECASE
-)
-EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
-TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt)")
-CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ")
-JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)", r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)", r"\(\s*\d+\s*\)")
-EVENT_CLEANUP_TRAIL_RE = re.compile(r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$", re.IGNORECASE)
-
-TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
-GOLF_RE = rx(r" golf ")
-NBA_RE = rx(r" nba ")
-EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
-BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
-COPA_DEL_REY_RE = rx(r" copa del rey ")
-BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
-CHAMPIONS_RE = rx(r" champions league ", r" champions ")
-CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
-PREMIER_RE = rx(r" premier league ", r" premier ", r" inglaterra - premier league ")
-SERIE_A_RE = rx(r" serie a ")
-BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
-BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
-LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
-EREDIVISIE_RE = rx(r" eredivisie ")
-LIGA_PORTUGAL_RE = rx(r" liga portugues[ae] ", r" portugues[ae] ", r" betclic ")
-WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
-EUROCUP_RE = rx(r" eurocup ")
-EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
-NATIONS_LEAGUE_RE = rx(r" nations league ")
-
-
-def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
-    blob_lower = normalize_search_text(blob)
-    if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
-        return ("", "", False)
-    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
-        return ("", "", False)
-
-    comp_name = ""
-    if "formula 1" in blob_lower or "f1" in blob_lower:
-        comp_name = "Fórmula 1"
-    elif "motogp" in blob_lower:
-        comp_name = "MotoGP"
-    elif "formula e" in blob_lower or "fórmula e" in blob_lower:
-        comp_name = "Fórmula E"
-    elif "indycar" in blob_lower or "indy car" in blob_lower:
-        comp_name = "Indycar"
-
-    if not comp_name:
-        return ("", "", False)
-
-    valid_lines = [l for l in text_lines if normalize_search_text(l) not in {normalize_search_text(comp_name), "motor", "automovilismo", "motociclismo"}]
-    clean_desc = " - ".join(valid_lines).strip()
-    clean_desc = EVENT_CLEANUP_TRAIL_RE.sub("", clean_desc).strip()
-
-    if not clean_desc or clean_desc == "-":
-        clean_desc = "Carrera"
-
-    event_title = f"{comp_name} - {clean_desc}"
-    clean_norm = normalize_search_text(event_title)
-
-    is_fav = False
-    if comp_name == "Fórmula 1":
-        is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
-    else:
-        is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
-
-    return (comp_name, event_title, is_fav)
-
-
-def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
-    if EXCLUDED_SPORTS_RE.search(blob) or "ehf tv" in tv_blob or "movistar golf" in blob:
-        return ("", "", "", False, False, "", "")
-    competition_filter_blob = re.sub(r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", blob, flags=re.IGNORECASE)
-    if EXCLUDED_COMPETITIONS_RE.search(competition_filter_blob):
-        return ("", "", "", False, False, "", "")
-
-    blob_normalized = normalize_search_text(blob)
-
-    if TENNIS_EVENT_RE.search(blob):
-        if GOLF_RE.search(tv_blob) or "movistar golf" in blob:
-            return ("", "", "", False, False, "", "")
-        tour = "WTA" if WTA_RE.search(blob) else "ATP"
-        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else f"{tour} Tour"
-        is_fav = bool(SPANISH_TENNIS_PLAYERS_RE.search(blob))
-        return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
-
-    if BASKET_ALLOWED_COMPETITIONS_RE.search(blob):
-        if WOMEN_RE.search(blob) or BASKET_WOMEN_RE.search(blob):
-            return ("", "", "", False, False, "", "")
-        if NBA_RE.search(blob):
-            comp_name = "NBA"
-            comp_key = "nba"
-        elif EUROLIGA_RE.search(blob):
-            comp_name = "Euroliga"
-            comp_key = "euroliga"
-        else:
-            comp_name = "Liga Endesa / ACB"
-            comp_key = "ligaendesa"
-        is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
-        return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
-
-    if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
-        comp_match = None
-        for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
-            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
-                comp_match = name
-                break
-        if comp_match and (REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized):
-            return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
-        return ("", "", "", False, False, "", "")
-
-    if COPA_DEL_REY_RE.search(blob) and not WOMEN_RE.search(blob) and not BASKET_CONTEXT_RE.search(blob):
-        is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob))
-        return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
-
-    if CHAMPIONS_RE.search(blob) and not WOMEN_RE.search(blob) and not CHAMPIONS_NON_FOOTBALL_RE.search(blob):
-        is_fav = bool(REAL_MADRID_RE.search(blob))
-        return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
-
-    if LALIGA_RE.search(blob):
-        is_fav = bool(REAL_MADRID_RE.search(blob))
-        return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
-
-    if PREMIER_RE.search(blob):
-        return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
-
-    if SERIE_A_RE.search(blob) and not ("brasil" in blob or "serie a brasil" in blob):
-        return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
-
-    if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob):
-        return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
-
-    if LIGUE1_RE.search(blob):
-        return ("Fútbol", "⚽", "Ligue 1", False, True, "", "ligue1")
-
-    if EREDIVISIE_RE.search(blob):
-        return ("Fútbol", "⚽", "Eredivisie", False, True, "", "eredivisie")
-
-    if LIGA_PORTUGAL_RE.search(blob):
-        return ("Fútbol", "⚽", "Liga Portugal Betclic", False, True, "", "ligaportugal")
-
-    if WORLD_CUP_RE.search(blob):
-        is_fav = bool(SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
-        return ("Fútbol", "⚽", "Copa Mundial de la FIFA", is_fav, True, "", "mundial")
-
-    if EURO_FINAL_RE.search(blob) and not EUROCUP_RE.search(blob):
-        is_fav = bool(SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
-        return ("Fútbol", "⚽", "Eurocopa", is_fav, True, "", "eurocopa")
-
-    if NATIONS_LEAGUE_RE.search(blob):
-        is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
-        return ("Fútbol", "⚽", "UEFA Nations League", is_fav, True, "", "nationsleague")
-
-    if PRIMERA_RFEF_RE.search(blob) or "primera federacion" in blob or "primera rfef" in blob:
-        if CASTILLA_RE.search(blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
-        return ("", "", "", False, False, "", "")
-
-    return ("", "", "", False, False, "", "")
 
 
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
@@ -1390,89 +1293,34 @@ def fetch_and_parse_agenda() -> list[dict]:
             if not time_clean or not channels:
                 continue
 
-            tv_blob = " ".join(channels).lower()
-            blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
-
-            comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
-            if comp_name:
-                event_key = (current_date_obj, time_clean, comp_name, normalize_search_text(motor_event_title))
-                if event_key in seen_events:
-                    continue
-                seen_events.add(event_key)
-
-                if is_globally_excluded_event(comp_name, motor_event_title):
-                    continue
-                futbolenlatv_results.append({
-                    "date_obj": current_date_obj,
-                    "hora": time_clean,
-                    "deporte": "MOTOR",
-                    "icono": "🏆",
-                    "competicion": comp_name.upper(),
-                    "evento": motor_event_title.upper(),
-                    "tv_list": channels,
-                    "fctv_url": "",
-                    "is_filtered": is_fav,
-                    "is_configured": True,
-                    "comp_key": "motor",
-                    "source": "futbolenlatv"
-                })
-                continue
-
-            sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
-                blob, tournament, tv_blob, text_lines
+            mapped = apply_futbolenlatv_criteria_to_event(
+                "", "", tournament, event_str, channels
             )
-
-            is_movistar_plus_channel = any(normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"} for ch in channels)
-            if not sport and is_movistar_plus_channel:
-                sport = "Otros"
-                icon = "📺"
-                competition = tournament if tournament else "Movistar Plus+"
-                is_favorite = True
-                is_configured = True
-                comp_key = "other_movistar"
-
-            if not sport:
+            if not mapped:
                 continue
 
-            normalized_competition = normalize_search_text(competition)
-            if (
-                not is_movistar_plus_channel and (
-                    normalized_competition == "brasil serie a"
-                    or ("brasil" in normalized_competition and "serie a" in normalized_competition)
-                )
-            ):
-                continue
-
-            final_event = custom_event if custom_event else event_str
-            if competition:
-                comp_clean_pattern = re.compile(re.escape(competition), re.IGNORECASE)
-                final_event = comp_clean_pattern.sub("", final_event)
-
-            final_event = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", final_event).strip()
-            final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
-
-            if not EVENT_TEXT_RE.search(final_event):
-                continue
-
-            event_key = (current_date_obj, time_clean, normalize_search_text(competition), normalize_search_text(final_event))
+            event_key = (
+                current_date_obj,
+                time_clean,
+                normalize_search_text(mapped["competicion"]),
+                normalize_search_text(mapped["evento"]),
+            )
             if event_key in seen_events:
                 continue
             seen_events.add(event_key)
 
-            if is_globally_excluded_event(competition, final_event):
-                continue
             futbolenlatv_results.append({
                 "date_obj": current_date_obj,
                 "hora": time_clean,
-                "deporte": sport.upper(),
-                "icono": icon,
-                "competicion": competition.upper(),
-                "evento": final_event.upper(),
+                "deporte": mapped["deporte"],
+                "icono": mapped["icono"],
+                "competicion": mapped["competicion"],
+                "evento": mapped["evento"],
                 "tv_list": channels,
                 "fctv_url": "",
-                "is_filtered": is_favorite,
-                "is_configured": is_configured,
-                "comp_key": comp_key,
+                "is_filtered": mapped["is_filtered"],
+                "is_configured": mapped["is_configured"],
+                "comp_key": mapped["comp_key"],
                 "source": "futbolenlatv"
             })
 
@@ -2723,9 +2571,9 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             "tv_list": [str(c.get("name", "")) for c in (stg.get("canales") or []) if c.get("name")],
             "stg_channels": stg.get("canales") or [],
             "fctv_url": "",
-            "is_filtered": False,
-            "is_configured": True,
-            "comp_key": comp_key_map.get(sport_up, ""),
+            "is_filtered": bool(stg.get("is_filtered", False)),
+            "is_configured": bool(stg.get("is_configured", True)),
+            "comp_key": str(stg.get("comp_key") or comp_key_map.get(sport_up, "")),
             "source": "cdnlive",
         })
 
