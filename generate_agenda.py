@@ -224,6 +224,67 @@ def normalize_competition_label(comp_text: str) -> str:
     return raw.upper()
 
 
+def is_allowed_competition_name(sport_upper: str, comp_norm: str) -> bool:
+    """Valida que la competición normalizada pertenezca explícitamente a las permitidas por deporte."""
+    if not comp_norm:
+        return False
+    if sport_upper == "MOTOR":
+        return comp_norm in {"formula 1", "motogp", "formula e", "indycar"}
+    if sport_upper == "TENIS":
+        if any(bad in comp_norm for bad in ("padel", "hockey", "golf", "basketball", "baloncesto", "futbol", "football")):
+            return False
+        return True
+    if sport_upper == "BALONCESTO":
+        return comp_norm in {"nba", "euroliga", "liga endesa / acb"}
+    if sport_upper == "FÚTBOL":
+        allowed_football = {
+            "laliga ea sports",
+            "premier league",
+            "serie a",
+            "bundesliga",
+            "ligue 1",
+            "eredivisie",
+            "liga portugal betclic",
+            "uefa champions league",
+            "copa del rey",
+            "copa mundial de la fifa",
+            "eurocopa",
+            "uefa nations league",
+            "liga f",
+            "copa de la reina",
+            "supercopa de espana femenina",
+            "uefa women's champions league",
+            "uefa womens champions league",
+            "espana - primera federacion",
+        }
+        return comp_norm in allowed_football
+    return False
+
+
+def _has_non_english_league_qualifier(norm_text: str) -> bool:
+    """Detecta calificadores de país/región/división no permitidos (p. ej. bolivian, armenian, russian, bosnia, etc.)."""
+    disallowed_prefixes = (
+        "bolivian ", "bolivia ", "armenian ", "armenia ",
+        "russian ", "russia ", "bosnia ", "bosnian ", "herzegovina ",
+        "serbian ", "serbia ", "croatian ", "croatia ", "bulgarian ", "bulgaria ",
+        "romanian ", "romania ", "polish ", "poland ", "ukrainian ", "ukraine ",
+        "greek ", "greece ", "turkish ", "turkey ", "czech ", "hungarian ", "hungary ",
+        "austrian ", "austria ", "swiss ", "belgian ", "belgium ", "scottish ", "scotland ",
+        "welsh ", "wales ", "irish ", "ireland ", "northern ireland ",
+        "danish ", "denmark ", "swedish ", "sweden ", "norwegian ", "norway ",
+        "finnish ", "finland ", "icelandic ", "iceland ",
+        "mexican ", "mexico ", "liga mx ", "colombian ", "colombia ",
+        "chilean ", "chile ", "peruvian ", "peru ", "uruguayan ", "uruguay ",
+        "paraguayan ", "paraguay ", "ecuadorian ", "ecuador ", "venezuelan ", "venezuela ",
+        "brazilian ", "brasil ", "argentine ", "argentina ", "mls ", "major league soccer",
+        "saudi ", "arabia ", "qatar ", "chinese ", "china ", "japanese ", "japan ",
+        "korean ", "korea ", "australian ", "australia ", "indian ", "india ",
+        "egyptian ", "egypt ", "moroccan ", "morocco ", "tunisian ", "tunisia ",
+        "algerian ", "algeria ", "south african ", "south africa ",
+    )
+    return any(norm_text.startswith(p) or f" {p}" in norm_text for p in disallowed_prefixes)
+
+
 def is_event_allowed_by_futbolenlatv_rules(
     sport_label: str,
     competition_label: str,
@@ -248,6 +309,10 @@ def is_event_allowed_by_futbolenlatv_rules(
     if raw_comp and raw_comp not in lines:
         lines.append(raw_comp)
 
+    comp_norm_check = normalize_search_text(raw_comp)
+    if _has_non_english_league_qualifier(comp_norm_check):
+        return (False, False, "", "", "", "", "")
+
     blob = normalize_search_text(f"{raw_comp} {raw_ev} {' '.join(lines)}")
 
     sport_up = str(sport_label or "").strip().upper()
@@ -264,12 +329,15 @@ def is_event_allowed_by_futbolenlatv_rules(
         comp_name, motor_title, is_fav = parse_motor_event(blob, raw_comp, lines or [raw_ev])
         if not comp_name:
             return (False, False, "", "", "", "", "")
+        m_comp_label = normalize_competition_label(comp_name)
+        if not is_allowed_competition_name("MOTOR", normalize_search_text(m_comp_label)):
+            return (False, False, "", "", "", "", "")
         return (
             True,
             bool(is_fav),
             "MOTOR",
             "🏆",
-            normalize_competition_label(comp_name),
+            m_comp_label,
             motor_title.upper(),
             "motor",
         )
@@ -283,6 +351,12 @@ def is_event_allowed_by_futbolenlatv_rules(
     comp_label = normalize_competition_label(competition or raw_comp)
     norm_comp = normalize_search_text(comp_label)
     if norm_comp == "brasil serie a" or ("brasil" in norm_comp and "serie a" in norm_comp):
+        return (False, False, "", "", "", "", "")
+    if _has_non_english_league_qualifier(norm_comp):
+        return (False, False, "", "", "", "", "")
+
+    sp_up = sport.upper()
+    if not is_allowed_competition_name(sp_up, norm_comp):
         return (False, False, "", "", "", "", "")
 
     final_ev = raw_ev
@@ -298,12 +372,26 @@ def is_event_allowed_by_futbolenlatv_rules(
     return (
         True,
         bool(is_favorite),
-        sport.upper(),
+        sp_up,
         icon,
         comp_label,
         final_ev.upper(),
         comp_key,
     )
+
+
+def _extract_stg_slug_info(href: str) -> tuple[str, str]:
+    """Extrae el segmento de competición y el slug del evento desde una URL de sport-tv-guide.live."""
+    raw = str(href or "").strip()
+    if not raw:
+        return ("", "")
+    parsed = urlparse(raw)
+    path = (parsed.path or "").strip("/")
+    m = re.search(r"(?:^|/)en-vivo-([a-z0-9-]+?)(?:/\d+/?$|$)", path, flags=re.IGNORECASE)
+    if m:
+        slug_body = m.group(1).lower()
+        return (slug_body, slug_body)
+    return ("", path.lower())
 
 
 def fetch_sport_tv_guide_favorite_events() -> list[dict]:
@@ -388,6 +476,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 const hora = (timeEl.innerText || timeEl.textContent || '').trim();
                                 const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
                                 const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const evLink = el.querySelector('a[href*="/event/"], a[href*="en-vivo-"]');
+                                const eventHref = evLink ? (evLink.getAttribute('href') || '') : '';
 
                                 const channelImgs = el.querySelectorAll('.col-xs-4.mobile-normal img, img[data-src*="tvm-station"], img[src*="tvm-station"]');
                                 const canales = [];
@@ -417,6 +507,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                     hora,
                                     evento,
                                     competicion,
+                                    eventHref,
                                     canales
                                 });
                             } else {
@@ -434,16 +525,27 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
                         evento_raw = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
                         competicion_raw = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("competicion", ""))).strip()
+                        event_href = str(item.get("eventHref", "")).strip()
                         canales = item.get("canales") or []
 
                         if not hora or not evento_raw or not canales:
                             continue
 
+                        _, slug_body = _extract_stg_slug_info(event_href)
+                        comp_for_check = competicion_raw
+                        if sport_key == "futbol" and slug_body:
+                            # Si la URL especifica explícitamente "-premier-league-" pero el texto de competición
+                            # indica otra competición o división distinta, no permitir confusión.
+                            if "premier-league" in slug_body and normalize_search_text(competicion_raw) not in {"", "premier league", "inglaterra - premier league"}:
+                                continue
+                            if not comp_for_check and "premier-league" in slug_body:
+                                comp_for_check = "Premier League"
+
                         allowed, is_fav, final_sport, final_icon, final_comp, final_event, comp_key = is_event_allowed_by_futbolenlatv_rules(
                             sport_label=sport_label,
-                            competition_label=competicion_raw,
+                            competition_label=comp_for_check,
                             event_title=evento_raw,
-                            raw_lines=[evento_raw, competicion_raw],
+                            raw_lines=[evento_raw, comp_for_check],
                         )
                         if not allowed:
                             continue
@@ -558,7 +660,13 @@ PRIMERA_RFEF_RE = rx(
     r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ",
     r" spanish primera division rfef ", r" primera division rfef "
 )
-LALIGA_RE = rx(r" liga ea sports ", r" liga ea ", r" primera division ", r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ")
+LALIGA_RE = rx(
+    r"\blaliga\s+ea\s+sports\b",
+    r"\bliga\s+ea\s+sports\b",
+    r"\bliga\s+ea\b",
+    r"\bespana\s*-?\s*la\s+liga\b",
+    r"\blaliga(?![\s\-]*(?:hypermotion|smartbank|tv\s*hypermotion|123))\b",
+)
 BASKET_ALLOWED_COMPETITIONS_RE = rx(r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ", r" copa acb ", r" supercopa endesa ", r" supercopa de espana ", r" nba ", r" national basketball association ")
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -590,7 +698,11 @@ COPA_DEL_REY_RE = rx(r" copa del rey ")
 BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
 CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
-PREMIER_RE = rx(r" premier league ", r" premier ", r" inglaterra - premier league ")
+PREMIER_RE = rx(
+    r"\binglaterra\s*-?\s*premier\s+league\b",
+    r"\benglish\s+premier\s+league\b",
+    r"(?<![a-z0-9-])premier\s+league(?![a-z0-9-])",
+)
 SERIE_A_RE = rx(r" serie a ")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
 BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
@@ -993,6 +1105,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         path_parts = [part for part in parsed_url.path.split("/") if part]
                         comp_str = detected_sport_label
                         event_str = "EVENTO FCTV33"
+                        has_explicit_url_comp = False
                         try:
                             match_idx = next((i for i, part in enumerate(path_parts) if "-match-" in part), -1)
                             if match_idx >= 0:
@@ -1004,7 +1117,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                 comp_segment = path_parts[-2] if len(path_parts) >= 2 else ""
                                 raw_comp_slug = re.sub(r"-\d{4,}$", "", comp_segment)
 
-                            comp_str = re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " ").upper().strip()
+                            slug_comp = re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " ").upper().strip()
+                            if slug_comp:
+                                comp_str = slug_comp
+                                has_explicit_url_comp = True
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
                             clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
                             clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
@@ -1016,7 +1132,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         if not event_str or event_str == "EVENTO FCTV33":
                             continue
 
-                        raw_lines = [
+                        fctv_eval_lines = [event_str] if has_explicit_url_comp else [
                             re.sub(r"\s+", " ", ln).strip()
                             for ln in str(item.get("cardText", "")).splitlines()
                             if re.sub(r"\s+", " ", ln).strip()
@@ -1025,7 +1141,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             sport_label=detected_sport_label,
                             competition_label=comp_str,
                             event_title=event_str,
-                            raw_lines=raw_lines or [event_str],
+                            raw_lines=fctv_eval_lines or [event_str],
                         )
                         if not allowed:
                             continue
@@ -1375,6 +1491,8 @@ def fetch_and_parse_agenda() -> list[dict]:
             comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
             if comp_name:
                 comp_label = normalize_competition_label(comp_name)
+                if not is_allowed_competition_name("MOTOR", normalize_search_text(comp_label)):
+                    continue
                 event_key = ("futbolenlatv", current_date_obj, time_clean, comp_label, normalize_search_text(motor_event_title))
                 if event_key in seen_events:
                     continue
@@ -1418,6 +1536,8 @@ def fetch_and_parse_agenda() -> list[dict]:
                 not is_movistar_plus_channel and (
                     normalized_competition == "brasil serie a"
                     or ("brasil" in normalized_competition and "serie a" in normalized_competition)
+                    or _has_non_english_league_qualifier(normalized_competition)
+                    or not is_allowed_competition_name(sport.upper(), normalized_competition)
                 )
             ):
                 continue
