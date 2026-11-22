@@ -679,6 +679,24 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "TC 2000",
         "UNITED STATES WOMENS NATIONAL SOCCER LEAGUE",
         "ZANZIBAR PREMIER LEAGUE",
+        "CRC DW2",
+        "ELITEDIVISIONEN (F)",
+        "FIM MOTOMINI",
+        "FNL RUSSIA",
+        "FORMULA 2 SERIES 2026 SEASON",
+        "FREE PRACTICE 1",
+        "INDO D4",
+        "FREE PRACTICE 1. INDO D4",
+        "LIGA IBERDROLA FEMENINA",
+        "LIGA PORTUGAL 2",
+        "LPB",
+        "NBA G-LEAGUE",
+        "PAGKYPRIO PROTATHLIMA GYNAIKON 2026-27",
+        "PHILIPPINES UNIVERSITY ATHLETIC ASSOCIATION",
+        "PRACTICE 1",
+        "SUPERLIGA",
+        "SÜPER LIGI",
+        "WOMEN EMPOWERMENT LEAGUE",
     ]
 }
 
@@ -713,6 +731,11 @@ EXCLUDED_EVENT_SUBSTRINGS = {
         "MOTO2",
         "MOTO3",
         "WARM UP",
+        "ASII TENISULUI",
+        "BASQUETEBOL FEM",
+        "CHEQUERED FLAG",
+        "FREIES TRAINING",
+        "TRAINING",
     ]
 }
 
@@ -729,6 +752,7 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "segunda division": "LaLiga Hypermotion",
     "hypermotion": "LaLiga Hypermotion",
     "liga f": "Liga F",
+    "primera division (f)": "Liga F",
     "primera division femenina": "Liga F",
     "spanish primera division de la liga de futbol femenino": "Liga F",
     "uefa champions league": "UEFA Champions League",
@@ -1439,7 +1463,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
-    if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
+    if WOMEN_RE.search(blob) or "primera division (f)" in blob_normalized or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         if BUNDESLIGA_RE.search(blob) and not BUNDESLIGA_2_RE.search(blob):
             is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
             return ("Fútbol", "⚽", "Bundesliga Femenina", is_fav, True, "", "other_football")
@@ -1448,8 +1472,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
                 comp_match = name
                 break
-        if comp_match and (REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized):
-            return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
+        if not comp_match and ("primera division (f)" in blob_normalized or "primera division f" in blob_normalized):
+            comp_match = "Liga F"
+        if comp_match:
+            is_fav_women = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
+            return ("Fútbol", "⚽", comp_match, is_fav_women, True, "", "other_football")
         return ("", "", "", False, False, "", "")
 
     if BUNDESLIGA_2_RE.search(blob):
