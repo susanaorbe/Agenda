@@ -698,6 +698,8 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
 
     if is_explicit_basketball or BASKET_ALLOWED_COMPETITIONS_RE.search(padded_blob):
+        if " primera feb " in padded_blob or " liga femenina endesa " in padded_blob:
+            return ("", "", "", False, False, "", "")
         if NBA_RE.search(padded_blob):
             comp_name = "NBA"
             comp_key = "nba"
