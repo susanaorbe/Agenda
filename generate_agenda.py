@@ -292,7 +292,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     raw_items = page.evaluate("""() => {
                         const out = [];
                         let currentDayText = '';
-                        const dayPattern = /\\b(\\d{1,2})\\s*(?:de\\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
+                        const dayPattern = /\b(\d{1,2})\s*(?:de\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
 
                         const nodes = document.querySelectorAll('div.row, h2, h3, h4, .dateHeader, .day-header, [class*="date"]');
                         for (const el of nodes) {
@@ -311,8 +311,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                     ''
                                 ).trim();
                                 const hora = (timeEl.innerText || timeEl.textContent || '').trim();
-                                const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
-                                const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\s+/g, ' ').trim();
+                                const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\s+/g, ' ').trim();
                                 const linkEl = el.querySelector('a[href]') || el.closest('a[href]');
                                 const href = linkEl ? (linkEl.href || linkEl.getAttribute('href') || '') : '';
 
@@ -320,7 +320,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 const canales = [];
                                 const seenCh = new Set();
                                 for (const img of channelImgs) {
-                                    const chName = (img.getAttribute('title') || img.getAttribute('alt') || '').replace(/\\s+/g, ' ').trim();
+                                    const chName = (img.getAttribute('title') || img.getAttribute('alt') || '').replace(/\s+/g, ' ').trim();
                                     const src = (img.getAttribute('data-src') || img.getAttribute('src') || '').toLowerCase();
                                     if (!chName) continue;
                                     let countryHint = '';
@@ -349,7 +349,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                     canales
                                 });
                             } else {
-                                const txt = (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
                                 if (txt && txt.length <= 40 && dayPattern.test(txt)) {
                                     currentDayText = txt;
                                 }
@@ -1016,7 +1016,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     candidate_cards = page.evaluate("""() => {
                         const out = [];
                         const seen = new Set();
-                        const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
+                        const timePattern = /\b\d{1,2}:\d{2}\b/;
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
@@ -1283,9 +1283,6 @@ def get_time_slot(time_str: str) -> str:
         return "noche"
 
 
-
-
-
 def clean_time(time_str: str) -> str:
     if not time_str:
         return ""
@@ -1380,7 +1377,7 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r" national league ", r" vanarama national league ", r" liga u ",
     r" tercera ", r" 3[ªa]\s*(?:rfef|federacion|division|grupo) ", r" grupo 8 ", r" tercera federacion ",
     r" basketball champions league ", r" futsal champions ",
-    r" 2\.?\s*bundesliga ", r" serie a fem+inile ", r" serie a femminile ",
+    r" 2\.?\s*bundesliga ", r" serie a fem\+inile ", r" serie a femminile ",
     r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
     r" brasil\s*[-–—]?\s*serie\s+a ",
     r" argentina ", r" torneo clausura ", r" torneo apertura ",
@@ -1526,7 +1523,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
             return ("Fútbol", "⚽", "Bundesliga Femenina", is_fav, True, "", "other_football")
         comp_match = None
-        # Excluir baloncesto femenino (ej. "Liga Femenina Endesa" / "Liga Femenina En..." / M+ Baloncesto / Siroko TV)
         if (
             "liga femenina en" in blob_normalized
             or "liga femenina endesa" in blob_normalized
@@ -3300,7 +3296,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             )
 
     futbolenlatv_rows_html = "".join(rows_list)
-    safe_stg_json = json.dumps(sport_tv_guide_events or [], ensure_ascii=False).replace("</", "<\\/")
+    safe_stg_json = json.dumps(sport_tv_guide_events or [], ensure_ascii=False).replace("</", "<\/")
 
     embedded_channels = []
     try:
@@ -3319,7 +3315,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     except Exception:
         embedded_channels = []
 
-    safe_channels_json = json.dumps(embedded_channels, ensure_ascii=False).replace("</", "<\\/")
+    safe_channels_json = json.dumps(embedded_channels, ensure_ascii=False).replace("</", "<\/")
 
     html = HTML_TEMPLATE.replace("{FECHA_ACT}", fecha_act)
     html = html.replace("{MADRUGADA_CNT}", str(slot_counts["madrugada"]))
