@@ -1057,7 +1057,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             "evento": final_event,
                             "tv_list": [],
                             "fctv_url": normalized_url,
-                            "is_filtered": bool(is_fav),
+                            "is_filtered": False,
                             "is_configured": True,
                             "comp_key": comp_key,
                             "source": "fctv33"
@@ -1331,6 +1331,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             for ev in events_list:
                 ev_copy = dict(ev)
                 ev_copy["source"] = "fctv33"
+                ev_copy["is_filtered"] = False
                 event_key = ("fctv33", ev_copy["date_obj"], ev_copy["hora"], normalize_search_text(ev_copy["competicion"]), normalize_search_text(ev_copy["evento"]))
                 if event_key not in seen_events:
                     seen_events.add(event_key)
@@ -1924,15 +1925,32 @@ function setFilter(filterType) {
     const chkFctv = document.getElementById('chk-fctv33');
     const chkCdnlive = document.getElementById('chk-cdnlive');
 
-    [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
-        if (chk) {
-            chk.disabled = false;
-            chk.parentElement.style.opacity = '1';
-            chk.parentElement.style.cursor = 'pointer';
+    if (isFavView) {
+        if (chkFutbolenlatv) {
+            chkFutbolenlatv.checked = true;
+            chkFutbolenlatv.disabled = true;
+            chkFutbolenlatv.parentElement.style.opacity = '0.6';
+            chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
         }
-    });
-    if (chkFutbolenlatv && chkFctv && chkCdnlive && !chkFutbolenlatv.checked && !chkFctv.checked && !chkCdnlive.checked) {
-        chkFutbolenlatv.checked = true;
+        [chkFctv, chkCdnlive].forEach(chk => {
+            if (chk) {
+                chk.checked = false;
+                chk.disabled = true;
+                chk.parentElement.style.opacity = '0.6';
+                chk.parentElement.style.cursor = 'not-allowed';
+            }
+        });
+    } else {
+        [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
+            if (chk) {
+                chk.disabled = false;
+                chk.parentElement.style.opacity = '1';
+                chk.parentElement.style.cursor = 'pointer';
+            }
+        });
+        if (chkFutbolenlatv && chkFctv && chkCdnlive && !chkFutbolenlatv.checked && !chkFctv.checked && !chkCdnlive.checked) {
+            chkFutbolenlatv.checked = true;
+        }
     }
 
     applyFilters();
@@ -1978,7 +1996,7 @@ function updateStatsForActiveView() {
             const matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
-            if (isFiltered && matchesSource && matchesSport && matchesSearch) {
+            if (isFiltered && source === 'futbolenlatv' && matchesSport && matchesSearch) {
                 favCount++;
             }
 
@@ -2405,7 +2423,7 @@ function applyFilters() {
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
             if (currentFilter === 'favoritos') {
-                matchesFilter = isFiltered;
+                matchesFilter = isFiltered && (source === 'futbolenlatv');
             } else if (currentFilter === 'proximamente') {
                 matchesFilter = (rowDate > TODAY_DATE_STR);
             } else {
@@ -2456,6 +2474,8 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
         if src not in {"futbolenlatv", "fctv33"}:
             src = "futbolenlatv"
         ev_copy["source"] = src
+        if src != "futbolenlatv":
+            ev_copy["is_filtered"] = False
         unified_events.append(ev_copy)
 
     for stg in (sport_tv_guide_events or []):
@@ -2483,7 +2503,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             "tv_list": [str(c.get("name", "")) for c in (stg.get("canales") or []) if c.get("name")],
             "stg_channels": stg.get("canales") or [],
             "fctv_url": "",
-            "is_filtered": bool(is_fav),
+            "is_filtered": False,
             "is_configured": True,
             "comp_key": comp_key,
             "source": "cdnlive",
@@ -2574,7 +2594,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             safe_competition = escape(normalize_competition_label(str(ev["competicion"])))
             safe_event = escape(str(ev["evento"]))
 
-            is_fav_ev = bool(ev["is_filtered"])
+            is_fav_ev = bool(ev["is_filtered"]) and (ev.get("source") == "futbolenlatv")
             is_filtered_str = str(is_fav_ev).lower()
             is_configured_str = str(ev["is_configured"]).lower()
 
