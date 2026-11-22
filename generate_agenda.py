@@ -607,7 +607,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     blob_lower = normalize_search_text(blob)
     if any(forbidden in blob_lower for forbidden in ["academy", "academie", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
         return ("", "", False)
-    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
+    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje", "warm up", "warmup"]):
         return ("", "", False)
 
     comp_name = ""
@@ -1619,8 +1619,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                         <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-cdnlive" value="cdnlive" onchange="handleSourceChange('cdnlive')"> SPORT TV GUIDE</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" checked onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-cdnlive" value="cdnlive" checked onchange="handleSourceChange('cdnlive')"> SPORT TV GUIDE</label>
                     </div>
                 </div>
             </div>
@@ -1899,6 +1899,7 @@ function handleSportChange(changedSport) {
 }
 
 function setFilter(filterType) {
+    const previousFilter = currentFilter;
     currentFilter = cleanStr(filterType);
     const isFavView = (currentFilter === 'favoritos');
 
@@ -1922,35 +1923,28 @@ function setFilter(filterType) {
         }
     });
 
-    const chkFutbolenlatv = document.getElementById('chk-futbolenlatv');
-    const chkFctv = document.getElementById('chk-fctv33');
-    const chkCdnlive = document.getElementById('chk-cdnlive');
-
+    const sourceCheckboxes = document.querySelectorAll('.source-chk');
     if (isFavView) {
-        if (chkFutbolenlatv) {
-            chkFutbolenlatv.checked = true;
-            chkFutbolenlatv.disabled = true;
-            chkFutbolenlatv.parentElement.style.opacity = '0.6';
-            chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
-        }
-        [chkFctv, chkCdnlive].forEach(chk => {
-            if (chk) {
-                chk.checked = false;
-                chk.disabled = true;
-                chk.parentElement.style.opacity = '0.6';
-                chk.parentElement.style.cursor = 'not-allowed';
-            }
+        sourceCheckboxes.forEach(chk => {
+            chk.checked = true;
+            chk.disabled = true;
+            chk.parentElement.style.opacity = '0.6';
+            chk.parentElement.style.cursor = 'not-allowed';
         });
     } else {
-        [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
-            if (chk) {
-                chk.disabled = false;
-                chk.parentElement.style.opacity = '1';
-                chk.parentElement.style.cursor = 'pointer';
-            }
+        sourceCheckboxes.forEach(chk => {
+            chk.disabled = false;
+            chk.parentElement.style.opacity = '1';
+            chk.parentElement.style.cursor = 'pointer';
         });
-        if (chkFutbolenlatv && chkFctv && chkCdnlive && !chkFutbolenlatv.checked && !chkFctv.checked && !chkCdnlive.checked) {
-            chkFutbolenlatv.checked = true;
+        if (previousFilter === 'favoritos') {
+            sourceCheckboxes.forEach(chk => {
+                chk.checked = true;
+            });
+        } else if (!Array.from(sourceCheckboxes).some(chk => chk.checked)) {
+            sourceCheckboxes.forEach(chk => {
+                chk.checked = true;
+            });
         }
     }
 
@@ -1973,9 +1967,15 @@ function updateStatsForActiveView() {
         const isFavoritesMode = (currentFilter === 'favoritos');
 
         const checkedSources = new Set();
-        document.querySelectorAll('.source-chk:checked').forEach(chk => {
-            checkedSources.add(cleanStr(chk.value));
-        });
+        if (isFavoritesMode) {
+            document.querySelectorAll('.source-chk').forEach(chk => {
+                checkedSources.add(cleanStr(chk.value));
+            });
+        } else {
+            document.querySelectorAll('.source-chk:checked').forEach(chk => {
+                checkedSources.add(cleanStr(chk.value));
+            });
+        }
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(cleanStr(chk.value)); });
@@ -1997,11 +1997,19 @@ function updateStatsForActiveView() {
             const matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
-            if (isFiltered && source === 'futbolenlatv' && matchesSport && matchesSearch) {
+            if (isFiltered && matchesSource && matchesSport && matchesSearch) {
                 favCount++;
             }
 
             if (!isFavoritesMode && matchesSource && matchesSport && matchesSearch) {
+                if (rowDate > TODAY_DATE_STR) proxCount++;
+                else if (isToday) {
+                    if (rowSlot === 'madrugada') madCount++;
+                    else if (rowSlot === 'manana') manCount++;
+                    else if (rowSlot === 'tarde') tarCount++;
+                    else if (rowSlot === 'noche') nocCount++;
+                }
+            } else if (isFavoritesMode && matchesSource && matchesSport && matchesSearch) {
                 if (rowDate > TODAY_DATE_STR) proxCount++;
                 else if (isToday) {
                     if (rowSlot === 'madrugada') madCount++;
