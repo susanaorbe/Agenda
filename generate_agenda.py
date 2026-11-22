@@ -611,7 +611,7 @@ LIGA_PORTUGAL_RE = rx(
 WORLD_CUP_RE = rx(
     r" copa mundial(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
     r" mundial de la fifa(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
-    r"(?<!u\d\s)(?<!sub\s?\d\s)(?<!women'?s\s)world cup(?!\s+u\d+|\s+sub\s*[-]?\d+|\s+women)"
+    r"(?<!u17\s)(?<!u20\s)(?<!u21\s)(?<!u23\s)(?<!sub17\s)(?<!sub20\s)(?<!sub21\s)(?<!sub23\s)(?<!womens\s)(?<!women\s)(?<!'s\s)world cup(?!\s+u\d+|\s+sub\s*[-]?\d+|\s+women)"
 )
 EUROCUP_RE = rx(r" eurocup ")
 EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
@@ -1029,7 +1029,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                 raw_comp_slug = re.sub(r"-\d{4,}$", "", comp_segment)
 
                             comp_str = re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " ").upper().strip()
-                            # Evitar que una competición del slug de FCTV33 se confunda con otra liga distinta si no es una competición permitida
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
                             clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
                             clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
