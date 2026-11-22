@@ -688,8 +688,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("", "", "", False, False, "", "")
 
     if PRIMERA_RFEF_RE.search(padded_blob) or "primera federacion" in padded_blob or "primera rfef" in padded_blob:
-        is_fav = bool(CASTILLA_RE.search(padded_blob))
-        return ("Fútbol", "⚽", "España - Primera Federación", is_fav, True, "", "other_football")
+        if not CASTILLA_RE.search(padded_blob):
+            return ("", "", "", False, False, "", "")
+        return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
 
     if COPA_DEL_REY_RE.search(padded_blob) and not WOMEN_RE.search(padded_blob) and not BASKET_CONTEXT_RE.search(padded_blob):
         is_fav = bool(REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob))
