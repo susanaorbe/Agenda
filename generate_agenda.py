@@ -240,13 +240,14 @@ def is_event_allowed_by_futbolenlatv_rules(
         for x in (raw_lines or [])
         if re.sub(r"\s+", " ", str(x or "")).strip()
     ]
-    if event_title and str(event_title).strip() not in lines:
-        lines.insert(0, str(event_title).strip())
-    if competition_label and str(competition_label).strip() not in lines:
-        lines.append(str(competition_label).strip())
-
     raw_comp = str(competition_label or "").strip()
     raw_ev = str(event_title or "").strip()
+
+    if raw_ev and raw_ev not in lines:
+        lines.insert(0, raw_ev)
+    if raw_comp and raw_comp not in lines:
+        lines.append(raw_comp)
+
     blob = normalize_search_text(f"{raw_comp} {raw_ev} {' '.join(lines)}")
 
     sport_up = str(sport_label or "").strip().upper()
@@ -287,6 +288,8 @@ def is_event_allowed_by_futbolenlatv_rules(
     final_ev = raw_ev
     if comp_label:
         final_ev = re.sub(re.escape(comp_label), "", final_ev, flags=re.IGNORECASE)
+    if raw_comp:
+        final_ev = re.sub(re.escape(raw_comp), "", final_ev, flags=re.IGNORECASE)
     final_ev = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", final_ev).strip()
     final_ev = EVENT_CLEANUP_TRAIL_RE.sub("", final_ev).strip()
     if not EVENT_TEXT_RE.search(final_ev):
@@ -551,7 +554,10 @@ SPANISH_TENNIS_PLAYERS_RE = rx(
 
 WTA_RE = re.compile(r" wta ", re.IGNORECASE)
 WOMEN_RE = rx(r" femenina ", r" femenino ", r" frauen ", r" women ", r"\(f\) ", r"\(w\) ")
-PRIMERA_RFEF_RE = rx(r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ")
+PRIMERA_RFEF_RE = rx(
+    r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ",
+    r" spanish primera division rfef ", r" primera division rfef "
+)
 LALIGA_RE = rx(r" liga ea sports ", r" liga ea ", r" primera division ", r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ")
 BASKET_ALLOWED_COMPETITIONS_RE = rx(r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ", r" copa acb ", r" supercopa endesa ", r" supercopa de espana ", r" nba ", r" national basketball association ")
 
@@ -681,6 +687,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
         return ("", "", "", False, False, "", "")
 
+    if PRIMERA_RFEF_RE.search(padded_blob) or "primera federacion" in padded_blob or "primera rfef" in padded_blob:
+        is_fav = bool(CASTILLA_RE.search(padded_blob))
+        return ("Fútbol", "⚽", "España - Primera Federación", is_fav, True, "", "other_football")
+
     if COPA_DEL_REY_RE.search(padded_blob) and not WOMEN_RE.search(padded_blob) and not BASKET_CONTEXT_RE.search(padded_blob):
         is_fav = bool(REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob))
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
@@ -722,11 +732,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if NATIONS_LEAGUE_RE.search(padded_blob):
         is_fav = bool(REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob) or "espana" in blob_normalized)
         return ("Fútbol", "⚽", "UEFA Nations League", is_fav, True, "", "nationsleague")
-
-    if PRIMERA_RFEF_RE.search(padded_blob) or "primera federacion" in padded_blob or "primera rfef" in padded_blob:
-        if CASTILLA_RE.search(padded_blob):
-            return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
-        return ("", "", "", False, False, "", "")
 
     return ("", "", "", False, False, "", "")
 
@@ -1276,6 +1281,42 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     return time_clean, matchup, channels, tournament, text_lines
 
 
+def event_similarity_key(x):
+    comp_norm = normalize_search_text(x.get("competicion", ""))
+    ev_norm = normalize_search_text(x.get("evento", ""))
+
+    synonyms = {
+        "euroleague": "euroliga",
+        "national basketball association": "nba",
+        "french ligue 1": "ligue 1",
+        "spanish la liga": "laliga ea sports",
+        "spanish primera division de la liga de futbol femenino": "liga f",
+        "spanish primera division rfef": "espana - primera federacion",
+        "uefa women's champions league": "uefa womens champions league",
+
+        "ax olimpia milano": "milano",
+        "gales": "wales",
+        "northern ireland": "irlanda del norte",
+        "olimpia milano": "milano",
+        "paris basketball": "paris",
+        "republica irlanda": "ireland",
+        "rumania": "romania",
+        "saski baskonia": "baskonia",
+        "winterthur fc barcelona": "barcelona",
+    }
+
+    for k, v in synonyms.items():
+        comp_norm = comp_norm.replace(k, v)
+        ev_norm = ev_norm.replace(k, v)
+
+    for w in [" vs ", " - ", "fc", "bc", "basket", "club", "mts", "red", "star"]:
+        ev_norm = ev_norm.replace(w, " ")
+
+    ev_core = " ".join(sorted(set([w for w in ev_norm.split() if len(w) > 2])))
+    ev_date = x.get("date_obj") or date.min
+    return (ev_date, x.get("hora", ""), comp_norm, ev_core)
+
+
 def fetch_and_parse_agenda() -> list[dict]:
     futbolenlatv_results = []
     seen_events = set()
@@ -1412,40 +1453,6 @@ def fetch_and_parse_agenda() -> list[dict]:
 
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
-
-    def event_similarity_key(x):
-        comp_norm = normalize_search_text(x["competicion"])
-        ev_norm = normalize_search_text(x["evento"])
-
-        synonyms = {
-            "euroleague": "euroliga",
-            "national basketball association": "nba",
-            "french ligue 1": "ligue 1",
-            "spanish la liga": "laliga ea sports",
-            "spanish primera division de la liga de futbol femenino": "liga f",
-            "spanish primera division rfef": "espana - primera federacion",
-            "uefa women's champions league": "uefa womens champions league",
-
-            "ax olimpia milano": "milano",
-            "gales": "wales",
-            "northern ireland": "irlanda del norte",
-            "olimpia milano": "milano",
-            "paris basketball": "paris",
-            "republica irlanda": "ireland",
-            "rumania": "romania",
-            "saski baskonia": "baskonia",
-            "winterthur fc barcelona": "barcelona",
-        }
-
-        for k, v in synonyms.items():
-            comp_norm = comp_norm.replace(k, v)
-            ev_norm = ev_norm.replace(k, v)
-
-        for w in [" vs ", " - ", "fc", "bc", "basket", "club", "mts", "red", "star"]:
-            ev_norm = ev_norm.replace(w, " ")
-
-        ev_core = " ".join(sorted(set([w for w in ev_norm.split() if len(w) > 2])))
-        return (x["date_obj"], x["hora"], comp_norm, ev_core)
 
     futbolenlatv_results.sort(key=event_similarity_key)
     return futbolenlatv_results
@@ -2482,14 +2489,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             "source": "cdnlive",
         })
 
-    unified_events.sort(
-        key=lambda x: (
-            x["date_obj"],
-            x["hora"],
-            normalize_search_text(x["competicion"]),
-            normalize_search_text(x["evento"]),
-        )
-    )
+    unified_events.sort(key=event_similarity_key)
     futbolenlatv_events = unified_events
 
     slot_counts = Counter(
