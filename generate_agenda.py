@@ -229,6 +229,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
         )
         context = browser.new_context(
             user_agent=REQUEST_HEADERS["User-Agent"],
+            locale="es-ES",
             timezone_id="Europe/Madrid"
         )
         page = context.new_page()
@@ -271,8 +272,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
             for sport_key, (sport_label, sport_icon, sport_url) in SPORT_TV_GUIDE_SPORT_URLS.items():
                 try:
-                    page.goto(sport_url, timeout=30000, wait_until="domcontentloaded")
-                    page.wait_for_timeout(2000)
+                    page.goto(sport_url, timeout=30000, wait_until="networkidle")
+                    page.wait_for_timeout(2500)
                     dismiss_consent_banner(page)
 
                     raw_items = page.evaluate("""() => {
@@ -287,6 +288,15 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 const inlineCols = el.querySelectorAll('.col-inline > div');
                                 if (!timeEl || inlineCols.length === 0) continue;
 
+                                const rawTsAttr = (
+                                    el.getAttribute('data-timestamp') ||
+                                    el.getAttribute('data-time') ||
+                                    timeEl.getAttribute('data-timestamp') ||
+                                    timeEl.getAttribute('data-time') ||
+                                    timeEl.parentElement?.getAttribute('data-timestamp') ||
+                                    timeEl.parentElement?.getAttribute('data-time') ||
+                                    ''
+                                ).trim();
                                 const hora = (timeEl.innerText || timeEl.textContent || '').trim();
                                 const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
                                 const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
@@ -319,6 +329,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 out.push({
                                     dayText: currentDayText,
                                     hora,
+                                    rawTsAttr,
                                     evento,
                                     competicion,
                                     href,
@@ -337,6 +348,14 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     sport_count = 0
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
+                        raw_ts_attr = str(item.get("rawTsAttr", "")).strip()
+                        if re.fullmatch(r"1\d{9}(?:\d{3})?", raw_ts_attr):
+                            try:
+                                ts_val = int(raw_ts_attr[:10])
+                                dt_madrid = datetime.fromtimestamp(ts_val, tz=spain_tz)
+                                hora = f"{dt_madrid.hour:02d}:{dt_madrid.minute:02d}"
+                            except Exception:
+                                pass
                         raw_ev_stg = re.sub(r"[\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
                         raw_ev_stg = re.sub(r"\s{2,}", " - ", raw_ev_stg)
                         evento = re.sub(r"\s+", " ", raw_ev_stg).strip().upper()
@@ -350,6 +369,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                             competicion = "Bundesliga (F)"
                         elif "2-bundesliga" in stg_href_low or re.search(r"\b2\.?\s*bundesliga\b", raw_stg_comp, flags=re.IGNORECASE):
                             competicion = "2. Bundesliga"
+                        elif "premier-league-149" in stg_href_low or "russian-premier-league" in stg_href_low:
+                            competicion = "RUSSIAN PREMIER LEAGUE"
                         else:
                             competicion = canonical_competition_name(raw_stg_comp).upper()
                         canales = item.get("canales") or []
@@ -736,6 +757,8 @@ EXCLUDED_EVENT_SUBSTRINGS = {
         "CHEQUERED FLAG",
         "FREIES TRAINING",
         "TRAINING",
+        "LIGA FEMENINA ENDESA",
+        "LIGA FEMENINA EN...",
     ]
 }
 
@@ -1260,7 +1283,7 @@ EXCLUDED_CHANNELS = {
     "beisbolplay", "canal 9 soria youtube", "cayotv youtube", "cmmplay",
     "concacaf youtube", "conmebol libertadores youtube", "dazn 1 bar(m148)", "dazn 1 bar", "dazn 2 bar(m149)",
     "dazn 2 bar", "deportes tvcanaria youtube", "eleventv youtube", "esport3 web",
-    "esport3(cataluña)", "esport3", "etb1", "etb1(país vasco)", "f1 academy youtube", "fanatiz", "fanplay",
+    "esport3(cataluña)", "esport3", "etb1", "etb1(país vasco)", "etb2", "etb2(país vasco)", "f1 academy youtube", "fanatiz", "fanplay",
     "fanplay tv", "fanseat", "fc barcelona ppv youtube", "fff tv youtube", "fiba youtube",
     "flamengo tv youtube", "hbo max", "j.league international youtube", "la 7", "la 7 tv",
     "la ocho mediterráneo", "la xarxa+", "laliga tv bar", "laliga tv m2",
@@ -1468,8 +1491,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             is_fav = bool(REAL_MADRID_RE.search(blob) or SPAIN_SELECTION_RE.search(blob) or "espana" in blob_normalized)
             return ("Fútbol", "⚽", "Bundesliga Femenina", is_fav, True, "", "other_football")
         comp_match = None
+        # Excluir baloncesto femenino (ej. "Liga Femenina Endesa" / "Liga Femenina En..." / M+ Baloncesto / Siroko TV)
+        if (
+            "liga femenina en" in blob_normalized
+            or "liga femenina endesa" in blob_normalized
+            or "m+ baloncesto" in tv_blob
+            or "movistar baloncesto" in tv_blob
+            or "baloncesto" in blob_normalized
+            or "basket" in blob_normalized
+        ):
+            return ("", "", "", False, False, "", "")
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
-            if pattern.search(blob) or ("femenina" in blob and name.lower() in blob):
+            if pattern.search(blob):
                 comp_match = name
                 break
         if not comp_match and ("primera division (f)" in blob_normalized or "primera division f" in blob_normalized):
@@ -1597,7 +1630,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
                     or any(term in part_lower for term in (
                         "m+", "dazn", "youtube", "fanatiz", "onefootball",
                         "siroko", "tv footballclub", "aragon tv", "aragon play",
-                        "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
+                        "cmmplay", "etb1", "etb2", "etb", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
                     ))
                 )
             )
