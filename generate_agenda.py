@@ -285,6 +285,11 @@ def is_event_allowed_by_futbolenlatv_rules(
     if norm_comp == "brasil serie a" or ("brasil" in norm_comp and "serie a" in norm_comp):
         return (False, False, "", "", "", "", "")
 
+    if sport.upper() == "BALONCESTO" and raw_comp:
+        norm_raw_comp = normalize_search_text(raw_comp)
+        if norm_raw_comp not in {"baloncesto", "basketball", "liga endesa acb", "liga endesa", "acb"}:
+            comp_label = normalize_competition_label(raw_comp)
+
     final_ev = raw_ev
     if comp_label:
         final_ev = re.sub(re.escape(comp_label), "", final_ev, flags=re.IGNORECASE)
@@ -661,6 +666,21 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     padded_blob = f" {normalize_search_text(blob)} "
     padded_tv = f" {normalize_search_text(tv_blob)} "
 
+    is_explicit_basketball = any(
+        tok in padded_blob
+        for tok in (
+            " baloncesto ", " basketball ", " lega basket ",
+            " pallacanestro ", " baskets ", " liga femenina de baloncesto "
+        )
+    )
+    is_explicit_volleyball = any(
+        tok in padded_blob
+        for tok in (" volleyball ", " volley ", " voleibol ")
+    )
+
+    if is_explicit_volleyball and not is_explicit_basketball:
+        return ("", "", "", False, False, "", "")
+
     if EXCLUDED_SPORTS_RE.search(padded_blob) or "ehf tv" in padded_tv or "movistar golf" in padded_blob:
         return ("", "", "", False, False, "", "")
     competition_filter_blob = re.sub(r"\b[1-5]\s*[ªaº]?\s*(?:ronda|round)\b", " ", padded_blob, flags=re.IGNORECASE)
@@ -677,19 +697,31 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(SPANISH_TENNIS_PLAYERS_RE.search(padded_blob))
         return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
 
-    if BASKET_ALLOWED_COMPETITIONS_RE.search(padded_blob):
-        if WOMEN_RE.search(padded_blob) or BASKET_WOMEN_RE.search(padded_blob):
-            return ("", "", "", False, False, "", "")
+    if is_explicit_basketball or BASKET_ALLOWED_COMPETITIONS_RE.search(padded_blob):
         if NBA_RE.search(padded_blob):
             comp_name = "NBA"
             comp_key = "nba"
         elif EUROLIGA_RE.search(padded_blob):
             comp_name = "Euroliga"
             comp_key = "euroliga"
+        elif " liga femenina de baloncesto " in padded_blob:
+            comp_name = "Liga Femenina de Baloncesto"
+            comp_key = "ligaendesa"
+        elif " lega basket " in padded_blob or " pallacanestro " in padded_blob:
+            comp_name = "Lega Basket Serie A"
+            comp_key = "ligaendesa"
+        elif " basketball bundesliga " in padded_blob or " baskets " in padded_blob:
+            comp_name = "Basketball Bundesliga"
+            comp_key = "ligaendesa"
         else:
             comp_name = "Liga Endesa / ACB"
             comp_key = "ligaendesa"
-        is_fav = bool(REAL_MADRID_RE.search(padded_blob) and not YOUTH_BASKET_RE.search(padded_blob))
+        is_fav = bool(
+            REAL_MADRID_RE.search(padded_blob)
+            and not YOUTH_BASKET_RE.search(padded_blob)
+            and not WOMEN_RE.search(padded_blob)
+            and not BASKET_WOMEN_RE.search(padded_blob)
+        )
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
     if WOMEN_RE.search(padded_blob) or any(p.search(padded_blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
@@ -715,7 +747,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
 
-    # Evitar que competiciones extranjeras ("primera division" de Honduras, Bolivia, Paraguay, Costa Rica, etc.) se asignen a LaLiga EA Sports
     foreign_primera_markers = (
         "honduras", "bolivia", "bolivian", "paraguay", "paraguayan",
         "costa rica", "colombia", "chile", "peru", "ecuador", "uruguay",
@@ -723,7 +754,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         "nicaragua", "brazil", "brasil", "portugal", "francia", "france",
         "alemania", "germany", "italia", "italy", "inglaterra", "england"
     )
-    has_primera_division_token = " primera division " in padded_blob and not any(m in padded_blob for m in foreign_primera_markers)
+    has_primera_division_token = (
+        " primera division " in padded_blob
+        and not any(m in padded_blob for m in foreign_primera_markers)
+        and any(sp_m in padded_blob for sp_m in ("espana", "espana -", "real madrid", "barcelona", "atletico", "sevilla", "betis", "valencia", "getafe", "villarreal", "athletic", "real sociedad", "laliga"))
+    )
     if LALIGA_RE.search(padded_blob) or has_primera_division_token:
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
@@ -985,6 +1020,9 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         parsed_url = urlparse(full_url)
 
                         path_lower = parsed_url.path.lower()
+                        if any(k in path_lower for k in ["/volleyball/", "/es/volleyball/", "/voleibol/", "/es/voleibol/"]):
+                            continue
+
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
                         detected_icon = "⚽"
