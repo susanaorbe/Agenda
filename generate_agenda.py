@@ -1874,6 +1874,11 @@ def fetch_and_parse_agenda() -> list[dict]:
                     if is_globally_excluded_event(final_comp, final_event):
                         continue
 
+                    comp_event_norm = normalize_search_text(f"{final_comp} {final_event}")
+                    if re.search(r"\bprimera\s+federacion(?:\s+grupo\s*[12])?\b", comp_event_norm):
+                        if not REAL_MADRID_RE.search(f" {normalize_search_text(final_event)} "):
+                            continue
+
                     event_key = (
                         current_date_obj,
                         time_clean,
