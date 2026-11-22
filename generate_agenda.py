@@ -1898,6 +1898,7 @@ function updateStatsForActiveView() {
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(cleanStr(chk.value)); });
 
         const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
+        const isFavoritesMode = (currentFilter === 'favoritos');
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
@@ -1918,9 +1919,12 @@ function updateStatsForActiveView() {
                 favCount++;
             }
 
-            if (rowDate > TODAY_DATE_STR && matchesSport && matchesSource && matchesSearch) proxCount++;
+            const matchesSourceForSlots = isFavoritesMode ? true : matchesSource;
+            const matchesSportForSlots = isFavoritesMode ? true : matchesSport;
 
-            if (isToday && matchesSport && matchesSource && matchesSearch) {
+            if (rowDate > TODAY_DATE_STR && matchesSportForSlots && matchesSourceForSlots && matchesSearch) proxCount++;
+
+            if (isToday && matchesSportForSlots && matchesSourceForSlots && matchesSearch) {
                 if (rowSlot === 'madrugada') madCount++;
                 else if (rowSlot === 'manana') manCount++;
                 else if (rowSlot === 'tarde') tarCount++;
