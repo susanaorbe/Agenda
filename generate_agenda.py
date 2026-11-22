@@ -370,7 +370,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         else:
             comp_name = "Liga Endesa / ACB"
             comp_key = "ligaendesa"
-        is_fav = bool(REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob))
+        is_fav = bool((REAL_MADRID_RE.search(blob) and not YOUTH_BASKET_RE.search(blob)) or comp_key == "ligaendesa")
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
     if WOMEN_RE.search(blob) or any(p.search(blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
@@ -1834,24 +1834,14 @@ function setFilter(filterType) {
     const chkCdnlive = document.getElementById('chk-cdnlive');
 
     if (isFavView) {
-        if (chkFutbolenlatv) {
-            chkFutbolenlatv.checked = true;
-            chkFutbolenlatv.disabled = true;
-            chkFutbolenlatv.parentElement.style.opacity = '0.6';
-            chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
-        }
-        if (chkFctv) {
-            chkFctv.checked = false;
-            chkFctv.disabled = true;
-            chkFctv.parentElement.style.opacity = '0.6';
-            chkFctv.parentElement.style.cursor = 'not-allowed';
-        }
-        if (chkCdnlive) {
-            chkCdnlive.checked = false;
-            chkCdnlive.disabled = true;
-            chkCdnlive.parentElement.style.opacity = '0.6';
-            chkCdnlive.parentElement.style.cursor = 'not-allowed';
-        }
+        [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
+            if (chk) {
+                chk.checked = true;
+                chk.disabled = false;
+                chk.parentElement.style.opacity = '1';
+                chk.parentElement.style.cursor = 'pointer';
+            }
+        });
     } else {
         [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
             if (chk) {
@@ -1898,7 +1888,7 @@ function updateStatsForActiveView() {
             const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
-            if (isFiltered && source === 'futbolenlatv' && matchesSearch) {
+            if (isFiltered && matchesSource && matchesSport && matchesSearch) {
                 favCount++;
             }
 
@@ -2473,11 +2463,7 @@ if ('ResizeObserver' in window) {
 function applyFilters() {
     if (currentActiveView === 'futbolenlatv') {
         const checkedSources = new Set();
-        if (currentFilter === 'favoritos') {
-            checkedSources.add('futbolenlatv');
-        } else {
-            document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
-        }
+        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(chk.value); });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(chk.value); });
@@ -2673,9 +2659,10 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             is_configured_str = str(ev["is_configured"]).lower()
 
             is_fctv_event = bool(ev.get("fctv_url"))
+            is_acb_fav = bool(ev.get("comp_key") == "ligaendesa" and ev["is_filtered"])
             favorite_pin_html = (
                 '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
-                if ev["is_filtered"] and not is_fctv_event else ""
+                if (ev["is_filtered"] and not is_fctv_event) or is_acb_fav else ""
             )
             comp_html = (
                 f'<span class="comp-meta">({favorite_pin_html}{safe_competition})</span>'
