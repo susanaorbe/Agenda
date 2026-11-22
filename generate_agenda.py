@@ -224,8 +224,84 @@ def normalize_competition_label(comp_text: str) -> str:
     return raw.upper()
 
 
+def is_event_allowed_by_futbolenlatv_rules(
+    sport_label: str,
+    competition_label: str,
+    event_title: str,
+    raw_lines: list[str] | None = None,
+) -> tuple[bool, bool, str, str, str, str]:
+    """
+    Evalúa si un evento y su competición son permitidos según las reglas de FUTBOLENLATV y MOTOR.
+    Retorna: (allowed, is_fav, final_sport_label, final_icon, final_comp_label, final_event_title)
+    """
+    lines = [
+        re.sub(r"\s+", " ", str(x or "")).strip()
+        for x in (raw_lines or [])
+        if re.sub(r"\s+", " ", str(x or "")).strip()
+    ]
+    if event_title and str(event_title).strip() not in lines:
+        lines.insert(0, str(event_title).strip())
+    if competition_label and str(competition_label).strip() not in lines:
+        lines.append(str(competition_label).strip())
+
+    raw_comp = str(competition_label or "").strip()
+    raw_ev = str(event_title or "").strip()
+    blob = normalize_search_text(f"{raw_comp} {raw_ev} {' '.join(lines)}")
+
+    sport_up = str(sport_label or "").strip().upper()
+    is_motor_candidate = sport_up in {"MOTOR", "DEPORTES DE MOTOR"} or any(
+        k in blob
+        for k in [
+            "formula 1", "fórmula 1", "f1", "motogp",
+            "formula e", "fórmula e", "indycar", "indy car",
+            "automovilismo", "motociclismo", "motor",
+        ]
+    )
+
+    if is_motor_candidate:
+        comp_name, motor_title, is_fav = parse_motor_event(blob, raw_comp, lines or [raw_ev])
+        if not comp_name:
+            return (False, False, "", "", "", "")
+        return (
+            True,
+            bool(is_fav),
+            "MOTOR",
+            "🏆",
+            normalize_competition_label(comp_name),
+            motor_title.upper(),
+        )
+
+    sport, icon, competition, is_favorite, _, _, _ = get_sport_and_competition(
+        blob, raw_comp, "", lines or [raw_ev]
+    )
+    if not sport:
+        return (False, False, "", "", "", "")
+
+    comp_label = normalize_competition_label(competition or raw_comp)
+    norm_comp = normalize_search_text(comp_label)
+    if norm_comp == "brasil serie a" or ("brasil" in norm_comp and "serie a" in norm_comp):
+        return (False, False, "", "", "", "")
+
+    final_ev = raw_ev
+    if comp_label:
+        final_ev = re.sub(re.escape(comp_label), "", final_ev, flags=re.IGNORECASE)
+    final_ev = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", final_ev).strip()
+    final_ev = EVENT_CLEANUP_TRAIL_RE.sub("", final_ev).strip()
+    if not EVENT_TEXT_RE.search(final_ev):
+        return (False, False, "", "", "", "")
+
+    return (
+        True,
+        bool(is_favorite),
+        sport.upper(),
+        icon,
+        comp_label,
+        final_ev.upper(),
+    )
+
+
 def fetch_sport_tv_guide_favorite_events() -> list[dict]:
-    """Inicia sesión en sport-tv-guide.live y extrae TODOS los eventos, fecha/hora, competición y canales."""
+    """Inicia sesión en sport-tv-guide.live y extrae los eventos permitidos según las reglas de FUTBOLENLATV."""
     username = (os.environ.get("SPORT_TV_GUIDE_USER") or "").strip()
     password = os.environ.get("SPORT_TV_GUIDE_PASS") or ""
 
@@ -350,12 +426,20 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     sport_count = 0
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
-                        evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
+                        evento_raw = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
                         competicion_raw = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("competicion", ""))).strip()
-                        competicion = normalize_competition_label(competicion_raw)
                         canales = item.get("canales") or []
 
-                        if not hora or not evento or not canales:
+                        if not hora or not evento_raw or not canales:
+                            continue
+
+                        allowed, _, final_sport, final_icon, final_comp, final_event = is_event_allowed_by_futbolenlatv_rules(
+                            sport_label=sport_label,
+                            competition_label=competicion_raw,
+                            event_title=evento_raw,
+                            raw_lines=[evento_raw, competicion_raw],
+                        )
+                        if not allowed:
                             continue
 
                         ev_date = today_date
@@ -373,7 +457,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                             except ValueError:
                                 ev_date = today_date
 
-                        dedup_key = (ev_date.isoformat(), hora, sport_key, normalize_search_text(evento))
+                        dedup_key = (ev_date.isoformat(), hora, normalize_search_text(final_comp), normalize_search_text(final_event))
                         if dedup_key in seen:
                             continue
                         seen.add(dedup_key)
@@ -389,15 +473,15 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                             "ts": ev_ts,
                             "fecha_label": "Hoy" if ev_date == today_date else ev_date.strftime("%d/%m"),
                             "hora": hora,
-                            "deporte": sport_label,
-                            "icono": sport_icon,
-                            "competicion": competicion,
-                            "evento": evento,
+                            "deporte": final_sport,
+                            "icono": final_icon,
+                            "competicion": final_comp,
+                            "evento": final_event,
                             "canales": canales,
                         })
                         sport_count += 1
 
-                    print(f"   -> [{sport_label}] Eventos con canales extraídos de sport-tv-guide.live: {sport_count}")
+                    print(f"   -> [{sport_label}] Eventos permitidos extraídos de sport-tv-guide.live: {sport_count}")
                 except Exception as e:
                     print(f"   [{sport_label}] Error extrayendo {sport_url}: {e}")
 
@@ -444,7 +528,7 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r" national league ", r" vanarama national league ", r" liga u ",
     r" tercera ", r" 3[ªa]\s*(?:rfef|federacion|division|grupo) ", r" grupo 8 ", r" tercera federacion ",
     r" basketball champions league ", r" futsal champions ",
-    r" 2\.?\s*bundesliga ", r" serie a fem+inile ", r" serie a femminile ",
+    r" 2\.?\s*bundesliga ", r" serie a femminile ",
     r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
     r" brasil\s*[-–—]?\s*serie\s+a ",
     r" argentina ", r" torneo clausura ", r" torneo apertura ",
@@ -510,7 +594,7 @@ NATIONS_LEAGUE_RE = rx(r" nations league ")
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
-    if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
+    if any(forbidden in blob_lower for forbidden in ["academy", "academie", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
         return ("", "", False)
     if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
         return ("", "", False)
@@ -643,6 +727,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
 
 
 def fetch_fctv_events(domain: str, today_date: date) -> dict:
+    """Extrae eventos de FCTV33 filtrados estrictamente por las reglas de FUTBOLENLATV (nunca favoritos)."""
     fctv_events_by_sport = {
         "football": [],
         "basketball": [],
@@ -868,23 +953,19 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         detected_sport_key = "football"
                         detected_sport_label = "FÚTBOL"
                         detected_icon = "⚽"
-                        detected_comp_key = "futbol"
 
                         if any(k in path_lower for k in ["/tennis/", "/es/tennis/", "/tenis/", "/es/tenis/"]):
                             detected_sport_key = "tennis"
                             detected_sport_label = "TENIS"
                             detected_icon = "🎾"
-                            detected_comp_key = "tenis"
                         elif any(k in path_lower for k in ["/basketball/", "/es/basketball/", "/baloncesto/", "/es/baloncesto/"]):
                             detected_sport_key = "basketball"
                             detected_sport_label = "BALONCESTO"
                             detected_icon = "🏀"
-                            detected_comp_key = "baloncesto"
                         elif any(k in path_lower for k in ["/motorsport/", "/es/motorsport/", "/motor/", "/es/motor/"]):
                             detected_sport_key = "motorsport"
                             detected_sport_label = "MOTOR"
                             detected_icon = "🏆"
-                            detected_comp_key = "motor"
 
                         canonical_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
                         if canonical_url in global_seen_urls:
@@ -929,36 +1010,22 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             for ln in str(item.get("cardText", "")).splitlines()
                             if re.sub(r"\s+", " ", ln).strip()
                         ]
-                        blob = normalize_search_text(f"{comp_str} {event_str} {' '.join(raw_lines)}")
+                        allowed, _, final_sport_label, final_icon, final_comp, final_event = is_event_allowed_by_futbolenlatv_rules(
+                            sport_label=detected_sport_label,
+                            competition_label=comp_str,
+                            event_title=event_str,
+                            raw_lines=raw_lines or [event_str],
+                        )
+                        if not allowed:
+                            continue
 
-                        comp_name, motor_event_title, is_fav = parse_motor_event(blob, comp_str, raw_lines or [event_str])
-                        if comp_name:
-                            final_sport_label = "MOTOR"
-                            final_icon = "🏆"
-                            final_comp = normalize_competition_label(comp_name)
-                            final_event = motor_event_title.upper()
-                            final_comp_key = "motor"
-                            final_fav = is_fav
-                            bucket_key = "motorsport"
-                        else:
-                            sport, icon, competition, is_favorite, _, _, comp_key = get_sport_and_competition(
-                                blob, comp_str, "", raw_lines or [event_str]
-                            )
-                            if not sport:
-                                continue
-                            final_sport_label = sport.upper()
-                            final_icon = icon
-                            final_comp = normalize_competition_label(competition or comp_str)
-                            final_event = event_str
-                            final_comp_key = comp_key
-                            final_fav = is_favorite
-                            bucket_map = {
-                                "FÚTBOL": "football",
-                                "BALONCESTO": "basketball",
-                                "TENIS": "tennis",
-                                "MOTOR": "motorsport",
-                            }
-                            bucket_key = bucket_map.get(final_sport_label, detected_sport_key)
+                        bucket_map = {
+                            "FÚTBOL": "football",
+                            "BALONCESTO": "basketball",
+                            "TENIS": "tennis",
+                            "MOTOR": "motorsport",
+                        }
+                        bucket_key = bucket_map.get(final_sport_label, detected_sport_key)
 
                         if normalize_search_text(final_comp) == normalize_search_text(final_event):
                             final_comp = final_sport_label
@@ -980,9 +1047,9 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             "evento": final_event,
                             "tv_list": [],
                             "fctv_url": normalized_url,
-                            "is_filtered": final_fav,
+                            "is_filtered": False,
                             "is_configured": True,
-                            "comp_key": final_comp_key,
+                            "comp_key": bucket_key,
                             "source": "fctv33"
                         })
                 except Exception as e:
@@ -1216,10 +1283,13 @@ def fetch_and_parse_agenda() -> list[dict]:
         fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
         for sport_key, events_list in fctv_events_by_sport.items():
             for ev in events_list:
-                event_key = (ev["date_obj"], ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+                ev_copy = dict(ev)
+                ev_copy["is_filtered"] = False
+                ev_copy["source"] = "fctv33"
+                event_key = ("fctv33", ev_copy["date_obj"], ev_copy["hora"], normalize_search_text(ev_copy["competicion"]), normalize_search_text(ev_copy["evento"]))
                 if event_key not in seen_events:
                     seen_events.add(event_key)
-                    futbolenlatv_results.append(ev)
+                    futbolenlatv_results.append(ev_copy)
     else:
         print("Aviso: FCTV33 se omitirá en esta generación: no hay un dominio activo válido (Taplink no disponible).")
 
@@ -1258,7 +1328,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
             if comp_name:
                 comp_label = normalize_competition_label(comp_name)
-                event_key = (current_date_obj, time_clean, comp_label, normalize_search_text(motor_event_title))
+                event_key = ("futbolenlatv", current_date_obj, time_clean, comp_label, normalize_search_text(motor_event_title))
                 if event_key in seen_events:
                     continue
                 seen_events.add(event_key)
@@ -1272,7 +1342,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                     "evento": motor_event_title.upper(),
                     "tv_list": channels,
                     "fctv_url": "",
-                    "is_filtered": is_fav,
+                    "is_filtered": bool(is_fav),
                     "is_configured": True,
                     "comp_key": "motor",
                     "source": "futbolenlatv"
@@ -1316,7 +1386,7 @@ def fetch_and_parse_agenda() -> list[dict]:
             if not EVENT_TEXT_RE.search(final_event):
                 continue
 
-            event_key = (current_date_obj, time_clean, normalize_search_text(competition_label), normalize_search_text(final_event))
+            event_key = ("futbolenlatv", current_date_obj, time_clean, normalize_search_text(competition_label), normalize_search_text(final_event))
             if event_key in seen_events:
                 continue
             seen_events.add(event_key)
@@ -1330,7 +1400,7 @@ def fetch_and_parse_agenda() -> list[dict]:
                 "evento": final_event.upper(),
                 "tv_list": channels,
                 "fctv_url": "",
-                "is_filtered": is_favorite,
+                "is_filtered": bool(is_favorite),
                 "is_configured": is_configured,
                 "comp_key": comp_key,
                 "source": "futbolenlatv"
@@ -1535,9 +1605,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
                 </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <div class="comp-checkboxes" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="applyFilters()"> FUTBOLENLATV</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="applyFilters()"> FCTV33</label>
-                        <label><input type="checkbox" class="source-chk" id="chk-cdnlive" value="cdnlive" onchange="applyFilters()"> CDN LIVE</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-futbolenlatv" value="futbolenlatv" checked onchange="handleSourceChange('futbolenlatv')"> FUTBOLENLATV</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-fctv33" value="fctv33" onchange="handleSourceChange('fctv33')"> FCTV33</label>
+                        <label><input type="checkbox" class="source-chk" id="chk-cdnlive" value="cdnlive" onchange="handleSourceChange('cdnlive')"> SPORT TV GUIDE</label>
                     </div>
                 </div>
             </div>
@@ -1790,27 +1860,29 @@ function updateStickyHeadingOffset() {
 
 function isForbiddenSourceInFavorites(sourceVal) {
     const s = cleanStr(sourceVal);
-    return s === 'fctv33' || s === 'sport tv guide' || s === 'sporttvguide' || s.includes('sport tv guide');
+    return s !== 'futbolenlatv';
 }
 
 function enforceFavoritesForbiddenSources() {
     if (currentFilter !== 'favoritos') return;
     document.querySelectorAll('.source-chk').forEach(chk => {
-        const val = chk.value || '';
-        const labelText = chk.parentElement ? chk.parentElement.textContent || '' : '';
-        if (isForbiddenSourceInFavorites(val) || isForbiddenSourceInFavorites(labelText)) {
-            chk.checked = false;
-            chk.disabled = true;
-            if (chk.parentElement) {
-                chk.parentElement.style.opacity = '0.6';
-                chk.parentElement.style.cursor = 'not-allowed';
-            }
+        const val = cleanStr(chk.value);
+        const isFtv = (val === 'futbolenlatv');
+        chk.checked = isFtv;
+        chk.disabled = true;
+        if (chk.parentElement) {
+            chk.parentElement.style.opacity = isFtv ? '1' : '0.55';
+            chk.parentElement.style.cursor = 'not-allowed';
         }
     });
 }
 
 function handleSourceChange(changedSource) {
-    enforceFavoritesForbiddenSources();
+    if (currentFilter === 'favoritos') {
+        enforceFavoritesForbiddenSources();
+        applyFilters();
+        return;
+    }
     applyFilters();
 }
 
@@ -1868,34 +1940,18 @@ function setFilter(filterType) {
     const chkCdnlive = document.getElementById('chk-cdnlive');
 
     if (isFavView) {
-        if (chkFutbolenlatv) {
-            chkFutbolenlatv.checked = true;
-            chkFutbolenlatv.disabled = true;
-            chkFutbolenlatv.parentElement.style.opacity = '0.6';
-            chkFutbolenlatv.parentElement.style.cursor = 'not-allowed';
-        }
-        if (chkFctv) {
-            chkFctv.checked = false;
-            chkFctv.disabled = true;
-            chkFctv.parentElement.style.opacity = '0.6';
-            chkFctv.parentElement.style.cursor = 'not-allowed';
-        }
-        if (chkCdnlive) {
-            chkCdnlive.checked = false;
-            chkCdnlive.disabled = true;
-            chkCdnlive.parentElement.style.opacity = '0.6';
-            chkCdnlive.parentElement.style.cursor = 'not-allowed';
-        }
         enforceFavoritesForbiddenSources();
     } else {
         [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
             if (chk) {
-                chk.checked = true;
                 chk.disabled = false;
                 chk.parentElement.style.opacity = '1';
                 chk.parentElement.style.cursor = 'pointer';
             }
         });
+        if (chkFutbolenlatv && chkFctv && chkCdnlive && !chkFutbolenlatv.checked && !chkFctv.checked && !chkCdnlive.checked) {
+            chkFutbolenlatv.checked = true;
+        }
     }
 
     applyFilters();
@@ -1922,7 +1978,7 @@ function updateStatsForActiveView() {
         const checkedSources = new Set();
         document.querySelectorAll('.source-chk:checked').forEach(chk => {
             const sVal = cleanStr(chk.value);
-            if (isFavoritesMode && isForbiddenSourceInFavorites(sVal)) return;
+            if (isFavoritesMode && sVal !== 'futbolenlatv') return;
             checkedSources.add(sVal);
         });
 
@@ -1942,26 +1998,22 @@ function updateStatsForActiveView() {
             const rowDate = tr.getAttribute('data-date');
             const isToday = (rowDate === TODAY_DATE_STR);
 
-            const matchesSource = isFavoritesMode
-                ? (!isForbiddenSourceInFavorites(source) && checkedSources.has(source))
-                : checkedSources.has(source);
+            const matchesSource = checkedSources.has(source);
             const matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
-            if (isFiltered && matchesSource && matchesSearch) {
+            if (source === 'futbolenlatv' && isFiltered && matchesSport && matchesSearch) {
                 favCount++;
             }
 
-            const matchesSourceForSlots = isFavoritesMode ? true : matchesSource;
-            const matchesSportForSlots = isFavoritesMode ? true : matchesSport;
-
-            if (rowDate > TODAY_DATE_STR && matchesSportForSlots && matchesSourceForSlots && matchesSearch) proxCount++;
-
-            if (isToday && matchesSportForSlots && matchesSourceForSlots && matchesSearch) {
-                if (rowSlot === 'madrugada') madCount++;
-                else if (rowSlot === 'manana') manCount++;
-                else if (rowSlot === 'tarde') tarCount++;
-                else if (rowSlot === 'noche') nocCount++;
+            if (!isFavoritesMode && matchesSource && matchesSport && matchesSearch) {
+                if (rowDate > TODAY_DATE_STR) proxCount++;
+                else if (isToday) {
+                    if (rowSlot === 'madrugada') madCount++;
+                    else if (rowSlot === 'manana') manCount++;
+                    else if (rowSlot === 'tarde') tarCount++;
+                    else if (rowSlot === 'noche') nocCount++;
+                }
             }
         }
 
@@ -2159,42 +2211,6 @@ function linkAgendaChannelsToCdn() {
             });
         }
     });
-
-    document.querySelectorAll('.tv-badge').forEach(badge => {
-        const textContent = badge.textContent.trim();
-        if (textContent.includes('FCTV33')) return;
-
-        const row = badge.closest('.event-row');
-        if (row && row.getAttribute('data-source') === 'futbolenlatv') {
-            return;
-        }
-
-        const channelName = textContent.replace(' 🔗', '').replace(' ▶', '').trim();
-
-        if (/dazn|disney\+/i.test(channelName)) {
-            badge.removeAttribute('href');
-            badge.classList.remove('channel-chip-link');
-            badge.onclick = null;
-            return;
-        }
-
-        const catalogCh = findCatalogChannel(channelName);
-        const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
-
-        if (playerUrl) {
-            badge.setAttribute('href', '#reproductor');
-            badge.classList.add('channel-chip-link');
-            badge.textContent = channelName + ' 🔗';
-            badge.onclick = (e) => {
-                e.preventDefault();
-                openPlayerModal(channelName, playerUrl);
-            };
-        } else {
-            badge.removeAttribute('href');
-            badge.classList.remove('channel-chip-link');
-            badge.onclick = null;
-        }
-    });
 }
 
 function computeMadridEventTimestamp(dateIso, timeStr) {
@@ -2250,114 +2266,6 @@ function highlightSportTvGuideLiveEvents() {
             card.classList.remove('previous-event');
         }
     });
-}
-
-function scrollToSportTvGuideTargetEvent() {
-    if (currentActiveView !== 'channels' || currentLetterFilter !== 'EVENTOS') return;
-    const panel = document.getElementById('sportTvGuideEventsPanel');
-    if (!panel || panel.style.display === 'none') return;
-
-    const cards = Array.from(panel.querySelectorAll('.stg-event-card'));
-    if (cards.length === 0) return;
-
-    const liveCard = cards.find(card => card.classList.contains('previous-event'));
-    if (!liveCard) return;
-
-    const stickyPanel = document.getElementById('stickyPanel');
-    const stickyOffset = stickyPanel ? stickyPanel.getBoundingClientRect().height + 12 : 12;
-    const cardTop = liveCard.getBoundingClientRect().top + window.scrollY;
-    const targetScrollTop = Math.max(0, cardTop - stickyOffset);
-
-    window.scrollTo({
-        top: targetScrollTop,
-        behavior: 'smooth'
-    });
-}
-
-function renderSportTvGuideEventsView() {
-    const panel = document.getElementById('sportTvGuideEventsPanel');
-    const grid = document.getElementById('channelsGrid');
-    if (!panel || !grid) return;
-
-    if (currentLetterFilter !== 'EVENTOS') {
-        panel.style.display = 'none';
-        panel.innerHTML = '';
-        grid.style.display = 'grid';
-        return;
-    }
-
-    grid.style.display = 'none';
-    panel.style.display = 'block';
-
-    const query = cleanStr(document.getElementById('channelSearch')?.value || '');
-    const sortedEvents = [...(Array.isArray(SPORT_TV_GUIDE_FAV_EVENTS) ? SPORT_TV_GUIDE_FAV_EVENTS : [])].sort((a, b) => {
-        const cmpDate = String(a.date_iso || '').localeCompare(String(b.date_iso || ''));
-        if (cmpDate !== 0) return cmpDate;
-        return String(a.hora || '').localeCompare(String(b.hora || ''));
-    });
-
-    const filteredEvents = sortedEvents.filter(ev => {
-        if (!query) return true;
-        const chNames = (ev.canales || []).map(c => c.name || '').join(' ');
-        const haystack = cleanStr(`${ev.fecha_label || ''} ${ev.hora || ''} ${ev.deporte || ''} ${ev.competicion || ''} ${ev.evento || ''} ${chNames}`);
-        return haystack.includes(query);
-    });
-
-    if (filteredEvents.length === 0) {
-        panel.innerHTML = '<div class="empty-state">😴 No hay eventos disponibles en Sport TV Guide.</div>';
-        return;
-    }
-
-    const nowMs = Date.now();
-
-    panel.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-            ${filteredEvents.map(ev => {
-                const seenLabels = new Set();
-                const channelButtons = (ev.canales || []).map(chObj => {
-                    const chName = cleanSportTvGuideChannelLabel(chObj.name);
-                    if (!chName) return '';
-
-                    const chCountry = String(chObj.country || '').trim();
-                    const mappedName = resolveMappedFavoriteName(chName, chCountry);
-                    const catalogCh = findCatalogChannel(chName, chCountry);
-                    const playerUrl = catalogCh ? safePlayerUrl(catalogCh) : null;
-                    const displayLabel = catalogCh?.name || mappedName || chName;
-
-                    const dedupKey = cleanStr(displayLabel);
-                    if (seenLabels.has(dedupKey)) return '';
-                    seenLabels.add(dedupKey);
-
-                    const safeTitle = displayLabel.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const safeUrlArg = playerUrl ? playerUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
-
-                    return `<a href="#reproductor" class="channel-action" onclick="event.preventDefault(); openPlayerModal('${safeTitle}', '${safeUrlArg}')">▶ ${displayLabel}</a>`;
-                }).filter(Boolean).join('');
-
-                const evTs = Number.isFinite(Number(ev.ts))
-                    ? Number(ev.ts)
-                    : computeMadridEventTimestamp(ev.date_iso, ev.hora);
-                const liveClass = isEventInPlay(ev.date_iso, evTs, nowMs) ? ' previous-event' : '';
-
-                return `
-                    <div class="stg-event-card${liveClass}" data-date="${ev.date_iso || ''}" data-ts="${Number.isFinite(evTs) ? evTs : ''}">
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <span class="date-badge ${ev.fecha_label === 'Hoy' ? 'today' : ''}">${ev.fecha_label || 'Hoy'}</span>
-                            <span class="time-badge">${ev.hora}</span>
-                            <span class="sport-tag" style="color: #38bdf8; font-size: 0.82rem;">${ev.icono || ''} ${ev.deporte || ''}</span>
-                            ${ev.competicion ? `<span style="color: var(--text-muted); font-size: 0.8rem;">(${ev.competicion})</span>` : ''}
-                            <strong class="stg-event-title" style="color: #fff; font-size: 0.9rem;">${ev.evento}</strong>
-                        </div>
-                        <div class="stg-channels-row">
-                            ${channelButtons}
-                        </div>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-
-    scrollToSportTvGuideTargetEvent();
 }
 
 function renderChannelsGrid(channels) {
@@ -2533,7 +2441,7 @@ function applyFilters() {
         const checkedSources = new Set();
         document.querySelectorAll('.source-chk:checked').forEach(chk => {
             const sVal = cleanStr(chk.value);
-            if (isFavoritesMode && isForbiddenSourceInFavorites(sVal)) return;
+            if (isFavoritesMode && sVal !== 'futbolenlatv') return;
             checkedSources.add(sVal);
         });
 
@@ -2556,15 +2464,13 @@ function applyFilters() {
             const rowDate = tr.getAttribute('data-date');
 
             let matchesFilter = false;
-            let matchesSource = isFavoritesMode
-                ? (!isForbiddenSourceInFavorites(source) && checkedSources.has(source))
-                : checkedSources.has(source);
-            let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
+            const matchesSource = checkedSources.has(source);
+            const matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
             if (currentFilter === 'favoritos') {
-                matchesFilter = isFiltered;
+                matchesFilter = (source === 'futbolenlatv') && isFiltered;
             } else if (currentFilter === 'proximamente') {
                 matchesFilter = (rowDate > TODAY_DATE_STR);
             } else {
@@ -2608,13 +2514,32 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     today_date = datetime.now(spain_tz).date()
     fecha_act = datetime.now(spain_tz).strftime("%d/%m/%Y - %H:%M")
 
-    unified_events = list(futbolenlatv_events or [])
+    unified_events = []
+    for ev in (futbolenlatv_events or []):
+        ev_copy = dict(ev)
+        src = str(ev_copy.get("source") or "futbolenlatv").strip().lower()
+        if src not in {"futbolenlatv", "fctv33"}:
+            src = "futbolenlatv"
+        ev_copy["source"] = src
+        if src != "futbolenlatv":
+            ev_copy["is_filtered"] = False
+        unified_events.append(ev_copy)
+
     for stg in (sport_tv_guide_events or []):
         try:
             ev_d = date.fromisoformat(str(stg.get("date_iso", "")))
         except ValueError:
             ev_d = today_date
-        sport_up = str(stg.get("deporte", "")).upper()
+
+        allowed, _, final_sport, final_icon, final_comp, final_event = is_event_allowed_by_futbolenlatv_rules(
+            sport_label=stg.get("deporte", ""),
+            competition_label=stg.get("competicion", ""),
+            event_title=stg.get("evento", ""),
+            raw_lines=[stg.get("evento", ""), stg.get("competicion", "")],
+        )
+        if not allowed:
+            continue
+
         comp_key_map = {
             "FÚTBOL": "futbol",
             "BALONCESTO": "baloncesto",
@@ -2624,16 +2549,16 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
         unified_events.append({
             "date_obj": ev_d,
             "hora": str(stg.get("hora", "")),
-            "deporte": sport_up,
-            "icono": str(stg.get("icono", "")),
-            "competicion": normalize_competition_label(stg.get("competicion", "")),
-            "evento": str(stg.get("evento", "")).upper(),
+            "deporte": final_sport,
+            "icono": final_icon,
+            "competicion": final_comp,
+            "evento": final_event,
             "tv_list": [str(c.get("name", "")) for c in (stg.get("canales") or []) if c.get("name")],
             "stg_channels": stg.get("canales") or [],
             "fctv_url": "",
             "is_filtered": False,
             "is_configured": True,
-            "comp_key": comp_key_map.get(sport_up, ""),
+            "comp_key": comp_key_map.get(final_sport, ""),
             "source": "cdnlive",
         })
 
@@ -2729,13 +2654,13 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             safe_competition = escape(normalize_competition_label(str(ev["competicion"])))
             safe_event = escape(str(ev["evento"]))
 
-            is_filtered_str = str(ev["is_filtered"]).lower()
+            is_fav_only_ftv = bool(ev["is_filtered"]) and (safe_source == "futbolenlatv")
+            is_filtered_str = str(is_fav_only_ftv).lower()
             is_configured_str = str(ev["is_configured"]).lower()
 
-            is_fctv_event = bool(ev.get("fctv_url"))
             favorite_pin_html = (
                 '<span class="favorite-pin" title="Favorito" aria-label="Favorito">📌</span>'
-                if ev["is_filtered"] and not is_fctv_event else ""
+                if is_fav_only_ftv else ""
             )
             comp_html = (
                 f'<span class="comp-meta">({favorite_pin_html}{safe_competition})</span>'
