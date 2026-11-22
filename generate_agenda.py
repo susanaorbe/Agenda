@@ -558,7 +558,11 @@ PRIMERA_RFEF_RE = rx(
     r" primera federacion ", r" primera rfef ", r" 1[ªa]\s*federacion ",
     r" spanish primera division rfef ", r" primera division rfef "
 )
-LALIGA_RE = rx(r" liga ea sports ", r" liga ea ", r" primera division ", r" españa - la liga ", r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ")
+LALIGA_RE = rx(
+    r" liga ea sports ", r" liga ea ", r" espana - la liga ",
+    r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ",
+    r" primera division de espana ", r" primera division espana "
+)
 BASKET_ALLOWED_COMPETITIONS_RE = rx(r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ", r" copa acb ", r" supercopa endesa ", r" supercopa de espana ", r" nba ", r" national basketball association ")
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -590,14 +594,25 @@ COPA_DEL_REY_RE = rx(r" copa del rey ")
 BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
 CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
-PREMIER_RE = rx(r" premier league ", r" premier ", r" inglaterra - premier league ")
-SERIE_A_RE = rx(r" serie a ")
+PREMIER_RE = rx(
+    r" inglaterra - premier league ",
+    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua))",
+    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )premier(?!\s+(?:division|league|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua))"
+)
+SERIE_A_RE = rx(r"(?<!ligapro )(?<!brazilian )(?<!brasil )(?<!femminile )serie a(?!\s+(?:ligapro|brazilian|brasil|femminile))")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
 BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
 LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
 EREDIVISIE_RE = rx(r" eredivisie ")
-LIGA_PORTUGAL_RE = rx(r" liga portugues[ae] ", r" portugues[ae] ", r" betclic ")
-WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
+LIGA_PORTUGAL_RE = rx(
+    r" liga portugal betclic ", r" portugal betclic ", r" betclic ",
+    r" liga portugues[ae](?!\s+(?:sub\s*[-]?\d+|u\d+|2|ii|femenina|women)) "
+)
+WORLD_CUP_RE = rx(
+    r" copa mundial(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
+    r" mundial de la fifa(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
+    r"(?<!u\d\s)(?<!sub\s?\d\s)(?<!women'?s\s)world cup(?!\s+u\d+|\s+sub\s*[-]?\d+|\s+women)"
+)
 EUROCUP_RE = rx(r" eurocup ")
 EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
 NATIONS_LEAGUE_RE = rx(r" nations league ")
@@ -700,7 +715,16 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
 
-    if LALIGA_RE.search(padded_blob):
+    # Evitar que competiciones extranjeras ("primera division" de Honduras, Bolivia, Paraguay, Costa Rica, etc.) se asignen a LaLiga EA Sports
+    foreign_primera_markers = (
+        "honduras", "bolivia", "bolivian", "paraguay", "paraguayan",
+        "costa rica", "colombia", "chile", "peru", "ecuador", "uruguay",
+        "mexico", "argentina", "venezuela", "guatemala", "el salvador", "panama",
+        "nicaragua", "brazil", "brasil", "portugal", "francia", "france",
+        "alemania", "germany", "italia", "italy", "inglaterra", "england"
+    )
+    has_primera_division_token = " primera division " in padded_blob and not any(m in padded_blob for m in foreign_primera_markers)
+    if LALIGA_RE.search(padded_blob) or has_primera_division_token:
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
 
@@ -1005,6 +1029,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                 raw_comp_slug = re.sub(r"-\d{4,}$", "", comp_segment)
 
                             comp_str = re.sub(r"-\d{4,}$", "", raw_comp_slug).replace("-", " ").upper().strip()
+                            # Evitar que una competición del slug de FCTV33 se confunda con otra liga distinta si no es una competición permitida
                             filename = re.sub(r"\.html?$", "", filename, flags=re.IGNORECASE)
                             clean_slug = re.sub(r"-\d{1,2}-\d{4}$", "", filename)
                             clean_slug = re.sub(r"-vs-", " @VS_SEP@ ", clean_slug, flags=re.IGNORECASE)
