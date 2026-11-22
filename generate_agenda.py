@@ -1,5 +1,5 @@
 from collections import Counter
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from html import escape
 from playwright.sync_api import sync_playwright
 import zoneinfo
@@ -20,6 +20,19 @@ from urllib.parse import urlparse, urljoin
 # ============================================================================
 
 WIDGET_URL = "https://www.futbolenlatv.es/deporte"
+FUTBOLENLATV_URLS = [
+    "https://www.futbolenlatv.es/deporte",
+    "https://www.futbolenlatv.es/partidos-futbol",
+    "https://www.futbolenlatv.es/partidos-baloncesto",
+    "https://www.futbolenlatv.es/partidos-tenis",
+    "https://www.futbolenlatv.es/partidos-motor",
+    "https://www.futbolenlatv.es/competicion/liga-f",
+    "https://www.futbolenlatv.es/competicion/premier-league",
+    "https://www.futbolenlatv.es/competicion/serie-a",
+    "https://www.futbolenlatv.es/competicion/bundesliga",
+    "https://www.futbolenlatv.es/competicion/ligue-1",
+    "https://www.futbolenlatv.es/competicion/liga-portuguesa",
+]
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -349,11 +362,13 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
                         raw_ts_attr = str(item.get("rawTsAttr", "")).strip()
+                        has_unix_ts = False
                         if re.fullmatch(r"1\d{9}(?:\d{3})?", raw_ts_attr):
                             try:
                                 ts_val = int(raw_ts_attr[:10])
                                 dt_madrid = datetime.fromtimestamp(ts_val, tz=spain_tz)
                                 hora = f"{dt_madrid.hour:02d}:{dt_madrid.minute:02d}"
+                                has_unix_ts = True
                             except Exception:
                                 pass
                         raw_ev_stg = re.sub(r"[\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
@@ -394,6 +409,16 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                         ev_date = next_month.replace(day=d_num)
                             except ValueError:
                                 ev_date = today_date
+
+                        if not has_unix_ts and hora:
+                            try:
+                                h_utc, m_utc = map(int, hora.split(":"))
+                                dt_utc = datetime(ev_date.year, ev_date.month, ev_date.day, h_utc, m_utc, tzinfo=timezone.utc)
+                                dt_local = dt_utc.astimezone(spain_tz)
+                                ev_date = dt_local.date()
+                                hora = dt_local.strftime("%H:%M")
+                            except Exception:
+                                pass
 
                         dedup_key = (ev_date.isoformat(), hora, sport_key, normalize_search_text(evento))
                         if dedup_key in seen:
@@ -718,6 +743,8 @@ EXCLUDED_COMPETITIONS_EXACT = {
         "SUPERLIGA",
         "SÜPER LIGI",
         "WOMEN EMPOWERMENT LEAGUE",
+        "INDIAN BANGALORE SUPER DIVISION",
+        "UEFA YOUTH LEAGUE",
     ]
 }
 
@@ -775,9 +802,12 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "segunda division": "LaLiga Hypermotion",
     "hypermotion": "LaLiga Hypermotion",
     "liga f": "Liga F",
+    "liga f moeve": "Liga F",
     "primera division (f)": "Liga F",
     "primera division femenina": "Liga F",
     "spanish primera division de la liga de futbol femenino": "Liga F",
+    "united states major league soccer": "Major Soccer League",
+    "major league soccer": "Major Soccer League",
     "uefa champions league": "UEFA Champions League",
     "champions league": "UEFA Champions League",
     "champions": "UEFA Champions League",
@@ -1201,6 +1231,11 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             query += "&ilang=es"
                         normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
 
+                        comp_norm_fctv = normalize_search_text(comp_str)
+                        if re.search(r"\bprimera\s+federaci[oó]n(?:\s+grupo\s*[12])?\b", comp_norm_fctv):
+                            if not REAL_MADRID_RE.search(f" {normalize_search_text(event_str)} "):
+                                continue
+
                         if is_globally_excluded_event(comp_str, event_str):
                             continue
                         fctv_events_by_sport[detected_sport_key].append({
@@ -1392,7 +1427,7 @@ NBA_RE = rx(r" nba ")
 EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
 BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
 COPA_DEL_REY_RE = rx(r" copa del rey ")
-BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
+BASKET_CONTEXT_RE = rx(r" basket ", r" basquet ", r" baloncesto ", r" acb ")
 CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
 PREMIER_RE = rx(r" premier league ", r" premier ", r" inglaterra - premier league ")
@@ -1401,7 +1436,7 @@ BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
 BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
 LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
 EREDIVISIE_RE = rx(r" eredivisie ")
-LIGA_PORTUGAL_RE = rx(r" liga portugues[ae] ", r" portugues[ae] ", r" betclic ")
+LIGA_PORTUGAL_RE = rx(r" liga portugal ", r" liga portugues[ae] ", r" portugues[ae] ", r" betclic ")
 WORLD_CUP_RE = rx(r" copa mundial ", r" mundial de la fifa ", r" world cup ")
 EUROCUP_RE = rx(r" eurocup ")
 EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")
@@ -1729,14 +1764,18 @@ def fetch_and_parse_agenda() -> list[dict]:
     seen_events = set()
     spain_tz = get_spain_timezone()
     today_date = datetime.now(spain_tz).date()
-    current_date_obj = today_date
 
     dynamic_domain = get_dynamic_domain()
     if dynamic_domain:
         fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
         for sport_key, events_list in fctv_events_by_sport.items():
             for ev in events_list:
-                event_key = (ev["date_obj"], ev["hora"], normalize_search_text(ev["competicion"]), normalize_search_text(ev["evento"]))
+                event_key = (
+                    ev["date_obj"],
+                    ev["hora"],
+                    normalize_search_text(ev["competicion"]),
+                    normalize_search_text(ev["evento"]),
+                )
                 if event_key not in seen_events:
                     seen_events.add(event_key)
                     futbolenlatv_results.append(ev)
@@ -1745,108 +1784,120 @@ def fetch_and_parse_agenda() -> list[dict]:
 
     try:
         with create_http_session() as session:
-            response = session.get(WIDGET_URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
-            response.raise_for_status()
-        soup = BeautifulSoup(response.content, "html.parser")
-
-        elements = soup.find_all("tr")
-        if not elements:
-            elements = soup.find_all(["article", "li", "div", "section", "p"])
-        if not elements:
-            elements = [node for node in soup.descendants if getattr(node, "name", None)]
-
-        for element in elements:
-            if not hasattr(element, "get_text"):
-                continue
-
-            el_text = element.get_text(" ", strip=True)
-            date_match = DATE_RE.search(el_text)
-            if date_match:
+            for agenda_url in FUTBOLENLATV_URLS:
+                current_date_obj = today_date
                 try:
-                    d, m, y = map(int, date_match.groups())
-                    current_date_obj = date(y, m, d)
-                except ValueError:
-                    pass
-
-            time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
-            if not time_clean or not channels:
-                continue
-
-            tv_blob = " " + " ".join(channels).lower() + " "
-            blob = " " + normalize_search_text(" ".join(text_lines) + " " + tournament + " " + tv_blob) + " "
-
-            comp_name, motor_event_title, is_motor_fav = parse_motor_event(blob, tournament, text_lines)
-            sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
-                blob, tournament, tv_blob, text_lines
-            )
-
-            if COMBAT_SPORT_RE.search(blob):
-                continue
-
-            in_four_sports = bool(comp_name or sport)
-            if not in_four_sports:
-                if TENNIS_EVENT_RE.search(blob):
-                    sport, icon, comp_key = "Tenis", "🎾", "tenis"
-                    in_four_sports = True
-                elif BASKET_CONTEXT_RE.search(blob) or NBA_RE.search(blob) or EUROLIGA_RE.search(blob):
-                    sport, icon, comp_key = "Baloncesto", "🏀", "baloncesto"
-                    in_four_sports = True
-                elif MOTOR_CONTEXT_RE.search(blob):
+                    response = session.get(agenda_url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+                    response.raise_for_status()
+                except Exception as url_err:
+                    print(f"Aviso cargando {agenda_url}: {url_err}")
                     continue
-                else:
-                    if not EXCLUDED_SPORTS_RE.search(blob) and not GOLF_RE.search(blob):
-                        sport, icon, comp_key = "Fútbol", "⚽", "futbol"
-                        in_four_sports = True
 
-            if not in_four_sports:
-                continue
+                soup = BeautifulSoup(response.content, "html.parser")
 
-            if comp_name:
-                final_sport = "MOTOR"
-                final_icon = "🏆"
-                final_comp = comp_name.upper()
-                final_event = motor_event_title.upper()
-                final_fav = bool(is_motor_fav or is_favorite)
-                final_comp_key = "motor"
-            else:
-                final_sport = sport.upper()
-                final_icon = icon
-                raw_comp = competition if competition else (tournament if tournament else sport)
-                final_comp = canonical_competition_name(raw_comp).upper()
-                raw_ev = custom_event if custom_event else event_str
-                if raw_comp:
-                    raw_ev = re.compile(re.escape(raw_comp), re.IGNORECASE).sub("", raw_ev)
-                raw_ev = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", raw_ev).strip()
-                raw_ev = EVENT_CLEANUP_TRAIL_RE.sub("", raw_ev).strip()
-                final_event = raw_ev.upper()
-                final_fav = bool(is_favorite)
-                final_comp_key = comp_key
+                elements = soup.find_all("tr")
+                if not elements:
+                    elements = soup.find_all(["article", "li", "div", "section", "p"])
+                if not elements:
+                    elements = [node for node in soup.descendants if getattr(node, "name", None)]
 
-            if not EVENT_TEXT_RE.search(final_event):
-                continue
+                for element in elements:
+                    if not hasattr(element, "get_text"):
+                        continue
 
-            if is_globally_excluded_event(final_comp, final_event):
-                continue
+                    el_text = element.get_text(" ", strip=True)
+                    date_match = DATE_RE.search(el_text)
+                    if date_match:
+                        try:
+                            d, m, y = map(int, date_match.groups())
+                            current_date_obj = date(y, m, d)
+                        except ValueError:
+                            pass
 
-            event_key = (current_date_obj, time_clean, normalize_search_text(final_comp), normalize_search_text(final_event))
-            if event_key in seen_events:
-                continue
-            seen_events.add(event_key)
+                    time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
+                    if not time_clean or not channels:
+                        continue
 
-            futbolenlatv_results.append({
-                "date_obj": current_date_obj,
-                "hora": time_clean,
-                "deporte": final_sport,
-                "icono": final_icon,
-                "competicion": final_comp,
-                "evento": final_event,
-                "tv_list": channels,
-                "fctv_url": "",
-                "is_filtered": final_fav,
-                "is_configured": True,
-                "comp_key": final_comp_key,
-                "source": "futbolenlatv"
-            })
+                    tv_blob = " " + " ".join(channels).lower() + " "
+                    blob = " " + normalize_search_text(" ".join(text_lines) + " " + tournament + " " + tv_blob) + " "
+
+                    comp_name, motor_event_title, is_motor_fav = parse_motor_event(blob, tournament, text_lines)
+                    sport, icon, competition, is_favorite, is_configured, custom_event, comp_key = get_sport_and_competition(
+                        blob, tournament, tv_blob, text_lines
+                    )
+
+                    if COMBAT_SPORT_RE.search(blob):
+                        continue
+
+                    in_four_sports = bool(comp_name or sport)
+                    if not in_four_sports:
+                        if TENNIS_EVENT_RE.search(blob):
+                            sport, icon, comp_key = "Tenis", "🎾", "tenis"
+                            in_four_sports = True
+                        elif BASKET_CONTEXT_RE.search(blob) or NBA_RE.search(blob) or EUROLIGA_RE.search(blob):
+                            sport, icon, comp_key = "Baloncesto", "🏀", "baloncesto"
+                            in_four_sports = True
+                        elif MOTOR_CONTEXT_RE.search(blob):
+                            continue
+                        else:
+                            if not EXCLUDED_SPORTS_RE.search(blob) and not GOLF_RE.search(blob):
+                                sport, icon, comp_key = "Fútbol", "⚽", "futbol"
+                                in_four_sports = True
+
+                    if not in_four_sports:
+                        continue
+
+                    if comp_name:
+                        final_sport = "MOTOR"
+                        final_icon = "🏆"
+                        final_comp = comp_name.upper()
+                        final_event = motor_event_title.upper()
+                        final_fav = bool(is_motor_fav or is_favorite)
+                        final_comp_key = "motor"
+                    else:
+                        final_sport = sport.upper()
+                        final_icon = icon
+                        raw_comp = competition if competition else (tournament if tournament else sport)
+                        final_comp = canonical_competition_name(raw_comp).upper()
+                        raw_ev = custom_event if custom_event else event_str
+                        if raw_comp:
+                            raw_ev = re.compile(re.escape(raw_comp), re.IGNORECASE).sub("", raw_ev)
+                        raw_ev = re.sub(r"^[\s\-–—]+|[\s\-–—]+$", "", raw_ev).strip()
+                        raw_ev = EVENT_CLEANUP_TRAIL_RE.sub("", raw_ev).strip()
+                        final_event = raw_ev.upper()
+                        final_fav = bool(is_favorite)
+                        final_comp_key = comp_key
+
+                    if not EVENT_TEXT_RE.search(final_event):
+                        continue
+
+                    if is_globally_excluded_event(final_comp, final_event):
+                        continue
+
+                    event_key = (
+                        current_date_obj,
+                        time_clean,
+                        normalize_search_text(final_comp),
+                        normalize_search_text(final_event),
+                    )
+                    if event_key in seen_events:
+                        continue
+                    seen_events.add(event_key)
+
+                    futbolenlatv_results.append({
+                        "date_obj": current_date_obj,
+                        "hora": time_clean,
+                        "deporte": final_sport,
+                        "icono": final_icon,
+                        "competicion": final_comp,
+                        "evento": final_event,
+                        "tv_list": channels,
+                        "fctv_url": "",
+                        "is_filtered": final_fav,
+                        "is_configured": True,
+                        "comp_key": final_comp_key,
+                        "source": "futbolenlatv",
+                    })
 
     except Exception as e:
         print(f"Error cargando la agenda general: {e}")
@@ -1864,13 +1915,11 @@ def fetch_and_parse_agenda() -> list[dict]:
             "english premier league": "premier league",
             "italian serie a": "serie a",
             "liga asociacion de clubs de baloncesto": "liga endesa acb",
-            "liga asociacion de clubes de baloncesto": "liga endesa acb",
             "liga endesa / acb": "liga endesa acb",
             "liga endesa": "liga endesa acb",
             "spanish primera division de la liga de futbol femenino": "liga f",
             "spanish primera division rfef": "espana - primera federacion",
             "uefa women's champions league": "uefa womens champions league",
-
             "ax olimpia milano": "milano",
             "gales": "wales",
             "northern ireland": "irlanda del norte",
