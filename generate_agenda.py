@@ -766,6 +766,17 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if PREMIER_RE.search(padded_blob):
         return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
 
+    brazil_serie_a_markers = (
+        " brasil ", " brazil ", " brasileirao ", " campeonato brasileiro ",
+        " bragantino ", " rb bragantino ", " vasco ", " vasco da gama ",
+        " botafogo ", " flamengo ", " palmeiras ", " corinthians ",
+        " sao paulo ", " fluminense ", " gremio ", " internacional ",
+        " cruzeiro ", " atletico mineiro ", " bahia ", " fortaleza ",
+        " athletico paranaense ", " vitoria ", " juventude ", " cuiba ", " criciuma "
+    )
+    if SERIE_A_RE.search(padded_blob) and any(m in padded_blob for m in brazil_serie_a_markers):
+        return ("", "", "", False, False, "", "")
+
     if SERIE_A_RE.search(padded_blob) and not ("brasil" in padded_blob or "serie a brasil" in padded_blob):
         return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
 
@@ -1201,7 +1212,7 @@ EXCLUDED_CHANNELS = {
     "rcdeportivo tv youtube", "rcn nuestra tele", "red bull tv", "rfef tv youtube",
     "rfef.es", "rtve play", "sefutbol youtube", "sevilla fc +",
     "siroko tv", "tv 3", "tv footballclub(acceder)", "tv footballclub", "tv canaria",
-    "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tv footballclub ▾",
+    "tv galicia", "tv3(cataluña)", "tvg(galicia)", "tvg2", "tvg 2", "tvg2(galicia)", "tv footballclub ▾",
     "tvg", "tv5monde", "uefa tv", "uefa youtube",
     "win sports tv youtube", "wta tv", "web directo", "zapping internacional",
     "a-leagues youtube", "liga u youtube", "marca youtube", "german football youtube", "l1 max youtube",
