@@ -232,7 +232,7 @@ EXCLUDED_SPORTS_RE = rx(
     r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
     r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
     r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ",
-    r" padel ", r" padell "
+    r" padel ", r" padell ", r" badminton ", r"\bbwf\b"
 )
 
 EXCLUDED_COMPETITIONS_RE = rx(
@@ -280,7 +280,7 @@ CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]
 JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)", r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)", r"\(\s*\d+\s*\)")
 EVENT_CLEANUP_TRAIL_RE = re.compile(r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$", re.IGNORECASE)
 
-TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
+TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" challenger ", r" itf ", r" torneo de ", r"(?:tenis|tennis|atp|wta|itf|challenger)\b[^\n]*\bopen\b|\bopen\b[^\n]*\b(?:tenis|tennis|atp|wta|itf|challenger)\b")
 GOLF_RE = rx(r" golf ")
 NBA_RE = rx(r" nba ")
 EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
