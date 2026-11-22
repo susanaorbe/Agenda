@@ -1788,7 +1788,29 @@ function updateStickyHeadingOffset() {
     document.documentElement.style.setProperty('--sticky-panel-height', panel.getBoundingClientRect().height + 'px');
 }
 
+function isForbiddenSourceInFavorites(sourceVal) {
+    const s = cleanStr(sourceVal);
+    return s === 'fctv33' || s === 'sport tv guide' || s === 'sporttvguide' || s.includes('sport tv guide');
+}
+
+function enforceFavoritesForbiddenSources() {
+    if (currentFilter !== 'favoritos') return;
+    document.querySelectorAll('.source-chk').forEach(chk => {
+        const val = chk.value || '';
+        const labelText = chk.parentElement ? chk.parentElement.textContent || '' : '';
+        if (isForbiddenSourceInFavorites(val) || isForbiddenSourceInFavorites(labelText)) {
+            chk.checked = false;
+            chk.disabled = true;
+            if (chk.parentElement) {
+                chk.parentElement.style.opacity = '0.6';
+                chk.parentElement.style.cursor = 'not-allowed';
+            }
+        }
+    });
+}
+
 function handleSourceChange(changedSource) {
+    enforceFavoritesForbiddenSources();
     applyFilters();
 }
 
@@ -1864,6 +1886,7 @@ function setFilter(filterType) {
             chkCdnlive.parentElement.style.opacity = '0.6';
             chkCdnlive.parentElement.style.cursor = 'not-allowed';
         }
+        enforceFavoritesForbiddenSources();
     } else {
         [chkFutbolenlatv, chkFctv, chkCdnlive].forEach(chk => {
             if (chk) {
@@ -1891,14 +1914,22 @@ function updateStatsForActiveView() {
         let nocCount = 0;
         let proxCount = 0;
 
+        const isFavoritesMode = (currentFilter === 'favoritos');
+        if (isFavoritesMode) {
+            enforceFavoritesForbiddenSources();
+        }
+
         const checkedSources = new Set();
-        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(cleanStr(chk.value)); });
+        document.querySelectorAll('.source-chk:checked').forEach(chk => {
+            const sVal = cleanStr(chk.value);
+            if (isFavoritesMode && isForbiddenSourceInFavorites(sVal)) return;
+            checkedSources.add(sVal);
+        });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(cleanStr(chk.value)); });
 
         const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
-        const isFavoritesMode = (currentFilter === 'favoritos');
 
         for (let i = 0; i < trs.length; i++) {
             const tr = trs[i];
@@ -1911,7 +1942,9 @@ function updateStatsForActiveView() {
             const rowDate = tr.getAttribute('data-date');
             const isToday = (rowDate === TODAY_DATE_STR);
 
-            const matchesSource = checkedSources.has(source);
+            const matchesSource = isFavoritesMode
+                ? (!isForbiddenSourceInFavorites(source) && checkedSources.has(source))
+                : checkedSources.has(source);
             const matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
 
@@ -2492,8 +2525,17 @@ if ('ResizeObserver' in window) {
 
 function applyFilters() {
     if (currentActiveView === 'futbolenlatv') {
+        const isFavoritesMode = (currentFilter === 'favoritos');
+        if (isFavoritesMode) {
+            enforceFavoritesForbiddenSources();
+        }
+
         const checkedSources = new Set();
-        document.querySelectorAll('.source-chk:checked').forEach(chk => { checkedSources.add(cleanStr(chk.value)); });
+        document.querySelectorAll('.source-chk:checked').forEach(chk => {
+            const sVal = cleanStr(chk.value);
+            if (isFavoritesMode && isForbiddenSourceInFavorites(sVal)) return;
+            checkedSources.add(sVal);
+        });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(cleanStr(chk.value)); });
@@ -2514,7 +2556,9 @@ function applyFilters() {
             const rowDate = tr.getAttribute('data-date');
 
             let matchesFilter = false;
-            let matchesSource = checkedSources.has(source);
+            let matchesSource = isFavoritesMode
+                ? (!isForbiddenSourceInFavorites(source) && checkedSources.has(source))
+                : checkedSources.has(source);
             let matchesSport = (currentFilter === 'favoritos') ? true : checkedSports.has(sport);
             const rawSearchQuery = document.getElementById('agendaSearch')?.value || '';
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
