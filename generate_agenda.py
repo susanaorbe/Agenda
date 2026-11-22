@@ -337,7 +337,9 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     sport_count = 0
                     for item in raw_items:
                         hora = _parse_sport_tv_time(item.get("hora", ""))
-                        evento = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip().upper()
+                        raw_ev_stg = re.sub(r"[\u00a0\u200b\ufeff]+", " ", str(item.get("evento", ""))).strip()
+                        raw_ev_stg = re.sub(r"\s{2,}", " - ", raw_ev_stg)
+                        evento = re.sub(r"\s+", " ", raw_ev_stg).strip().upper()
                         raw_stg_comp = str(item.get("competicion", "")).strip()
                         stg_href_low = str(item.get("href", "")).lower()
                         if (
@@ -721,7 +723,6 @@ COMPETITION_SYNONYMS: dict[str, str] = {
     "la liga ea sports": "LaLiga EA Sports",
     "liga ea sports": "LaLiga EA Sports",
     "liga ea": "LaLiga EA Sports",
-    "primera division": "LaLiga EA Sports",
     "espana - la liga": "LaLiga EA Sports",
     "spanish la liga": "LaLiga EA Sports",
     "laliga hypermotion": "LaLiga Hypermotion",
@@ -794,8 +795,20 @@ COMPETITION_SYNONYMS: dict[str, str] = {
 }
 
 
+def deduplicate_repeated_phrase(text: str) -> str:
+    cleaned = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(text or "")).strip()
+    if not cleaned:
+        return ""
+    tokens = cleaned.split(" ")
+    if len(tokens) >= 2 and len(tokens) % 2 == 0:
+        half = len(tokens) // 2
+        if [t.lower() for t in tokens[:half]] == [t.lower() for t in tokens[half:]]:
+            return " ".join(tokens[:half])
+    return cleaned
+
+
 def canonical_competition_name(raw_comp: str) -> str:
-    cleaned = re.sub(r"[\s\u00a0\u200b\ufeff]+", " ", str(raw_comp or "")).strip()
+    cleaned = deduplicate_repeated_phrase(raw_comp)
     if not cleaned:
         return ""
     norm = normalize_search_text(cleaned)
