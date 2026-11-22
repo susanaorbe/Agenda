@@ -304,17 +304,18 @@ NATIONS_LEAGUE_RE = rx(r" nations league ")
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
-    if any(forbidden in blob_lower for forbidden in ["academy", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
+    # Excluir explícitamente F1 Academy y demás categorías/sesiones no deseadas
+    if any(forbidden in blob_lower for forbidden in ["f1 academy", "f1 academie", "academy", "academie", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
         return ("", "", False)
-    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje"]):
+    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje", "libres", "practice", "fp1", "fp2", "fp3"]):
         return ("", "", False)
 
     comp_name = ""
-    if "formula 1" in blob_lower or "f1" in blob_lower:
+    if "formula 1" in blob_lower or re.search(r"\bf1\b", blob_lower):
         comp_name = "Fórmula 1"
     elif "motogp" in blob_lower:
         comp_name = "MotoGP"
-    elif "formula e" in blob_lower or "fórmula e" in blob_lower:
+    elif "formula e" in blob_lower or "formula e" in blob_lower:
         comp_name = "Fórmula E"
     elif "indycar" in blob_lower or "indy car" in blob_lower:
         comp_name = "Indycar"
@@ -332,13 +333,13 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     event_title = f"{comp_name} - {clean_desc}"
     clean_norm = normalize_search_text(event_title)
 
-    is_fav = False
-    if comp_name == "Fórmula 1":
-        is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
-    else:
-        is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
+    # Solo sesiones principales/clasificación/sprint permitidas
+    allowed_sessions = ["carrera", "race", "clasificacion", "qualifying", "sprint"] if comp_name == "Fórmula 1" else ["carrera", "race", "sprint"]
+    is_fav = any(k in clean_norm for k in allowed_sessions)
+    if not is_fav:
+        return ("", "", False)
 
-    return (comp_name, event_title, is_fav)
+    return (comp_name, event_title, True)
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
