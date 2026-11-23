@@ -625,7 +625,7 @@ NATIONS_LEAGUE_RE = rx(r" nations league ")
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
-    if any(forbidden in blob_lower for forbidden in ["academy", "academie", "moto2", "moto 2", "moto3", "moto 3", "rookies", "supercars"]):
+    if any(forbidden in blob_lower for forbidden in ["academy", "academie", "moto2", "moto 2", "moto3", "moto 3", "motomini", "moto mini", "160cc", "rookies", "supercars"]):
         return ("", "", False)
     if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje", "warm up", "warmup"]):
         return ("", "", False)
@@ -698,7 +698,26 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("Tenis", "🎾", comp, is_fav, True, "", "tenis")
 
     if is_explicit_basketball or BASKET_ALLOWED_COMPETITIONS_RE.search(padded_blob):
-        if " primera feb " in padded_blob or " liga femenina endesa " in padded_blob:
+        if (
+            " primera feb " in padded_blob
+            or " liga femenina endesa " in padded_blob
+            or " korean womens basketball league " in padded_blob
+            or " china womens basketball association " in padded_blob
+            or " fiba africa basketball league " in padded_blob
+            or " womens basketball " in padded_blob
+            or " women basketball " in padded_blob
+        ):
+            return ("", "", "", False, False, "", "")
+        if not BASKET_ALLOWED_COMPETITIONS_RE.search(padded_blob) and not any(
+            tok in padded_blob
+            for tok in (
+                " liga femenina de baloncesto ",
+                " lega basket ",
+                " pallacanestro ",
+                " basketball bundesliga ",
+                " baskets ",
+            )
+        ):
             return ("", "", "", False, False, "", "")
         if NBA_RE.search(padded_blob):
             comp_name = "NBA"
