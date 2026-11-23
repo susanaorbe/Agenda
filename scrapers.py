@@ -855,3 +855,20 @@ def fetch_and_parse_agenda() -> list[dict]:
         print(f"Error cargando la agenda general: {e}")
 
     futbolenlatv_results.sort(key=event_similarity_key)
+    return futbolenlatv_results
+
+
+def event_similarity_key(x):
+    comp_norm = normalize_search_text(x.get("competicion", ""))
+    ev_norm = normalize_search_text(x.get("evento", ""))
+
+    for k, v in EVENT_SIMILARITY_SYNONYMS.items():
+        comp_norm = comp_norm.replace(k, v)
+        ev_norm = ev_norm.replace(k, v)
+
+    for w in [" vs ", " - ", "fc", "bc", "basket", "club", "mts", "red", "star"]:
+        ev_norm = ev_norm.replace(w, " ")
+
+    ev_core = " ".join(sorted(set([w for w in ev_norm.split() if len(w) > 2])))
+    ev_date = x.get("date_obj") or date.min
+    return (ev_date, x.get("hora", ""), comp_norm, ev_core)
