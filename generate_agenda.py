@@ -448,6 +448,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
 
                         if not hora or not evento_raw or not canales:
                             continue
+                        if contains_previo_or_previa(evento_raw, competicion_raw):
+                            continue
 
                         allowed, is_fav, final_sport, final_icon, final_comp, final_event, comp_key = is_event_allowed_by_futbolenlatv_rules(
                             sport_label=sport_label,
@@ -522,6 +524,17 @@ def normalize_search_text(text: str) -> str:
     )
     value = re.sub(r"[|,;:/]+", " ", value)
     return re.sub(r"\s+", " ", value).strip()
+
+
+def contains_previo_or_previa(*texts) -> bool:
+    """Devuelve True si algún texto contiene la palabra 'previo' o 'previa'."""
+    for txt in texts:
+        if not txt:
+            continue
+        norm = normalize_search_text(str(txt))
+        if re.search(r"\bprevi[oa]s?\b", norm):
+            return True
+    return False
 
 
 def rx(*patterns: str) -> re.Pattern:
@@ -1065,6 +1078,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         href = item.get("href", "")
                         if not href:
                             continue
+                        if contains_previo_or_previa(href, item.get("cardText", "")):
+                            continue
 
                         full_url = urljoin(base_url, href)
                         parsed_url = urlparse(full_url)
@@ -1126,6 +1141,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             pass
 
                         if not event_str or event_str == "EVENTO FCTV33":
+                            continue
+                        if contains_previo_or_previa(comp_str, event_str):
                             continue
 
                         raw_lines = [
@@ -1276,6 +1293,32 @@ def is_excluded_channel(channel: str) -> bool:
     return key in EXCLUDED_CHANNEL_KEYS
 
 
+COMPETITION_TERMS = (
+    "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo",
+    "torneo", "serie a", "endesa", "bundesliga", "atp", "wta", "masters",
+    "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague",
+    "nba", "portugal", "portuguesa",
+)
+
+EVENT_SIMILARITY_SYNONYMS = {
+    "euroleague": "euroliga",
+    "national basketball association": "nba",
+    "french ligue 1": "ligue 1",
+    "spanish la liga": "laliga ea sports",
+    "spanish primera division de la liga de futbol femenino": "liga f",
+    "spanish primera division rfef": "espana - primera federacion",
+    "uefa women's champions league": "uefa womens champions league",
+    "ax olimpia milano": "milano",
+    "gales": "wales",
+    "northern ireland": "irlanda del norte",
+    "olimpia milano": "milano",
+    "paris basketball": "paris",
+    "republica irlanda": "ireland",
+    "rumania": "romania",
+    "saski baskonia": "baskonia",
+    "winterthur fc barcelona": "barcelona",
+}
+
 def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     if item is None or not hasattr(item, "get_text"):
         return "", "", [], "", []
@@ -1295,10 +1338,6 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     channel_keys = set()
     text_lines = []
 
-    competition_terms = (
-        "liga", "primera", "segunda", "tercera", "federacion", "division", "grupo", "torneo", "serie a",
-        "endesa", "bundesliga", "atp", "wta", "masters", "copa", "champions", "superbike", "eredivisie", "euroliga", "euroleague", "nba", "portugal", "portuguesa"
-    )
 
     for part in raw_parts:
         part = JUNK_RESIDUES_RE.sub("", part).strip()
@@ -1360,7 +1399,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     matchup_candidates = []
     for part in text_lines:
         part_lower = normalize_search_text(part)
-        is_competition_line = any(term in part_lower for term in competition_terms)
+        is_competition_line = any(term in part_lower for term in COMPETITION_TERMS)
         has_match_separator = bool(
             re.search(r"\s+-\s+|\s+vs\.?\s+|\s+v\.\s+", part, re.IGNORECASE)
             or re.search(r"\s\(f\)\s*-\s*", part, re.IGNORECASE)
@@ -1391,6 +1430,9 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
     matchup = " - ".join(event_lines) if event_lines else tournament
     matchup = EVENT_CLEANUP_TRAIL_RE.sub("", matchup).strip()
 
+    if contains_previo_or_previa(tournament, matchup, *text_lines):
+        return "", "", [], "", []
+
     return time_clean, matchup, channels, tournament, text_lines
 
 
@@ -1398,27 +1440,7 @@ def event_similarity_key(x):
     comp_norm = normalize_search_text(x.get("competicion", ""))
     ev_norm = normalize_search_text(x.get("evento", ""))
 
-    synonyms = {
-        "euroleague": "euroliga",
-        "national basketball association": "nba",
-        "french ligue 1": "ligue 1",
-        "spanish la liga": "laliga ea sports",
-        "spanish primera division de la liga de futbol femenino": "liga f",
-        "spanish primera division rfef": "espana - primera federacion",
-        "uefa women's champions league": "uefa womens champions league",
-
-        "ax olimpia milano": "milano",
-        "gales": "wales",
-        "northern ireland": "irlanda del norte",
-        "olimpia milano": "milano",
-        "paris basketball": "paris",
-        "republica irlanda": "ireland",
-        "rumania": "romania",
-        "saski baskonia": "baskonia",
-        "winterthur fc barcelona": "barcelona",
-    }
-
-    for k, v in synonyms.items():
+    for k, v in EVENT_SIMILARITY_SYNONYMS.items():
         comp_norm = comp_norm.replace(k, v)
         ev_norm = ev_norm.replace(k, v)
 
@@ -1479,6 +1501,8 @@ def fetch_and_parse_agenda() -> list[dict]:
 
             time_clean, event_str, channels, tournament, text_lines = parse_row_elements(element)
             if not time_clean or not channels:
+                continue
+            if contains_previo_or_previa(el_text, event_str, tournament, *text_lines):
                 continue
 
             tv_blob = " ".join(channels).lower()
@@ -1612,7 +1636,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         .table-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); margin-bottom: 80px; }
         .events-stack { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; }
 
-        .stg-event-card { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; }
+        .stg-event-card { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px; scroll-margin-top: calc(var(--sticky-panel-height, 260px) + 14px); }
         .stg-event-card.previous-event { background: rgba(56, 189, 248, 0.075); border-color: rgba(56, 189, 248, 0.42); border-left: 3px solid #38bdf8; }
         .stg-event-card.previous-event .time-badge { background: #0369a1; box-shadow: 0 0 0 1px rgba(125, 211, 252, 0.35); }
         .stg-event-title::before { content: none; }
@@ -1809,10 +1833,33 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 const TODAY_DATE_STR = "{TODAY_DATE_STR}";
 const SPORT_TV_GUIDE_FAV_EVENTS = {SPORT_TV_GUIDE_EVENTS_JSON};
 const EMBEDDED_CHANNELS = {EMBEDDED_CHANNELS_JSON};
-let currentFilter = 'favoritos';
+let currentFilter = getCurrentTimeSlotFilter();
+function getCurrentTimeSlotFilter() {
+    try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Europe/Madrid',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(now);
+        const hh = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+        const mm = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+        const totalMins = hh * 60 + mm;
+        if (totalMins <= 419) return 'madrugada';
+        if (totalMins <= 779) return 'manana';
+        if (totalMins <= 1229) return 'tarde';
+        return 'noche';
+    } catch (_) {
+        return 'tarde';
+    }
+}
+
 let currentActiveView = 'futbolenlatv';
 let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
+let hasPerformedInitialScroll = false;
 
 function toggleClearBtn(inputId, btnId) {
     const inp = document.getElementById(inputId);
@@ -2171,7 +2218,7 @@ function switchView(viewName) {
         if (btnFutbolenlatv) btnFutbolenlatv.classList.add('active');
         futbolenlatvContainer.style.display = 'block';
         futbolenlatvControls.style.display = 'block';
-        setFilter('favoritos');
+        setFilter(getCurrentTimeSlotFilter());
     } else if (viewName === 'channels') {
         if (btnChannels) btnChannels.classList.add('active');
         channelsContainer.style.display = 'block';
@@ -2467,7 +2514,8 @@ function highlightPreviousEvents() {
     highlightSportTvGuideLiveEvents();
 }
 
-function scrollToTargetEvent() {
+function scrollToTargetEvent(forceScroll = false) {
+    if (!forceScroll && typeof hasPerformedInitialScroll !== 'undefined' && hasPerformedInitialScroll) return;
     const table = document.getElementById('futbolenlatvTable');
     if (!table) return;
     const visibleRows = Array.from(table.getElementsByClassName('stg-event-card')).filter(r => r.style.display !== 'none');
@@ -2484,11 +2532,19 @@ function scrollToTargetEvent() {
     }
 
     if (!targetRow) {
-        targetRow = visibleRows[visibleRows.length - 1];
+        targetRow = visibleRows[0];
     }
 
     if (targetRow) {
-        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        updateStickyHeadingOffset();
+        const panelHeight = document.getElementById('stickyPanel')?.getBoundingClientRect().height || 0;
+        const rect = targetRow.getBoundingClientRect();
+        const absoluteTop = rect.top + window.scrollY - panelHeight - 14;
+        window.scrollTo({
+            top: Math.max(0, absoluteTop),
+            behavior: 'auto'
+        });
+        hasPerformedInitialScroll = true;
     }
 }
 
@@ -2496,7 +2552,7 @@ window.addEventListener('load', async () => {
     await initApp();
     highlightPreviousEvents();
     setInterval(highlightPreviousEvents, 60000);
-    setFilter('favoritos');
+    setFilter(getCurrentTimeSlotFilter());
     updateStickyHeadingOffset();
 });
 
@@ -2573,7 +2629,7 @@ function applyFilters() {
             } else { emptyRow.style.display = ''; }
         } else {
             if (emptyRow) emptyRow.style.display = 'none';
-            scrollToTargetEvent();
+            scrollToTargetEvent(false);
         }
     }
 }
@@ -2590,6 +2646,8 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
 
     unified_events = []
     for ev in (futbolenlatv_events or []):
+        if contains_previo_or_previa(ev.get("competicion", ""), ev.get("evento", "")):
+            continue
         ev_copy = dict(ev)
         src = str(ev_copy.get("source") or "futbolenlatv").strip().lower()
         if src not in {"futbolenlatv", "fctv33"}:
@@ -2600,6 +2658,8 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
         unified_events.append(ev_copy)
 
     for stg in (sport_tv_guide_events or []):
+        if contains_previo_or_previa(stg.get("competicion", ""), stg.get("evento", "")):
+            continue
         try:
             ev_d = date.fromisoformat(str(stg.get("date_iso", "")))
         except ValueError:
@@ -2742,7 +2802,11 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
             )
 
     futbolenlatv_rows_html = "".join(rows_list)
-    safe_stg_json = json.dumps(sport_tv_guide_events or [], ensure_ascii=False).replace("</", "<\\/")
+    filtered_stg_events = [
+        stg for stg in (sport_tv_guide_events or [])
+        if not contains_previo_or_previa(stg.get("competicion", ""), stg.get("evento", ""))
+    ]
+    safe_stg_json = json.dumps(filtered_stg_events, ensure_ascii=False).replace("</", "<\\/")
 
     embedded_channels = []
     try:
