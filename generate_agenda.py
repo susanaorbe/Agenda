@@ -251,6 +251,11 @@ def is_event_allowed_by_futbolenlatv_rules(
     blob = normalize_search_text(f"{raw_comp} {raw_ev} {' '.join(lines)}")
 
     sport_up = str(sport_label or "").strip().upper()
+    if sport_up in {"BALONCESTO", "BASKETBALL"} and (
+        "femenin" in blob or "women" in blob or " (f) " in f" {blob} " or " (w) " in f" {blob} "
+    ):
+        return (False, False, "", "", "", "", "")
+
     is_motor_candidate = sport_up in {"MOTOR", "DEPORTES DE MOTOR"} or any(
         k in blob
         for k in [
@@ -653,12 +658,21 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     event_title = f"{comp_name} - {clean_desc}"
     clean_norm = normalize_search_text(event_title)
 
-    is_fav = False
     if comp_name == "Fórmula 1":
         is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
-    else:
-        is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
+        return (comp_name, event_title, is_fav)
 
+    if comp_name == "MotoGP":
+        has_allowed_session = any(k in clean_norm for k in ["carrera", "race", "sprint"])
+        is_practice_or_quali = any(
+            k in clean_norm
+            for k in ["free practice", "practice", "qualifying", "clasificacion", "fp1", "fp2", "q1", "q2"]
+        )
+        if is_practice_or_quali and not has_allowed_session:
+            return ("", "", False)
+        return (comp_name, event_title, has_allowed_session)
+
+    is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
     return (comp_name, event_title, is_fav)
 
 
@@ -701,11 +715,15 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if (
             " primera feb " in padded_blob
             or " liga femenina endesa " in padded_blob
+            or " euroliga femenina " in padded_blob
+            or " euroleague women " in padded_blob
             or " korean womens basketball league " in padded_blob
             or " china womens basketball association " in padded_blob
             or " fiba africa basketball league " in padded_blob
             or " womens basketball " in padded_blob
             or " women basketball " in padded_blob
+            or WOMEN_RE.search(padded_blob)
+            or BASKET_WOMEN_RE.search(padded_blob)
         ):
             return ("", "", "", False, False, "", "")
         if not BASKET_ALLOWED_COMPETITIONS_RE.search(padded_blob) and not any(
