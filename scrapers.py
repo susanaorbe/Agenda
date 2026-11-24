@@ -660,13 +660,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         href = item.get("href", "")
                         if not href:
                             continue
-                        if any(tok in href.lower() for tok in ("2280700", "bayern", "2280705", "pamesa-valencia")):
-                            print(
-                                "DIAG FCTV MATCH:",
-                                "| href=", href,
-                                "| cardText=", repr(item.get("cardText", "")),
-                                "| dataAttrs=", repr(item.get("dataAttrs", "")),
-                            )
                         if contains_previo_or_previa(href, item.get("cardText", "")):
                             continue
 
