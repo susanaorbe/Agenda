@@ -426,7 +426,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 return links;
             }""")
 
-            valid_categories = set()
+            valid_categories = []
+            seen_cats = set()
             for link in category_links:
                 if link.startswith("mailto:") or "javascript:" in link or "taplink" in link:
                     continue
@@ -434,8 +435,14 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 path_l = parsed_l.path.strip("/")
                 if path_l and "." in path_l and not path_l.endswith(".html"):
                     continue
-                if path_l and path_l not in valid_categories:
-                    valid_categories.add(path_l)
+                if path_l and path_l not in seen_cats:
+                    seen_cats.add(path_l)
+                    valid_categories.append(path_l)
+
+            for fallback_cat in ("es/basketball.html", "es/basketball"):
+                if fallback_cat not in seen_cats:
+                    seen_cats.add(fallback_cat)
+                    valid_categories.append(fallback_cat)
 
             global_seen_urls = set()
 
@@ -446,11 +453,14 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                 try:
                     page.goto(cat_url, timeout=25000, wait_until="domcontentloaded")
-                    page.wait_for_timeout(1000)
+                    try:
+                        page.wait_for_selector('a[href*="-match-"]', timeout=8000)
+                    except Exception:
+                        page.wait_for_timeout(1200)
 
-                    for _ in range(3):
+                    for _ in range(5):
                         page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
-                        page.wait_for_timeout(300)
+                        page.wait_for_timeout(350)
                     page.evaluate("window.scrollTo(0, 0)")
 
                     candidate_cards = page.evaluate("""() => {
@@ -619,7 +629,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         canonical_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
                         if canonical_url in global_seen_urls:
                             continue
-                        global_seen_urls.add(canonical_url)
 
                         current_event_date, extracted_time = parse_fctv_datetime(item)
                         if not current_event_date or not extracted_time or extracted_time == "LIVE":
@@ -688,6 +697,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         elif "ilang=" not in query:
                             query += "&ilang=es"
                         normalized_url = f"{parsed_url.scheme or 'https'}://{parsed_url.netloc}{parsed_url.path}?{query}"
+
+                        global_seen_urls.add(canonical_url)
 
                         fctv_events_by_sport[bucket_key].append({
                             "date_obj": current_event_date,

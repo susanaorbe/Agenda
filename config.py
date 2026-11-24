@@ -217,7 +217,12 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
     re.IGNORECASE
 )
 
-TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
+TENNIS_EVENT_RE = rx(
+    r" tenis ", r" atp ", r" wta ", r" masters ", r" open ",
+    r" challenger ", r" itf ", r" torneo de ",
+    r" davis cup ", r" copa davis ", r" billie jean king cup ",
+    r" united cup ", r" laver cup "
+)
 GOLF_RE = rx(r" golf ")
 NBA_RE = rx(
     r"(?<!g )(?<!nba )nba(?!\s*(?:g\s*league|gleague|summer\s*league|2k|draft))",
