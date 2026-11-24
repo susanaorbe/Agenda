@@ -190,7 +190,8 @@ LALIGA_RE = rx(
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
     r" liga endesa ", r" acb ", r" euroliga ", r" euroleague ", r" euro league ",
     r" copa acb ", r" supercopa endesa ", r" supercopa de espana ",
-    r" nba ", r" national basketball association "
+    r"(?<!g )(?<!nba )nba(?!\s*(?:g\s*league|gleague|summer\s*league|2k|draft))",
+    r"national basketball association(?!\s+(?:g\s*league|gleague|summer\s*league|development\s*league))"
 )
 
 WOMEN_FOOTBALL_COMPETITIONS = (
@@ -218,7 +219,10 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
 
 TENNIS_EVENT_RE = rx(r" tenis ", r" atp ", r" wta ", r" masters ", r" open ", r" challenger ", r" itf ", r" torneo de ")
 GOLF_RE = rx(r" golf ")
-NBA_RE = rx(r" nba ", r" national basketball association ")
+NBA_RE = rx(
+    r"(?<!g )(?<!nba )nba(?!\s*(?:g\s*league|gleague|summer\s*league|2k|draft))",
+    r"national basketball association(?!\s+(?:g\s*league|gleague|summer\s*league|development\s*league))"
+)
 EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
 BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
 COPA_DEL_REY_RE = rx(r" copa del rey ")
@@ -227,13 +231,17 @@ CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
 PREMIER_RE = rx(
     r" inglaterra - premier league ",
-    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua))",
-    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )premier(?!\s+(?:division|league|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua))"
+    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern))",
+    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )premier(?!\s+(?:division|league|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern))"
 )
 SERIE_A_RE = rx(r"(?<!ligapro )(?<!brazilian )(?<!brasil )(?<!femminile )serie a(?!\s+(?:ligapro|brazilian|brasil|femminile))")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
 BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
-LIGUE1_RE = rx(r" ligue 1 ", r" francia - ligue 1 ")
+LIGUE1_RE = rx(
+    r" francia - ligue 1 ",
+    r" french ligue 1 ",
+    r"(?<!mauritania )(?<!mauritanian )(?<!algeria )(?<!algerian )(?<!tunisia )(?<!tunisian )(?<!morocco )(?<!moroccan )ligue 1(?!\s+(?:mauritania|mauritanian|algeria|algerian|tunisia|tunisian|morocco|moroccan))"
+)
 EREDIVISIE_RE = rx(r" eredivisie ")
 LIGA_PORTUGAL_RE = rx(
     r" liga portugal betclic ", r" portugal betclic ", r" betclic ",

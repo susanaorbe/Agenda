@@ -354,7 +354,7 @@ def is_event_allowed_by_futbolenlatv_rules(
 
     if sport.upper() == "BALONCESTO" and raw_comp:
         norm_raw_comp = normalize_search_text(raw_comp)
-        if norm_raw_comp not in {"baloncesto", "basketball", "liga endesa acb", "liga endesa", "acb"}:
+        if norm_raw_comp in {"euroliga", "euroleague", "euro league", "nba", "national basketball association", "liga endesa acb", "liga endesa", "acb"}:
             comp_label = normalize_competition_label(raw_comp)
 
     final_ev = raw_ev
