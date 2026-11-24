@@ -150,7 +150,7 @@ SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
 EXCLUDED_SPORTS_RE = rx(
     r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
     r" balonmano ", r" asobal ", r" handball ", r" waterpolo ", r" rugby ", r" rutby ", r" rucby ", r" rubgy ",
-    r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ",
+    r" ehf ", r" ihf ", r" futsal ", r" futbol sala ", r" golf ", r" beisbol ", r" baseball ", r" wbsc ",
     r" padel ", r" padell ",
     r" badminton ", r" bwf ", r" cricket ", r" t20 ", r" list a ", r" emerging teams ",
     r" snooker ", r" darts ", r" dardos ", r" boxing ", r" ufc ", r" mma "

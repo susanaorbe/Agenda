@@ -117,9 +117,47 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     return (comp_name, event_title, is_fav)
 
 
+def _is_non_football_premier_event(padded_blob: str) -> bool:
+    """Detecta torneos o eventos de otros deportes con la palabra 'premier' (ej. WBSC Premier 12)."""
+    if re.search(r"\bwbsc\s+premier(?:\s+\d+)?\b", padded_blob):
+        return True
+    if " premier 12 " in padded_blob or re.search(r"\bpremier\s*12\b", padded_blob):
+        return True
+    non_football_tokens = (
+        " beisbol ", " baseball ", " wbsc ", " softball ", " softbol ",
+        " snooker ", " darts ", " dardos ", " badminton ", " squash ", " table tennis ", " tenis de mesa "
+    )
+    return any(tok in padded_blob for tok in non_football_tokens)
+
+
+def _is_non_english_premier_league(padded_blob: str) -> bool:
+    """Evita confundir ligas nacionales o torneos llamados 'premier league' de otros países con la Premier League inglesa."""
+    non_english_tokens = (
+        " lebanese ", " libano ", " liban ",
+        " egyptian ", " egipto ", " egypt ",
+        " irish ", " irlandesa ", " ireland ",
+        " welsh ", " gales ", " wales ",
+        " scottish ", " escocia ", " scotland ",
+        " thai ", " tailandia ", " thailand ",
+        " indian ", " india ",
+        " russian ", " rusia ", " russia ",
+        " ukrainian ", " ucrania ", " ukraine ",
+        " armenian ", " armenia ",
+        " vietnamese ", " vietnam ",
+        " malaysian ", " malasia ", " malaysia ",
+        " singapore ", " singapur ",
+        " ghana ", " kenya ", " uganda ", " tanzania ", " zambia ", " nigeria ", " south africa ",
+        " premier 12 ", " wbsc ",
+    )
+    return any(tok in padded_blob for tok in non_english_tokens)
+
+
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     padded_blob = f" {normalize_search_text(blob)} "
     padded_tv = f" {normalize_search_text(tv_blob)} "
+
+    if _is_non_football_premier_event(padded_blob):
+        return ("", "", "", False, False, "", "")
 
     is_explicit_basketball = any(
         tok in padded_blob
@@ -251,7 +289,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
 
-    if PREMIER_RE.search(padded_blob):
+    if PREMIER_RE.search(padded_blob) and not _is_non_english_premier_league(padded_blob):
         return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
 
     brazil_serie_a_markers = (
@@ -322,6 +360,8 @@ def is_event_allowed_by_futbolenlatv_rules(
     blob = normalize_search_text(f"{raw_comp} {raw_ev} {' '.join(lines)}")
 
     sport_up = str(sport_label or "").strip().upper()
+    if _is_non_football_premier_event(f" {blob} "):
+        return (False, False, "", "", "", "", "")
     if sport_up in {"BALONCESTO", "BASKETBALL"} and (
         "femenin" in blob or "women" in blob or " (f) " in f" {blob} " or " (w) " in f" {blob} "
     ):
