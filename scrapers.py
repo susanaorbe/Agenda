@@ -33,6 +33,14 @@ from rules import (
 )
 
 
+def _has_whole_word(text_norm: str, words: list[str]) -> bool:
+    """Comprueba si alguna palabra aparece como palabra completa en un texto normalizado."""
+    if not text_norm or not words:
+        return False
+    escaped = "|".join(re.escape(w) for w in words)
+    return bool(re.search(rf"(?<![a-z0-9])(?:{escaped})(?![a-z0-9])", text_norm))
+
+
 def update_channels_json_from_api():
     """Consulta la API oficial de CDN Live TV y actualiza channels.json correctamente."""
     api_url = "https://api.cdnlivetv.tv/api/v1/channels/?user=cdnlivetv&plan=free"
@@ -583,7 +591,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             return None, ""
                         extracted_t = f"{int(t_match.group(1)):02d}:{t_match.group(2)}"
 
-                        has_explicit_past_marker = any(k in text_norm for k in ["ayer", "yesterday"])
+                        has_explicit_past_marker = _has_whole_word(text_norm, ["ayer", "yesterday"])
                         has_explicit_date = bool(
                             re.search(r"\b\d{1,2}[/-]\d{1,2}(?:[/-](?:20)?\d{2})?\b", card_text)
                             or re.search(
@@ -620,9 +628,12 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             except ValueError:
                                 pass
 
-                        if any(k in text_norm for k in ["en vivo", "en directo", "directo", "live", "hoy", "today"]):
+                        if (
+                            _has_whole_word(text_norm, ["en vivo", "en directo", "directo", "live", "hoy", "today"])
+                            or re.search(r"\ben\s+vivo\b|\ben\s+directo\b", text_norm)
+                        ):
                             return today_date, extracted_t
-                        if any(k in text_norm for k in ["manana", "tomorrow"]):
+                        if _has_whole_word(text_norm, ["manana", "tomorrow"]):
                             return today_date + timedelta(days=1), extracted_t
 
                         dm_match = re.search(r"\b(\d{1,2})[/-](\d{1,2})(?:[/-](20\d{2}))?\b", card_text)
