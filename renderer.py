@@ -84,7 +84,7 @@ def generate_html(futbolenlatv_events, sport_tv_guide_events=None):
     slot_counts = Counter(
         get_time_slot(event["hora"])
         for event in futbolenlatv_events
-        if event["date_obj"] == today_date
+        if event["date_obj"] == today_date and str(event.get("source") or "").lower() != "cdnlive"
     )
     total_cnt = sum(1 for event in futbolenlatv_events if event["date_obj"] > today_date)
 

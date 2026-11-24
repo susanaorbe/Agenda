@@ -454,12 +454,19 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     seen_cats.add(path_l)
                     valid_categories.append(path_l)
 
-            for fallback_cat in ("es/basketball.html", "es/basketball", "es/football.html", "es/tennis.html", "es/motorsport.html"):
-                if fallback_cat not in seen_cats:
-                    seen_cats.add(fallback_cat)
-                    valid_categories.append(fallback_cat)
-
-            valid_categories = valid_categories[:16]
+            priority_cats = [
+                "es/basketball.html", "es/basketball", "basketball.html", "basketball",
+                "es/football.html", "es/football", "es/tennis.html", "es/tennis",
+                "es/motorsport.html", "es/motorsport"
+            ]
+            ordered_cats = []
+            for pc in priority_cats:
+                if pc not in ordered_cats:
+                    ordered_cats.append(pc)
+            for c in valid_categories:
+                if c not in ordered_cats:
+                    ordered_cats.append(c)
+            valid_categories = ordered_cats[:18]
             global_seen_urls = set()
 
             for cat in valid_categories:

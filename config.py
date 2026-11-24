@@ -173,7 +173,7 @@ SPANISH_TENNIS_PLAYERS_RE = rx(
     r" carlos alcaraz ", r" alcaraz ", r" alejandro davidovich ", r" davidovich ",
     r" cristina bucsa ", r" bucsa ", r" paula badosa ", r" badosa ",
     r" jaume munar ", r" munar ", r" rafael jodar ", r" jodar ",
-    r" dani merida ", r" merida "
+    r" dani merida ", r" merida ", r" espana ", r" españa ", r" spain "
 )
 
 WTA_RE = re.compile(r" wta ", re.IGNORECASE)
@@ -219,10 +219,9 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
 
 TENNIS_EVENT_RE = rx(
     r" tenis ", r" atp ", r" wta ", r" masters ", r" open ",
-    r" challenger ", r" itf ", r" torneo de ",
-    r" davis cup ", r" copa davis ", r" billie jean king cup ",
-    r" united cup ", r" laver cup "
+    r" challenger ", r" itf ", r" torneo de "
 )
+DAVIS_CUP_RE = rx(r" davis cup ", r" copa davis ", r" billie jean king cup ")
 GOLF_RE = rx(r" golf ")
 NBA_RE = rx(
     r"(?<!g )(?<!nba )nba(?!\s*(?:g\s*league|gleague|summer\s*league|2k|draft))",

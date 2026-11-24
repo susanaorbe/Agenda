@@ -43,6 +43,7 @@ from config import (
     WOMEN_RE,
     WORLD_CUP_RE,
     WTA_RE,
+    DAVIS_CUP_RE,
     YOUTH_BASKET_RE,
     clean_channel_display_name,
     clean_time,
@@ -142,6 +143,14 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         return ("", "", "", False, False, "", "")
 
     blob_normalized = normalize_search_text(padded_blob)
+
+    if DAVIS_CUP_RE.search(padded_blob):
+        if GOLF_RE.search(padded_tv) or "movistar golf" in padded_blob:
+            return ("", "", "", False, False, "", "")
+        if not SPAIN_SELECTION_RE.search(padded_blob):
+            return ("", "", "", False, False, "", "")
+        comp = raw_tournament if raw_tournament and raw_tournament.lower() not in {"tenis", "atp", "wta", ""} else "Davis Cup"
+        return ("Tenis", "🎾", comp, True, True, "", "tenis")
 
     if TENNIS_EVENT_RE.search(padded_blob):
         if GOLF_RE.search(padded_tv) or "movistar golf" in padded_blob:
