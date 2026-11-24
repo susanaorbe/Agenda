@@ -28,6 +28,7 @@ let currentActiveView = 'futbolenlatv';
 let currentLetterFilter = 'FAVORITOS';
 let allCatalogChannels = [];
 let hasPerformedInitialScroll = false;
+let fixedFavoritesCount = null;
 
 function toggleClearBtn(inputId, btnId) {
     const inp = document.getElementById(inputId);
@@ -266,11 +267,11 @@ function setFilter(filterType) {
         });
         if (previousFilter === 'favoritos') {
             sourceCheckboxes.forEach(chk => {
-                chk.checked = true;
+                chk.checked = (cleanStr(chk.value) !== 'cdnlive');
             });
         } else if (!Array.from(sourceCheckboxes).some(chk => chk.checked)) {
             sourceCheckboxes.forEach(chk => {
-                chk.checked = true;
+                chk.checked = (cleanStr(chk.value) !== 'cdnlive');
             });
         }
     }
@@ -284,7 +285,20 @@ function updateStatsForActiveView() {
         if (!table) return;
         const trs = table.getElementsByClassName('stg-event-card');
 
-        let favCount = 0;
+        if (fixedFavoritesCount === null) {
+            let initialFavs = 0;
+            for (let i = 0; i < trs.length; i++) {
+                const tr = trs[i];
+                if (tr.id === 'dynamicEmptyState') continue;
+                const isFiltered = tr.getAttribute('data-filtered') === 'true';
+                const source = cleanStr(tr.getAttribute('data-source'));
+                if (isFiltered && source === 'futbolenlatv') {
+                    initialFavs++;
+                }
+            }
+            fixedFavoritesCount = initialFavs;
+        }
+
         let madCount = 0;
         let manCount = 0;
         let tarCount = 0;
@@ -314,7 +328,6 @@ function updateStatsForActiveView() {
             if (tr.id === 'dynamicEmptyState') continue;
 
             const rowSlot = cleanStr(tr.getAttribute('data-slot'));
-            const isFiltered = tr.getAttribute('data-filtered') === 'true';
             const source = cleanStr(tr.getAttribute('data-source'));
             const sport = cleanStr(tr.getAttribute('data-sport'));
             const rowDate = tr.getAttribute('data-date');
@@ -323,10 +336,6 @@ function updateStatsForActiveView() {
             const matchesSource = checkedSources.has(source);
             const matchesSport = checkedSports.has('todos') || checkedSports.has(sport);
             const matchesSearch = matchesTimeOrTextSearch(tr, rawSearchQuery);
-
-            if (isFiltered && matchesSource && matchesSport && matchesSearch) {
-                favCount++;
-            }
 
             if (!isFavoritesMode && matchesSource && matchesSport && matchesSearch) {
                 if (rowDate > TODAY_DATE_STR) proxCount++;
@@ -354,7 +363,7 @@ function updateStatsForActiveView() {
         const cardNoc = document.querySelector('#card-noche .val');
         const cardProx = document.querySelector('#card-proximamente .val');
 
-        if (cardFav) cardFav.textContent = favCount;
+        if (cardFav) cardFav.textContent = fixedFavoritesCount;
         if (cardMad) cardMad.textContent = madCount;
         if (cardMan) cardMan.textContent = manCount;
         if (cardTar) cardTar.textContent = tarCount;
