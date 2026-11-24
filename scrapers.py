@@ -398,6 +398,21 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
             return False
         return True
 
+    def is_relevant_fctv_category(path_str: str) -> bool:
+        p_low = path_str.strip("/").lower()
+        if not p_low or "-match-" in p_low:
+            return False
+        if p_low in {"es", "en", "pt", "fr", "de", "it"}:
+            return False
+        if re.search(r"-(?:19|20)\d{2}(?:\.html)?$", p_low):
+            return False
+        sport_tokens = (
+            "football", "basketball", "tennis", "motorsport", "motor",
+            "futbol", "baloncesto", "tenis", "euroleague", "euroliga",
+            "nba", "acb", "laliga", "champions", "atp", "wta", "f1", "motogp"
+        )
+        return any(tok in p_low for tok in sport_tokens)
+
     spain_tz = get_spain_timezone()
 
     with sync_playwright() as p:
@@ -412,8 +427,8 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
         page = context.new_page()
 
         try:
-            page.goto(target_url, timeout=35000, wait_until="domcontentloaded")
-            page.wait_for_timeout(2000)
+            page.goto(target_url, timeout=25000, wait_until="domcontentloaded")
+            page.wait_for_timeout(1200)
 
             category_links = page.evaluate("""() => {
                 const links = [];
@@ -435,15 +450,16 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                 path_l = parsed_l.path.strip("/")
                 if path_l and "." in path_l and not path_l.endswith(".html"):
                     continue
-                if path_l and path_l not in seen_cats:
+                if is_relevant_fctv_category(path_l) and path_l not in seen_cats:
                     seen_cats.add(path_l)
                     valid_categories.append(path_l)
 
-            for fallback_cat in ("es/basketball.html", "es/basketball"):
+            for fallback_cat in ("es/basketball.html", "es/basketball", "es/football.html", "es/tennis.html", "es/motorsport.html"):
                 if fallback_cat not in seen_cats:
                     seen_cats.add(fallback_cat)
                     valid_categories.append(fallback_cat)
 
+            valid_categories = valid_categories[:16]
             global_seen_urls = set()
 
             for cat in valid_categories:
@@ -452,21 +468,21 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     cat_url += "?ptst=1"
 
                 try:
-                    page.goto(cat_url, timeout=25000, wait_until="domcontentloaded")
+                    page.goto(cat_url, timeout=18000, wait_until="domcontentloaded")
                     try:
-                        page.wait_for_selector('a[href*="-match-"]', timeout=8000)
+                        page.wait_for_selector('a[href*="-match-"]', timeout=3500)
                     except Exception:
-                        page.wait_for_timeout(1200)
+                        page.wait_for_timeout(600)
 
-                    for _ in range(5):
+                    for _ in range(3):
                         page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)")
-                        page.wait_for_timeout(350)
+                        page.wait_for_timeout(200)
                     page.evaluate("window.scrollTo(0, 0)")
 
                     candidate_cards = page.evaluate("""() => {
                         const out = [];
                         const seen = new Set();
-                        const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
+                        const timePattern = /\b\d{1,2}:\d{2}\b/;
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
