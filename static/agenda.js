@@ -308,15 +308,9 @@ function updateStatsForActiveView() {
         const isFavoritesMode = (currentFilter === 'favoritos');
 
         const checkedSources = new Set();
-        if (isFavoritesMode) {
-            document.querySelectorAll('.source-chk').forEach(chk => {
-                checkedSources.add(cleanStr(chk.value));
-            });
-        } else {
-            document.querySelectorAll('.source-chk:checked').forEach(chk => {
-                checkedSources.add(cleanStr(chk.value));
-            });
-        }
+        document.querySelectorAll('.source-chk:checked').forEach(chk => {
+            checkedSources.add(cleanStr(chk.value));
+        });
 
         const checkedSports = new Set();
         document.querySelectorAll('.comp-chk:checked').forEach(chk => { checkedSports.add(cleanStr(chk.value)); });
