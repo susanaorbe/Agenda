@@ -489,7 +489,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     candidate_cards = page.evaluate("""() => {
                         const out = [];
                         const seen = new Set();
-                        const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
+                        const timePattern = /\b\d{1,2}:\d{2}\b/;
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
@@ -550,13 +550,34 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         card_text = item_dict.get("cardText", "")
                         data_attrs = item_dict.get("dataAttrs", "")
                         combined = f"{card_text}\n{data_attrs}"
+                        text_norm = normalize_search_text(card_text)
+
+                        t_match = time_re.search(card_text)
+                        if not t_match:
+                            return None, ""
+                        extracted_t = f"{int(t_match.group(1)):02d}:{t_match.group(2)}"
+
+                        has_explicit_past_marker = any(k in text_norm for k in ["ayer", "yesterday"])
+                        has_explicit_date = bool(
+                            re.search(r"\b\d{1,2}[/-]\d{1,2}(?:[/-](?:20)?\d{2})?\b", card_text)
+                            or re.search(
+                                r"\b\d{1,2}\s+(?:de\s+)?(?:ene|jan|feb|mar|abr|apr|may|jun|jul|ago|aug|sep|sept|oct|nov|dic|dec)[a-z]*\b",
+                                text_norm,
+                            )
+                        )
+
+                        if has_explicit_past_marker:
+                            return today_date - timedelta(days=1), extracted_t
 
                         ts_match = re.search(r"\b(1[6-9]\d{8}|2\d{9})(\d{3})?\b", data_attrs)
                         if ts_match:
                             try:
                                 ts_sec = int(ts_match.group(1))
                                 dt_spain = datetime.fromtimestamp(ts_sec, tz=spain_tz)
-                                return dt_spain.date(), f"{dt_spain.hour:02d}:{dt_spain.minute:02d}"
+                                ev_d = dt_spain.date()
+                                if ev_d < today_date and not has_explicit_date:
+                                    ev_d = today_date
+                                return ev_d, f"{dt_spain.hour:02d}:{dt_spain.minute:02d}"
                             except Exception:
                                 pass
 
@@ -565,27 +586,18 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             try:
                                 y, m, d = int(iso_match.group(1)), int(iso_match.group(2)), int(iso_match.group(3))
                                 ev_d = date(y, m, d)
+                                if ev_d < today_date and not has_explicit_date:
+                                    ev_d = today_date
                                 if iso_match.group(4) and iso_match.group(5):
                                     return ev_d, f"{int(iso_match.group(4)):02d}:{int(iso_match.group(5)):02d}"
-                                t_m = time_re.search(card_text)
-                                if t_m:
-                                    return ev_d, f"{int(t_m.group(1)):02d}:{t_m.group(2)}"
+                                return ev_d, extracted_t
                             except ValueError:
                                 pass
-
-                        t_match = time_re.search(card_text)
-                        if not t_match:
-                            return None, ""
-                        extracted_t = f"{int(t_match.group(1)):02d}:{t_match.group(2)}"
-
-                        text_norm = normalize_search_text(card_text)
 
                         if any(k in text_norm for k in ["en vivo", "en directo", "directo", "live", "hoy", "today"]):
                             return today_date, extracted_t
                         if any(k in text_norm for k in ["manana", "tomorrow"]):
                             return today_date + timedelta(days=1), extracted_t
-                        if any(k in text_norm for k in ["ayer", "yesterday"]):
-                            return today_date - timedelta(days=1), extracted_t
 
                         dm_match = re.search(r"\b(\d{1,2})[/-](\d{1,2})(?:[/-](20\d{2}))?\b", card_text)
                         if dm_match:
@@ -617,17 +629,6 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                     pass
 
                         return today_date, extracted_t
-
-                    for item in valid_candidates:
-                        if "2280700" in item.get("href", "") or "bayern" in item.get("href", "").lower():
-                            print(
-                                "DEBUG BAYERN FCTV:",
-                                item.get("href"),
-                                "| fecha/hora:",
-                                parse_fctv_datetime(item),
-                                "| text:",
-                                repr(item.get("cardText", "")[:120]),
-                            )
 
                     for item in valid_candidates:
                         href = item.get("href", "")
