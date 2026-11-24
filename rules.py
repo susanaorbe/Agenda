@@ -66,6 +66,12 @@ def normalize_competition_label(comp_text: str) -> str:
         "usa nba",
     } or re.fullmatch(r"nba(?:\s+20\d{2}(?:[/-]\d{2,4})?)?", norm):
         return "NBA"
+    if norm in {"euroliga", "euroleague", "euro league", "turkish airlines euroleague"} or re.fullmatch(
+        r"(?:euroliga|euroleague|euro league)(?:\s+20\d{2}(?:[/-]\d{2,4})?)?", norm
+    ):
+        return "EUROLIGA"
+    if norm in {"liga endesa acb", "liga endesa", "acb"}:
+        return "ACB"
     return raw.upper()
 
 
@@ -240,7 +246,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
             comp_name = "Basketball Bundesliga"
             comp_key = "ligaendesa"
         else:
-            comp_name = "Liga Endesa / ACB"
+            comp_name = "ACB"
             comp_key = "ligaendesa"
         is_fav = bool(
             REAL_MADRID_RE.search(padded_blob)
@@ -403,7 +409,7 @@ def is_event_allowed_by_futbolenlatv_rules(
 
     if sport.upper() == "BALONCESTO" and raw_comp:
         norm_raw_comp = normalize_search_text(raw_comp)
-        if norm_raw_comp in {"euroliga", "euroleague", "euro league", "nba", "national basketball association", "liga endesa acb", "liga endesa", "acb"}:
+        if norm_raw_comp in {"euroliga", "euroleague", "euro league", "turkish airlines euroleague", "nba", "national basketball association", "liga endesa acb", "liga endesa", "acb"}:
             comp_label = normalize_competition_label(raw_comp)
 
     final_ev = raw_ev
