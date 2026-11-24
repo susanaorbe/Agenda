@@ -489,7 +489,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     candidate_cards = page.evaluate("""() => {
                         const out = [];
                         const seen = new Set();
-                        const timePattern = /\b\d{1,2}:\d{2}\b/;
+                        const timePattern = /\\b\\d{1,2}:\\d{2}\\b/;
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
@@ -617,6 +617,17 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                     pass
 
                         return today_date, extracted_t
+
+                    for item in valid_candidates:
+                        if "2280700" in item.get("href", "") or "bayern" in item.get("href", "").lower():
+                            print(
+                                "DEBUG BAYERN FCTV:",
+                                item.get("href"),
+                                "| fecha/hora:",
+                                parse_fctv_datetime(item),
+                                "| text:",
+                                repr(item.get("cardText", "")[:120]),
+                            )
 
                     for item in valid_candidates:
                         href = item.get("href", "")
