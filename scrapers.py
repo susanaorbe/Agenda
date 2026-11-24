@@ -238,10 +238,10 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     page.wait_for_timeout(2000)
                     dismiss_consent_banner(page)
 
-                    raw_items = page.evaluate("""() => {
+                    raw_items = page.evaluate(r"""() => {
                         const out = [];
                         let currentDayText = '';
-                        const dayPattern = /\\b(\\d{1,2})\\s*(?:de\\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
+                        const dayPattern = /\b(\d{1,2})\s*(?:de\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
 
                         const nodes = document.querySelectorAll('div.row, h2, h3, h4, .dateHeader, .day-header, [class*="date"]');
                         for (const el of nodes) {
@@ -251,14 +251,14 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                 if (!timeEl || inlineCols.length === 0) continue;
 
                                 const hora = (timeEl.innerText || timeEl.textContent || '').trim();
-                                const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\\s+/g, ' ').trim();
-                                const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const evento = (inlineCols[0]?.innerText || inlineCols[0]?.textContent || '').replace(/\s+/g, ' ').trim();
+                                const competicion = (inlineCols[1]?.innerText || inlineCols[1]?.textContent || '').replace(/\s+/g, ' ').trim();
 
                                 const channelImgs = el.querySelectorAll('.col-xs-4.mobile-normal img, img[data-src*="tvm-station"], img[src*="tvm-station"]');
                                 const canales = [];
                                 const seenCh = new Set();
                                 for (const img of channelImgs) {
-                                    const chName = (img.getAttribute('title') || img.getAttribute('alt') || '').replace(/\\s+/g, ' ').trim();
+                                    const chName = (img.getAttribute('title') || img.getAttribute('alt') || '').replace(/\s+/g, ' ').trim();
                                     const src = (img.getAttribute('data-src') || img.getAttribute('src') || '').toLowerCase();
                                     if (!chName) continue;
                                     let countryHint = '';
@@ -285,7 +285,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                                     canales
                                 });
                             } else {
-                                const txt = (el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
+                                const txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
                                 if (txt && txt.length <= 40 && dayPattern.test(txt)) {
                                     currentDayText = txt;
                                 }
@@ -430,7 +430,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
             page.goto(target_url, timeout=25000, wait_until="domcontentloaded")
             page.wait_for_timeout(1200)
 
-            category_links = page.evaluate("""() => {
+            category_links = page.evaluate(r"""() => {
                 const links = [];
                 for (const a of document.querySelectorAll('a[href]')) {
                     const href = a.getAttribute('href');
@@ -486,7 +486,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                         page.wait_for_timeout(200)
                     page.evaluate("window.scrollTo(0, 0)")
 
-                    candidate_cards = page.evaluate("""() => {
+                    candidate_cards = page.evaluate(r"""() => {
                         const out = [];
                         const seen = new Set();
                         const timePattern = /\b\d{1,2}:\d{2}\b/;
