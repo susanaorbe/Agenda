@@ -139,6 +139,7 @@ def _is_non_football_premier_event(padded_blob: str) -> bool:
 def _is_non_english_premier_league(padded_blob: str) -> bool:
     """Evita confundir ligas nacionales o torneos llamados 'premier league' de otros países con la Premier League inglesa."""
     non_english_tokens = (
+        " congo ", " congolese ", " brazzaville ", " kinshasa ", " dr congo ", " rdc ",
         " lebanese ", " libano ", " liban ",
         " egyptian ", " egipto ", " egypt ",
         " irish ", " irlandesa ", " ireland ",
