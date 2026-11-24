@@ -254,7 +254,7 @@ function setFilter(filterType) {
     const sourceCheckboxes = document.querySelectorAll('.source-chk');
     if (isFavView) {
         sourceCheckboxes.forEach(chk => {
-            chk.checked = true;
+            chk.checked = (cleanStr(chk.value) !== 'cdnlive');
             chk.disabled = true;
             chk.parentElement.style.opacity = '0.6';
             chk.parentElement.style.cursor = 'not-allowed';
