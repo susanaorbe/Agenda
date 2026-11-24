@@ -241,7 +241,7 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                     raw_items = page.evaluate(r"""() => {
                         const out = [];
                         let currentDayText = '';
-                        const dayPattern = /\b(\d{1,2})\s*(?:de\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
+                        const dayPattern = /(\d{1,2})\s*(?:de\s+)?(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|lun|mar|mié|mie|jue|vie|sáb|sab|dom)/i;
 
                         const nodes = document.querySelectorAll('div.row, h2, h3, h4, .dateHeader, .day-header, [class*="date"]');
                         for (const el of nodes) {
@@ -489,7 +489,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                     candidate_cards = page.evaluate(r"""() => {
                         const out = [];
                         const seen = new Set();
-                        const timePattern = /\b\d{1,2}:\d{2}\b/;
+                        const timePattern = /\d{1,2}:\d{2}/;
                         for (const a of document.querySelectorAll('a[href]')) {
                             const href = a.getAttribute('href') || '';
                             if (!href) continue;
@@ -711,6 +711,17 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             event_title=event_str,
                             raw_lines=raw_lines or [event_str],
                         )
+                        if "2280700" in canonical_url or "bayern" in canonical_url.lower():
+                            print(
+                                "TRACE BAYERN FCTV:",
+                                "| url=", canonical_url,
+                                "| seen_url=", canonical_url in global_seen_urls,
+                                "| date=", current_event_date,
+                                "| hora=", extracted_time,
+                                "| comp_str=", repr(comp_str),
+                                "| event_str=", repr(event_str),
+                                "| rules=", (allowed, is_fav, final_sport_label, final_comp, final_event, comp_key),
+                            )
                         if not allowed:
                             continue
 
@@ -776,6 +787,13 @@ def fetch_and_parse_agenda() -> list[dict]:
                 ev_copy["source"] = "fctv33"
                 ev_copy["is_filtered"] = False
                 event_key = ("fctv33", ev_copy["date_obj"], ev_copy["hora"], normalize_search_text(ev_copy["competicion"]), normalize_search_text(ev_copy["evento"]))
+                if ev_copy.get("source") == "fctv33" and ("bayern" in normalize_search_text(ev_copy.get("evento", "")) or "2280700" in ev_copy.get("fctv_url", "")):
+                    print(
+                        "TRACE FINAL BAYERN:",
+                        "| in_seen=", event_key in seen_events,
+                        "| key=", event_key,
+                        "| ev=", ev_copy,
+                    )
                 if event_key not in seen_events:
                     seen_events.add(event_key)
                     futbolenlatv_results.append(ev_copy)
