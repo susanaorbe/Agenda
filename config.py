@@ -32,6 +32,22 @@ SPORT_TV_GUIDE_SPORT_URLS = {
     "motor": ("MOTOR", "🏆", "https://sport-tv-guide.live/es/live/deportes-de-motor"),
 }
 
+_NORMALIZE_TRANSLATION = str.maketrans({
+    "\u00a0": " ",
+    "\u200b": None,
+    "\ufeff": None,
+    "á": "a",
+    "é": "e",
+    "í": "i",
+    "ó": "o",
+    "ú": "u",
+    "ç": "c",
+    "ñ": "n",
+    "º": "ª",
+})
+_SEPARATORS_RE = re.compile(r"[|,;:/]+")
+_WHITESPACE_RE = re.compile(r"\s+")
+
 
 # ============================================================================
 # UTILIDADES DE FECHA, RED Y NORMALIZACIÓN DE TEXTO
@@ -68,14 +84,9 @@ def create_http_session() -> requests.Session:
 
 
 def normalize_search_text(text: str) -> str:
-    value = str(text or "").lower().replace("\u00a0", " ").replace("\u200b", "").replace("\ufeff", "")
-    value = (
-        value.replace("á", "a").replace("é", "e").replace("í", "i")
-        .replace("ó", "o").replace("ú", "u").replace("ç", "c")
-        .replace("ñ", "n").replace("º", "ª")
-    )
-    value = re.sub(r"[|,;:/]+", " ", value)
-    return re.sub(r"\s+", " ", value).strip()
+    value = str(text or "").lower().translate(_NORMALIZE_TRANSLATION)
+    value = _SEPARATORS_RE.sub(" ", value)
+    return _WHITESPACE_RE.sub(" ", value).strip()
 
 
 def contains_previo_or_previa(*texts) -> bool:

@@ -53,6 +53,13 @@ from config import (
 )
 
 
+def _strip_parentheses_padded(text: str) -> str:
+    """Devuelve texto normalizado y acolchado sin paréntesis para detectar etiquetas como (COPA DE LA REINA)."""
+    norm = normalize_search_text(text)
+    without_parens = re.sub(r"[()]+", " ", norm)
+    return f" {re.sub(r'\s+', ' ', without_parens).strip()} "
+
+
 def normalize_competition_label(comp_text: str) -> str:
     """Normaliza nombres largos o variantes de competición a su etiqueta canónica."""
     raw = re.sub(r"\s+", " ", str(comp_text or "")).strip()
@@ -181,6 +188,7 @@ def _is_non_english_premier_league(padded_blob: str) -> bool:
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     padded_blob = f" {normalize_search_text(blob)} "
+    unparenthesized_blob = _strip_parentheses_padded(blob)
     padded_tv = f" {normalize_search_text(tv_blob)} "
 
     if _is_non_football_premier_event(padded_blob):
@@ -277,13 +285,18 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         )
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
-    if WOMEN_RE.search(padded_blob) or any(p.search(padded_blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
+    if " copa de la reina " in unparenthesized_blob:
+        if REAL_MADRID_RE.search(unparenthesized_blob):
+            return ("Fútbol", "⚽", "Copa de la Reina", True, True, "", "other_football")
+        return ("", "", "", False, False, "", "")
+
+    if WOMEN_RE.search(padded_blob) or any(p.search(unparenthesized_blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
-            if pattern.search(padded_blob) or ("femenina" in padded_blob and name.lower() in padded_blob):
+            if pattern.search(unparenthesized_blob) or ("femenina" in unparenthesized_blob and name.lower() in unparenthesized_blob):
                 comp_match = name
                 break
-        if comp_match and (REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob) or "espana" in blob_normalized):
+        if comp_match and REAL_MADRID_RE.search(unparenthesized_blob):
             return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
         return ("", "", "", False, False, "", "")
 
@@ -291,11 +304,6 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if not CASTILLA_RE.search(padded_blob):
             return ("", "", "", False, False, "", "")
         return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
-
-    if " copa de la reina " in padded_blob:
-        if REAL_MADRID_RE.search(padded_blob):
-            return ("Fútbol", "⚽", "Copa de la Reina", True, True, "", "other_football")
-        return ("", "", "", False, False, "", "")
 
     if COPA_DEL_REY_RE.search(padded_blob) and not WOMEN_RE.search(padded_blob) and not BASKET_CONTEXT_RE.search(padded_blob):
         is_fav = bool(REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob))
