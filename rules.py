@@ -75,29 +75,6 @@ def normalize_competition_label(comp_text: str) -> str:
     return raw.upper()
 
 
-def _has_real_madrid_women_participation(norm_text: str) -> bool:
-    """Devuelve True solo si hay referencia al Real Madrid en contexto femenino/club."""
-    return bool(REAL_MADRID_RE.search(norm_text))
-
-
-def is_copa_de_la_reina_allowed(blob_or_url: str, event_title: str = "", competition_label: str = "") -> bool:
-    """Devuelve True solo si el evento es de Copa de la Reina y participa el Real Madrid Femenino."""
-    raw_joined = f"{competition_label} {event_title} {blob_or_url}"
-    norm_spaced = f" {normalize_search_text(raw_joined)} "
-    norm_hyphen_as_space = f" {normalize_search_text(re.sub(r'[-_/+]+', ' ', raw_joined))} "
-
-    is_copa_reina = (
-        " copa de la reina " in norm_spaced
-        or " copa de la reina " in norm_hyphen_as_space
-        or bool(re.search(r"\bcopa[-_\s]+(?:de[-_\s]+la[-_\s]+)?reina\b", norm_spaced))
-        or bool(re.search(r"\bcopa[-_\s]+(?:de[-_\s]+la[-_\s]+)?reina\b", norm_hyphen_as_space))
-    )
-    if not is_copa_reina:
-        return True
-
-    return _has_real_madrid_women_participation(norm_spaced) or _has_real_madrid_women_participation(norm_hyphen_as_space)
-
-
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
     padded_motor_blob = f" {blob_lower} "
@@ -204,13 +181,9 @@ def _is_non_english_premier_league(padded_blob: str) -> bool:
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
     padded_blob = f" {normalize_search_text(blob)} "
-    padded_hyphen_blob = f" {normalize_search_text(re.sub(r'[-_/+]+', ' ', blob))} "
     padded_tv = f" {normalize_search_text(tv_blob)} "
 
-    if not is_copa_de_la_reina_allowed(blob, " ".join(text_lines or []), raw_tournament):
-        return ("", "", "", False, False, "", "")
-
-    if _is_non_football_premier_event(padded_blob) or _is_non_football_premier_event(padded_hyphen_blob):
+    if _is_non_football_premier_event(padded_blob):
         return ("", "", "", False, False, "", "")
 
     is_explicit_basketball = any(
@@ -304,40 +277,13 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         )
         return ("Baloncesto", "🏀", comp_name, is_fav, True, "", comp_key)
 
-    if (
-        " copa de la reina " in padded_blob
-        or " copa de la reina " in padded_hyphen_blob
-        or re.search(r"\bcopa[-_\s]+(?:de[-_\s]+la[-_\s]+)?reina\b", padded_blob)
-        or re.search(r"\bcopa[-_\s]+(?:de[-_\s]+la[-_\s]+)?reina\b", padded_hyphen_blob)
-    ):
-        if _has_real_madrid_women_participation(padded_blob) or _has_real_madrid_women_participation(padded_hyphen_blob):
-            return ("Fútbol", "⚽", "Copa de la Reina", True, True, "", "other_football")
-        return ("", "", "", False, False, "", "")
-
-    if WOMEN_RE.search(padded_blob) or WOMEN_RE.search(padded_hyphen_blob) or any(
-        p.search(padded_blob) or p.search(padded_hyphen_blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS
-    ):
+    if WOMEN_RE.search(padded_blob) or any(p.search(padded_blob) for p, _ in WOMEN_FOOTBALL_COMPETITIONS):
         comp_match = None
         for pattern, name in WOMEN_FOOTBALL_COMPETITIONS:
-            if (
-                pattern.search(padded_blob)
-                or pattern.search(padded_hyphen_blob)
-                or ("femenina" in padded_blob and name.lower() in padded_blob)
-                or ("femenina" in padded_hyphen_blob and name.lower() in padded_hyphen_blob)
-            ):
+            if pattern.search(padded_blob) or ("femenina" in padded_blob and name.lower() in padded_blob):
                 comp_match = name
                 break
-        if comp_match == "Copa de la Reina":
-            if _has_real_madrid_women_participation(padded_blob) or _has_real_madrid_women_participation(padded_hyphen_blob):
-                return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
-            return ("", "", "", False, False, "", "")
-        if comp_match and (
-            REAL_MADRID_RE.search(padded_blob)
-            or REAL_MADRID_RE.search(padded_hyphen_blob)
-            or SPAIN_SELECTION_RE.search(padded_blob)
-            or SPAIN_SELECTION_RE.search(padded_hyphen_blob)
-            or "espana" in blob_normalized
-        ):
+        if comp_match and (REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob) or "espana" in blob_normalized):
             return ("Fútbol", "⚽", comp_match, True, True, "", "other_football")
         return ("", "", "", False, False, "", "")
 
@@ -345,6 +291,11 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         if not CASTILLA_RE.search(padded_blob):
             return ("", "", "", False, False, "", "")
         return ("Fútbol", "⚽", "España - Primera Federación", True, True, "", "other_football")
+
+    if " copa de la reina " in padded_blob:
+        if REAL_MADRID_RE.search(padded_blob):
+            return ("Fútbol", "⚽", "Copa de la Reina", True, True, "", "other_football")
+        return ("", "", "", False, False, "", "")
 
     if COPA_DEL_REY_RE.search(padded_blob) and not WOMEN_RE.search(padded_blob) and not BASKET_CONTEXT_RE.search(padded_blob):
         is_fav = bool(REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob))
@@ -438,11 +389,8 @@ def is_event_allowed_by_futbolenlatv_rules(
     if raw_comp and raw_comp not in lines:
         lines.append(raw_comp)
 
-    raw_all_txt = f"{raw_comp} {raw_ev} {' '.join(lines)}"
-    if not is_copa_de_la_reina_allowed(raw_all_txt, raw_ev, raw_comp):
-        return (False, False, "", "", "", "", "")
+    blob = normalize_search_text(f"{raw_comp} {raw_ev} {' '.join(lines)}")
 
-    blob = normalize_search_text(f"{raw_all_txt} {re.sub(r'[-_/+]+', ' ', raw_all_txt)}")
     sport_up = str(sport_label or "").strip().upper()
     if _is_non_football_premier_event(f" {blob} "):
         return (False, False, "", "", "", "", "")
