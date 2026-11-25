@@ -11,6 +11,8 @@ from config import (
     DATE_RE,
     EVENT_CLEANUP_TRAIL_RE,
     EVENT_TEXT_RE,
+    EXCLUDED_COMPETITIONS_RE,
+    EXCLUDED_SPORTS_RE,
     REQUEST_HEADERS,
     REQUEST_TIMEOUT,
     SPORT_TV_GUIDE_LOGIN_URL,
@@ -26,6 +28,7 @@ from config import (
 from rules import (
     event_similarity_key,
     get_sport_and_competition,
+    is_copa_de_la_reina_allowed,
     is_event_allowed_by_futbolenlatv_rules,
     normalize_competition_label,
     parse_motor_event,
@@ -312,6 +315,8 @@ def fetch_sport_tv_guide_favorite_events() -> list[dict]:
                         if not hora or not evento_raw or not canales:
                             continue
                         if contains_previo_or_previa(evento_raw, competicion_raw):
+                            continue
+                        if not is_copa_de_la_reina_allowed(f"{evento_raw} {competicion_raw}", evento_raw, competicion_raw):
                             continue
 
                         allowed, is_fav, final_sport, final_icon, final_comp, final_event, comp_key = is_event_allowed_by_futbolenlatv_rules(
@@ -682,6 +687,10 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                         full_url = urljoin(page.url or base_url, href)
                         parsed_url = urlparse(full_url)
+                        slug_words = re.sub(r"[-_/+]+", " ", f"{parsed_url.path} {href}")
+
+                        if not is_copa_de_la_reina_allowed(f"{full_url} {slug_words}", item.get("cardText", ""), ""):
+                            continue
 
                         path_lower = parsed_url.path.lower()
                         if any(k in path_lower for k in ["/volleyball/", "/es/volleyball/", "/voleibol/", "/es/voleibol/"]):
@@ -740,7 +749,7 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
 
                         if not event_str or event_str == "EVENTO FCTV33":
                             continue
-                        if contains_previo_or_previa(comp_str, event_str):
+                        if contains_previo_or_previa(comp_str, event_str, slug_words):
                             continue
 
                         raw_lines = [
@@ -748,13 +757,17 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                             for ln in str(item.get("cardText", "")).splitlines()
                             if re.sub(r"\s+", " ", ln).strip()
                         ]
+                        raw_lines.extend([parsed_url.path, slug_words])
+
                         allowed, is_fav, final_sport_label, final_icon, final_comp, final_event, comp_key = is_event_allowed_by_futbolenlatv_rules(
                             sport_label=detected_sport_label,
                             competition_label=comp_str,
                             event_title=event_str,
-                            raw_lines=raw_lines or [event_str],
+                            raw_lines=raw_lines,
                         )
                         if not allowed:
+                            continue
+                        if not is_copa_de_la_reina_allowed(f"{full_url} {slug_words}", final_event, final_comp):
                             continue
 
                         bucket_map = {
@@ -815,7 +828,25 @@ def fetch_and_parse_agenda() -> list[dict]:
         fctv_events_by_sport = fetch_fctv_events(dynamic_domain, today_date)
         for sport_key, events_list in fctv_events_by_sport.items():
             for ev in events_list:
+                ev_url = str(ev.get("fctv_url", "") or "")
+                ev_slug_txt = re.sub(r"[-_/+]+", " ", ev_url)
+                if not is_copa_de_la_reina_allowed(f"{ev_url} {ev_slug_txt}", ev.get("evento", ""), ev.get("competicion", "")):
+                    continue
+                allowed, _, final_sport_label, final_icon, final_comp, final_event, comp_key = is_event_allowed_by_futbolenlatv_rules(
+                    sport_label=ev.get("deporte", ""),
+                    competition_label=ev.get("competicion", ""),
+                    event_title=ev.get("evento", ""),
+                    raw_lines=[ev.get("evento", ""), ev.get("competicion", ""), ev_url, ev_slug_txt],
+                )
+                if not allowed:
+                    continue
+
                 ev_copy = dict(ev)
+                ev_copy["deporte"] = final_sport_label
+                ev_copy["icono"] = final_icon
+                ev_copy["competicion"] = final_comp
+                ev_copy["evento"] = final_event
+                ev_copy["comp_key"] = comp_key
                 ev_copy["source"] = "fctv33"
                 ev_copy["is_filtered"] = False
                 event_key = ("fctv33", ev_copy["date_obj"], ev_copy["hora"], normalize_search_text(ev_copy["competicion"]), normalize_search_text(ev_copy["evento"]))
@@ -859,6 +890,9 @@ def fetch_and_parse_agenda() -> list[dict]:
             tv_blob = " ".join(channels).lower()
             blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
+            if not is_copa_de_la_reina_allowed(blob, event_str, tournament):
+                continue
+
             is_motor_row = bool(
                 re.search(
                     r"(?<![a-z0-9])(?:formula\s*1|f1|formula\s*2|fia\s*formula\s*2|f2|motogp|moto\s*2|moto2|moto\s*3|moto3|formula\s*e|f[oó]rmula\s*e|indycar|indy\s*car|automovilismo|motociclismo|motor|libres|libre|fp\s*[1-3])(?![a-z0-9])",
@@ -895,8 +929,16 @@ def fetch_and_parse_agenda() -> list[dict]:
                 blob, tournament, tv_blob, text_lines
             )
 
+            # Solo rescatar como "Otros" en Movistar+ si no pertenece a deportes/competiciones excluidos
+            # ni a Copa de la Reina sin Real Madrid Femenino.
+            padded_blob = f" {blob} "
             is_movistar_plus_channel = any(normalize_search_text(ch) in {"movistar plus+", "movistar plus", "movistar+"} for ch in channels)
-            if not sport and is_movistar_plus_channel:
+            has_excluded_marker = bool(
+                EXCLUDED_SPORTS_RE.search(padded_blob)
+                or EXCLUDED_COMPETITIONS_RE.search(padded_blob)
+                or "copa de la reina" in padded_blob
+            )
+            if not sport and is_movistar_plus_channel and not has_excluded_marker:
                 sport = "Otros"
                 icon = "📺"
                 competition = tournament if tournament else "Movistar Plus+"
@@ -926,6 +968,9 @@ def fetch_and_parse_agenda() -> list[dict]:
             final_event = EVENT_CLEANUP_TRAIL_RE.sub("", final_event).strip()
 
             if not EVENT_TEXT_RE.search(final_event):
+                continue
+
+            if not is_copa_de_la_reina_allowed(blob, final_event, competition_label):
                 continue
 
             event_key = ("futbolenlatv", current_date_obj, time_clean, normalize_search_text(competition_label), normalize_search_text(final_event))
