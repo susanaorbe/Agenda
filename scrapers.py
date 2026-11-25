@@ -629,8 +629,14 @@ def fetch_fctv_events(domain: str, today_date: date) -> dict:
                                 pass
 
                         if (
-                            _has_whole_word(text_norm, ["en vivo", "en directo", "directo", "live", "hoy", "today"])
-                            or re.search(r"\ben\s+vivo\b|\ben\s+directo\b", text_norm)
+                            _has_whole_word(text_norm, ["hoy", "today"])
+                            or (
+                                not has_explicit_date
+                                and (
+                                    _has_whole_word(text_norm, ["en vivo", "en directo", "directo", "live"])
+                                    or re.search(r"\ben\s+vivo\b|\ben\s+directo\b", text_norm)
+                                )
+                            )
                         ):
                             return today_date, extracted_t
                         if _has_whole_word(text_norm, ["manana", "tomorrow"]):
@@ -853,12 +859,10 @@ def fetch_and_parse_agenda() -> list[dict]:
             tv_blob = " ".join(channels).lower()
             blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
-            is_motor_row = any(
-                tok in f" {blob} "
-                for tok in (
-                    " formula 1 ", " f1 ", " formula 2 ", " fia formula 2 ", " f2 ",
-                    " motogp ", " moto2 ", " moto 2 ", " moto3 ", " moto 3 ",
-                    " formula e ", " indycar ", " indy car ", " automovilismo ", " motociclismo ", " motor ",
+            is_motor_row = bool(
+                re.search(
+                    r"(?<![a-z0-9])(?:formula\s*1|f1|formula\s*2|fia\s*formula\s*2|f2|motogp|moto\s*2|moto2|moto\s*3|moto3|formula\s*e|f[oó]rmula\s*e|indycar|indy\s*car|automovilismo|motociclismo|motor|libres|libre|fp\s*[1-3])(?![a-z0-9])",
+                    blob,
                 )
             )
             comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)

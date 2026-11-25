@@ -90,7 +90,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     if any(junk in padded_motor_blob for junk in [" previo ", " post ", " rueda de prensa ", " podio ", " reportaje ", " warm up ", " warmup "]):
         return ("", "", False)
     if re.search(
-        r"(?:libres|libre|treinos\s+livres|livres|free\s+practice|practice|fp\s*[1-3])",
+        r"\b(?:libres|libre|treinos\s+livres|livres|free\s+practice|practice|fp\s*[1-3])\b",
         blob_lower,
     ):
         return ("", "", False)
@@ -119,7 +119,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     clean_norm = normalize_search_text(event_title)
 
     if re.search(
-        r"(?:libres|libre|treinos\s+livres|livres|free\s+practice|practice|fp\s*[1-3])",
+        r"\b(?:libres|libre|treinos\s+livres|livres|free\s+practice|practice|fp\s*[1-3])\b",
         clean_norm,
     ):
         return ("", "", False)
@@ -173,6 +173,7 @@ def _is_non_english_premier_league(padded_blob: str) -> bool:
         " malaysian ", " malasia ", " malaysia ",
         " singapore ", " singapur ",
         " ghana ", " kenya ", " uganda ", " tanzania ", " zambia ", " nigeria ", " south africa ",
+        " turks and caicos ", " turks caicos ", " turks ", " caicos ",
         " premier 12 ", " wbsc ",
     )
     return any(tok in padded_blob for tok in non_english_tokens)

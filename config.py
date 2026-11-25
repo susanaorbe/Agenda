@@ -237,8 +237,8 @@ CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ", r" gcc ", r" gulf club ")
 PREMIER_RE = rx(
     r" inglaterra - premier league ",
-    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern))",
-    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )premier(?!\s+(?:division|league|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern))"
+    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))",
+    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier(?!\s+(?:division|league|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))"
 )
 SERIE_A_RE = rx(r"(?<!ligapro )(?<!brazilian )(?<!brasil )(?<!femminile )serie a(?!\s+(?:ligapro|brazilian|brasil|femminile))")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
