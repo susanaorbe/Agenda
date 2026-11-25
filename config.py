@@ -166,7 +166,9 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r" argentina ", r" torneo clausura ", r" torneo apertura ",
     r" liga profesional ", r" primera division argentina ",
     r" international cup ", r" eurocup ",
-    r" hong kong open ", r" international league t20 ", r" emerging teams asia cup "
+    r" hong kong open ", r" international league t20 ", r" emerging teams asia cup ",
+    r" fia formula 2 ", r" formula 2 ", r" f2 ",
+    r" gcc champions league ", r" gcc champions ", r" gulf club champions "
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -232,7 +234,7 @@ BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
 COPA_DEL_REY_RE = rx(r" copa del rey ")
 BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
 CHAMPIONS_RE = rx(r" champions league ", r" champions ")
-CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ")
+CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ", r" gcc ", r" gulf club ")
 PREMIER_RE = rx(
     r" inglaterra - premier league ",
     r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern))",

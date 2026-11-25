@@ -77,9 +77,22 @@ def normalize_competition_label(comp_text: str) -> str:
 
 def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> tuple[str, str, bool]:
     blob_lower = normalize_search_text(blob)
-    if any(forbidden in blob_lower for forbidden in ["academy", "academie", "moto2", "moto 2", "moto3", "moto 3", "motomini", "moto mini", "160cc", "rookies", "supercars"]):
+    padded_motor_blob = f" {blob_lower} "
+    if any(
+        forbidden in padded_motor_blob
+        for forbidden in [
+            " academy ", " academie ", " moto2 ", " moto 2 ", " moto3 ", " moto 3 ",
+            " motomini ", " moto mini ", " 160cc ", " rookies ", " supercars ",
+            " formula 2 ", " fia formula 2 ", " f2 ",
+        ]
+    ):
         return ("", "", False)
-    if any(junk in blob_lower for junk in ["previo", "post", "rueda de prensa", "podio", "reportaje", "warm up", "warmup"]):
+    if any(junk in padded_motor_blob for junk in [" previo ", " post ", " rueda de prensa ", " podio ", " reportaje ", " warm up ", " warmup "]):
+        return ("", "", False)
+    if re.search(
+        r"(?:libres|libre|treinos\s+livres|livres|free\s+practice|practice|fp\s*[1-3])",
+        blob_lower,
+    ):
         return ("", "", False)
 
     comp_name = ""
@@ -105,6 +118,12 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
     event_title = f"{comp_name} - {clean_desc}"
     clean_norm = normalize_search_text(event_title)
 
+    if re.search(
+        r"(?:libres|libre|treinos\s+livres|livres|free\s+practice|practice|fp\s*[1-3])",
+        clean_norm,
+    ):
+        return ("", "", False)
+
     if comp_name == "Fórmula 1":
         is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
         return (comp_name, event_title, is_fav)
@@ -113,7 +132,7 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
         has_allowed_session = any(k in clean_norm for k in ["carrera", "race", "sprint"])
         is_practice_or_quali = any(
             k in clean_norm
-            for k in ["free practice", "practice", "qualifying", "clasificacion", "fp1", "fp2", "q1", "q2"]
+            for k in ["free practice", "practice", "libres", "libre", "treinos libres", "livres", "qualifying", "clasificacion", "fp1", "fp2", "fp3", "q1", "q2"]
         )
         if is_practice_or_quali and not has_allowed_session:
             return ("", "", False)

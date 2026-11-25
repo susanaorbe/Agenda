@@ -853,7 +853,17 @@ def fetch_and_parse_agenda() -> list[dict]:
             tv_blob = " ".join(channels).lower()
             blob = normalize_search_text(f"{' '.join(text_lines)} {tournament} {tv_blob}")
 
+            is_motor_row = any(
+                tok in f" {blob} "
+                for tok in (
+                    " formula 1 ", " f1 ", " formula 2 ", " fia formula 2 ", " f2 ",
+                    " motogp ", " moto2 ", " moto 2 ", " moto3 ", " moto 3 ",
+                    " formula e ", " indycar ", " indy car ", " automovilismo ", " motociclismo ", " motor ",
+                )
+            )
             comp_name, motor_event_title, is_fav = parse_motor_event(blob, tournament, text_lines)
+            if is_motor_row and not comp_name:
+                continue
             if comp_name:
                 comp_label = normalize_competition_label(comp_name)
                 event_key = ("futbolenlatv", current_date_obj, time_clean, comp_label, normalize_search_text(motor_event_title))
