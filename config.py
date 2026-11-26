@@ -248,10 +248,24 @@ COPA_DEL_REY_RE = rx(r" copa del rey ")
 BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
 CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ", r" gcc ", r" gulf club ")
+ENGLISH_PREMIER_CLUBS_RE = rx(
+    r" arsenal ", r" aston villa ", r" bournemouth ", r" brentford ", r" brighton ",
+    r" burnley ", r" chelsea ", r" crystal palace ", r" everton ", r" fulham ",
+    r" ipswich ", r" leeds ", r" leicester ", r" liverpool ", r" luton ",
+    r" manchester city ", r" man city ", r" manchester united ", r" man utd ", r" man united ",
+    r" newcastle ", r" nottingham forest ", r" sheffield united ", r" southampton ",
+    r" sunderland ", r" tottenham ", r" spurs ", r" west ham ", r" wolverhampton ", r" wolves "
+)
+
 PREMIER_RE = rx(
     r" inglaterra - premier league ",
-    r"(?<!jordan )(?<!jordanian )(?<!jordania )(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier league(?!\s+(?:jordan|jordanian|jordania|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))",
-    r"(?<!jordan )(?<!jordanian )(?<!jordania )(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier(?!\s+(?:division|league|jordan|jordanian|jordania|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))"
+    r" england - premier league ",
+    r" english premier league ",
+    r" barclays premier league ",
+    r" premier league inglesa ",
+    r" premier league de inglaterra ",
+    r"(?<!\w\s)premier league(?!\s+(?:cup|2|ii|u21|u18|women|femenina|international))",
+    r"(?<!\w\s)premier(?!\s+(?:division|league|cup|12|padel))"
 )
 SERIE_A_RE = rx(r"(?<!ligapro )(?<!brazilian )(?<!brasil )(?<!femminile )serie a(?!\s+(?:ligapro|brazilian|brasil|femminile))")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")

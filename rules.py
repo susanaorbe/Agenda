@@ -31,6 +31,7 @@ from config import (
     LIGUE1_RE,
     NATIONS_LEAGUE_RE,
     NBA_RE,
+    ENGLISH_PREMIER_CLUBS_RE,
     PREMIER_RE,
     PRIMERA_RFEF_RE,
     REAL_MADRID_RE,
@@ -164,29 +165,26 @@ def _is_non_football_premier_event(padded_blob: str) -> bool:
     return any(tok in padded_blob for tok in non_football_tokens)
 
 
-def _is_non_english_premier_league(padded_blob: str) -> bool:
-    """Evita confundir ligas nacionales o torneos llamados 'premier league' de otros países con la Premier League inglesa."""
-    non_english_tokens = (
-        " congo ", " congolese ", " brazzaville ", " kinshasa ", " dr congo ", " rdc ",
-        " lebanese ", " libano ", " liban ",
-        " egyptian ", " egipto ", " egypt ",
-        " jordan ", " jordanian ", " jordania ",
-        " irish ", " irlandesa ", " ireland ",
-        " welsh ", " gales ", " wales ",
-        " scottish ", " escocia ", " scotland ",
-        " thai ", " tailandia ", " thailand ",
-        " indian ", " india ",
-        " russian ", " rusia ", " russia ",
-        " ukrainian ", " ucrania ", " ukraine ",
-        " armenian ", " armenia ",
-        " vietnamese ", " vietnam ",
-        " malaysian ", " malasia ", " malaysia ",
-        " singapore ", " singapur ",
-        " ghana ", " kenya ", " uganda ", " tanzania ", " zambia ", " nigeria ", " south africa ",
-        " turks and caicos ", " turks caicos ", " turks ", " caicos ",
-        " premier 12 ", " wbsc ",
+def _is_english_premier_league(padded_blob: str) -> bool:
+    """Valida por lista blanca que una mención a 'Premier League' corresponda realmente a la liga inglesa."""
+    if any(tok in padded_blob for tok in (" women ", " femenina ", " femenino ", " u21 ", " u18 ", " sub 21 ", " sub 18 ", " premier 2 ", " premier league 2 ", " premier league cup ", " international cup ", " asia trophy ")):
+        return False
+    explicit_england_markers = (
+        " inglaterra - premier league ",
+        " england - premier league ",
+        " english premier league ",
+        " barclays premier league ",
+        " premier league inglesa ",
+        " premier league de inglaterra ",
+        " england premier league ",
     )
-    return any(tok in padded_blob for tok in non_english_tokens)
+    if any(m in padded_blob for m in explicit_england_markers):
+        return True
+    # Si dice "premier league" o "premier", validar por lista blanca de clubes ingleses
+    if re.search(r"(?:^|\s)premier(?:\s+league)?(?:\s|$)", padded_blob):
+        if ENGLISH_PREMIER_CLUBS_RE.search(padded_blob):
+            return True
+    return False
 
 
 def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text_lines: list[str]) -> tuple[str, str, str, bool, bool, str, str]:
@@ -335,7 +333,7 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "LaLiga EA Sports", is_fav, True, "", "laliga")
 
-    if PREMIER_RE.search(padded_blob) and not _is_non_english_premier_league(padded_blob):
+    if PREMIER_RE.search(padded_blob) and _is_english_premier_league(padded_blob):
         return ("Fútbol", "⚽", "Premier League", False, True, "", "premier")
 
     brazil_serie_a_markers = (
