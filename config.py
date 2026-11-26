@@ -157,6 +157,7 @@ REAL_MADRID_RE = rx(r" real madrid ", r" rm castilla ", r" r\.?\s*madrid ")
 CASTILLA_RE = rx(r" real madrid castilla ", r" rm castilla ", r" castilla ")
 YOUTH_BASKET_RE = rx(r" sub\s*[-]?\d+ ", r" junior ", r" cadete ", r" infantil ")
 SPAIN_SELECTION_RE = rx(r"\bspain\b", r"\bespaña\b", r"\bespana\b")
+FIBA_RE = rx(r"\bfiba\b")
 
 EXCLUDED_SPORTS_RE = rx(
     r" hockey ", r" patines ", r" nfl ", r" cowboys ", r" packers ",
@@ -179,7 +180,8 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r" international cup ", r" eurocup ",
     r" hong kong open ", r" international league t20 ", r" emerging teams asia cup ",
     r" fia formula 2 ", r" formula 2 ", r" f2 ",
-    r" gcc champions league ", r" gcc champions ", r" gulf club champions "
+    r" gcc champions league ", r" gcc champions ", r" gulf club champions ",
+    r" fiba copa mundial ", r" fiba world cup "
 )
 
 SPANISH_TENNIS_PLAYERS_RE = rx(
@@ -222,8 +224,8 @@ CLEAN_TV_RE = re.compile(
     re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
-TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt)")
-CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ")
+TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt|mediaset|telecinco)")
+CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ", r" mediaset infinity ", r" telecinco ")
 JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)", r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)", r"\(\s*\d+\s*\)")
 EVENT_CLEANUP_TRAIL_RE = re.compile(
     r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
@@ -248,8 +250,8 @@ CHAMPIONS_RE = rx(r" champions league ", r" champions ")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ", r" gcc ", r" gulf club ")
 PREMIER_RE = rx(
     r" inglaterra - premier league ",
-    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier league(?!\s+(?:saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))",
-    r"(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier(?!\s+(?:division|league|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))"
+    r"(?<!jordan )(?<!jordanian )(?<!jordania )(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier league(?!\s+(?:jordan|jordanian|jordania|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))",
+    r"(?<!jordan )(?<!jordanian )(?<!jordania )(?<!saint kitts nevis )(?<!ukrainian )(?<!ukranian )(?<!egyptian )(?<!jamaica )(?<!antigua barbuda )(?<!scottish )(?<!scotland )(?<!northern )(?<!english northern )(?<!turks and caicos )(?<!turks caicos )premier(?!\s+(?:division|league|jordan|jordanian|jordania|saint kitts|ukrainian|ukranian|egyptian|jamaica|antigua|scottish|scotland|northern|turks))"
 )
 SERIE_A_RE = rx(r"(?<!ligapro )(?<!brazilian )(?<!brasil )(?<!femminile )serie a(?!\s+(?:ligapro|brazilian|brasil|femminile))")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
@@ -265,9 +267,9 @@ LIGA_PORTUGAL_RE = rx(
     r" liga portugues[ae](?!\s+(?:sub\s*[-]?\d+|u\d+|2|ii|femenina|women)) "
 )
 WORLD_CUP_RE = rx(
-    r" copa mundial(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
-    r" mundial de la fifa(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
-    r"(?<!u17\s)(?<!u20\s)(?<!u21\s)(?<!u23\s)(?<!sub17\s)(?<!sub20\s)(?<!sub21\s)(?<!sub23\s)(?<!womens\s)(?<!women\s)(?<!'s\s)world cup(?!\s+u\d+|\s+sub\s*[-]?\d+|\s+women)"
+    r"(?<!fiba )copa mundial(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
+    r"(?<!fiba )mundial de la fifa(?!\s+sub\s*[-]?\d+|\s+u\d+|\s+femenina|\s+women)",
+    r"(?<!fiba )(?<!u17\s)(?<!u20\s)(?<!u21\s)(?<!u23\s)(?<!sub17\s)(?<!sub20\s)(?<!sub21\s)(?<!sub23\s)(?<!womens\s)(?<!women\s)(?<!'s\s)world cup(?!\s+u\d+|\s+sub\s*[-]?\d+|\s+women)"
 )
 EUROCUP_RE = rx(r" eurocup ")
 EURO_FINAL_RE = rx(r" eurocopa ", r" euro\s*20\d{2} ", r" euro\s*cup ")

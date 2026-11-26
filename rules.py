@@ -23,6 +23,7 @@ from config import (
     EVENT_TEXT_RE,
     EXCLUDED_COMPETITIONS_RE,
     EXCLUDED_SPORTS_RE,
+    FIBA_RE,
     GOLF_RE,
     JUNK_RESIDUES_RE,
     LALIGA_RE,
@@ -169,6 +170,7 @@ def _is_non_english_premier_league(padded_blob: str) -> bool:
         " congo ", " congolese ", " brazzaville ", " kinshasa ", " dr congo ", " rdc ",
         " lebanese ", " libano ", " liban ",
         " egyptian ", " egipto ", " egypt ",
+        " jordan ", " jordanian ", " jordania ",
         " irish ", " irlandesa ", " ireland ",
         " welsh ", " gales ", " wales ",
         " scottish ", " escocia ", " scotland ",
@@ -193,6 +195,9 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     padded_tv = f" {normalize_search_text(tv_blob)} "
 
     if _is_non_football_premier_event(padded_blob):
+        return ("", "", "", False, False, "", "")
+
+    if FIBA_RE.search(padded_blob):
         return ("", "", "", False, False, "", "")
 
     is_explicit_basketball = any(
@@ -403,6 +408,8 @@ def is_event_allowed_by_futbolenlatv_rules(
     sport_up = str(sport_label or "").strip().upper()
     if _is_non_football_premier_event(f" {blob} "):
         return (False, False, "", "", "", "", "")
+    if FIBA_RE.search(f" {blob} "):
+        return (False, False, "", "", "", "", "")
     if sport_up in {"BALONCESTO", "BASKETBALL"} and (
         "femenin" in blob or "women" in blob or " (f) " in f" {blob} " or " (w) " in f" {blob} "
     ):
@@ -512,7 +519,8 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
             or any(term in part_lower for term in (
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
-                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app"
+                "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app",
+                "mediaset", "telecinco"
             ))
         )
         if looks_like_channel:
