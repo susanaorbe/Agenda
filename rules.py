@@ -5,6 +5,7 @@ from config import (
     BASKET_ALLOWED_COMPETITIONS_RE,
     BASKET_CONTEXT_RE,
     BASKET_WOMEN_RE,
+    AUSTRIAN_BUNDESLIGA_RE,
     BUNDESLIGA_2_RE,
     BUNDESLIGA_RE,
     CASTILLA_RE,
@@ -104,15 +105,18 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
         blob_lower,
     ):
         return ("", "", False)
+    # Categoría genérica/indefinida de FCTV33 (/motorsport/def-match-... o etiqueta "- DEF")
+    if re.search(r"\bdef\b", blob_lower):
+        return ("", "", False)
 
     comp_name = ""
-    if "formula 1" in blob_lower or "f1" in blob_lower:
+    if re.search(r"\bformula\s*1\b|\bf1\b", blob_lower):
         comp_name = "Fórmula 1"
-    elif "motogp" in blob_lower:
+    elif re.search(r"\bmotogp\b|\bmoto\s*gp\b", blob_lower):
         comp_name = "MotoGP"
-    elif "formula e" in blob_lower or "fórmula e" in blob_lower:
+    elif re.search(r"\bformula\s*e\b", blob_lower):
         comp_name = "Fórmula E"
-    elif "indycar" in blob_lower or "indy car" in blob_lower:
+    elif re.search(r"\bindy\s*car\b", blob_lower):
         comp_name = "Indycar"
 
     if not comp_name:
@@ -135,8 +139,18 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
         return ("", "", False)
 
     if comp_name == "Fórmula 1":
-        is_fav = any(k in clean_norm for k in ["carrera", "race", "clasificacion", "qualifying", "sprint"])
-        return (comp_name, event_title, is_fav)
+        allowed_f1_pats = (
+            r"\bcarrera\b",
+            r"\brace\b",
+            r"\bclasificacion(?:es)?\b",
+            r"\bqualifying\b",
+            r"\bquali\b",
+            r"\bsprint\b",
+        )
+        has_allowed_f1 = any(re.search(pat, clean_norm) for pat in allowed_f1_pats)
+        if not has_allowed_f1:
+            return ("", "", False)
+        return (comp_name, event_title, True)
 
     if comp_name == "MotoGP":
         if re.search(r"\bgala\b|\bawards?\b|\bceremonia\b|\bpremi[oa]s?\b", clean_norm):
@@ -351,7 +365,10 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
     if SERIE_A_RE.search(padded_blob) and not ("brasil" in padded_blob or "serie a brasil" in padded_blob):
         return ("Fútbol", "⚽", "Serie A", False, True, "", "seriea")
 
-    if BUNDESLIGA_RE.search(padded_blob) and not BUNDESLIGA_2_RE.search(padded_blob):
+    if BUNDESLIGA_2_RE.search(padded_blob) or AUSTRIAN_BUNDESLIGA_RE.search(padded_blob):
+        return ("", "", "", False, False, "", "")
+
+    if BUNDESLIGA_RE.search(padded_blob):
         return ("Fútbol", "⚽", "Bundesliga", False, True, "", "bundesliga")
 
     if LIGUE1_RE.search(padded_blob):

@@ -85,6 +85,7 @@ def create_http_session() -> requests.Session:
 
 def normalize_search_text(text: str) -> str:
     value = str(text or "").lower().translate(_NORMALIZE_TRANSLATION)
+    value = re.sub(r"[-_]+", " ", value)
     value = _SEPARATORS_RE.sub(" ", value)
     return _WHITESPACE_RE.sub(" ", value).strip()
 
@@ -172,7 +173,7 @@ EXCLUDED_COMPETITIONS_RE = rx(
     r" national league ", r" vanarama national league ", r" liga u ",
     r" tercera ", r" 3[ªa]\s*(?:rfef|federacion|division|grupo) ", r" grupo 8 ", r" tercera federacion ",
     r" basketball champions league ", r" futsal champions ",
-    r" 2\.?\s*bundesliga ", r" serie a femminile ",
+    r" 2\.?\s*bundesliga ", r" bundesliga\s*2(?:\s|$) ", r" 2nd\s*bundesliga ", r" zweite\s*bundesliga ", r" austrian\s*bundesliga ", r" austria\s*bundesliga ", r" serie a femminile ",
     r" laliga hypermotion ", r" segunda division ", r" hypermotion ",
     r" brasil\s*[-–—]?\s*serie\s+a ",
     r" argentina ", r" torneo clausura ", r" torneo apertura ",
@@ -269,7 +270,17 @@ PREMIER_RE = rx(
 )
 SERIE_A_RE = rx(r"(?<!ligapro )(?<!brazilian )(?<!brasil )(?<!femminile )serie a(?!\s+(?:ligapro|brazilian|brasil|femminile))")
 BUNDESLIGA_RE = rx(r" bundesliga ", r" alemania - bundesliga ")
-BUNDESLIGA_2_RE = rx(r"2\.?\s*bundesliga ")
+BUNDESLIGA_2_RE = rx(
+    r"2\.?\s*bundesliga",
+    r"bundesliga\s*2(?:\s|$)",
+    r"2nd\s*bundesliga",
+    r"zweite\s*bundesliga",
+)
+AUSTRIAN_BUNDESLIGA_RE = rx(
+    r"austrian\s*bundesliga",
+    r"austria\s*bundesliga",
+    r"bundesliga\s*austria",
+)
 LIGUE1_RE = rx(
     r" francia - ligue 1 ",
     r" french ligue 1 ",
