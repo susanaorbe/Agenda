@@ -328,7 +328,12 @@ def get_sport_and_competition(blob: str, raw_tournament: str, tv_blob: str, text
         is_fav = bool(REAL_MADRID_RE.search(padded_blob) or SPAIN_SELECTION_RE.search(padded_blob))
         return ("Fútbol", "⚽", "Copa del Rey", is_fav, True, "", "copadelrey")
 
-    if CHAMPIONS_RE.search(padded_blob) and not WOMEN_RE.search(padded_blob) and not CHAMPIONS_NON_FOOTBALL_RE.search(padded_blob):
+    if (
+        CHAMPIONS_RE.search(padded_blob)
+        and not WOMEN_RE.search(padded_blob)
+        and not CHAMPIONS_NON_FOOTBALL_RE.search(padded_blob)
+        and not re.search(r"\b(?:juniores|junior|u19|u18|u17|sub\s*[-]?19|sub\s*[-]?18|sub\s*[-]?17|nacional\s+juniores|portuguese\s+champions)\b", padded_blob)
+    ):
         is_fav = bool(REAL_MADRID_RE.search(padded_blob))
         return ("Fútbol", "⚽", "UEFA Champions League", is_fav, True, "", "champions")
 

@@ -248,7 +248,7 @@ EUROLIGA_RE = rx(r" euroliga ", r" euroleague ")
 BASKET_WOMEN_RE = rx(r"\(f\) ", r"\(w\) ")
 COPA_DEL_REY_RE = rx(r" copa del rey ")
 BASKET_CONTEXT_RE = rx(r" basket ", r" baloncesto ", r" acb ")
-CHAMPIONS_RE = rx(r" champions league ", r" champions ")
+CHAMPIONS_RE = rx(r" champions league ", r"(?<!portuguese )champions(?!\s+(?:nacional|juniores|u19|u18|u17|sub\s*19|sub\s*18|sub\s*17))")
 CHAMPIONS_NON_FOOTBALL_RE = rx(r" basketball ", r" cl ", r" afc ", r" asia ", r" gcc ", r" gulf club ")
 ENGLISH_PREMIER_CLUBS_RE = rx(
     r" arsenal ", r" aston villa ", r" bournemouth ", r" brentford ", r" brighton ",
