@@ -224,8 +224,8 @@ CLEAN_TV_RE = re.compile(
     re.IGNORECASE
 )
 EVENT_TEXT_RE = re.compile(r"[a-zA-Z0-9]")
-TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt|mediaset|telecinco)")
-CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ", r" mediaset infinity ", r" telecinco ")
+TV_IDENTIFIERS_RE = rx(r"(?:m\+|movistar|dazn|channel|eurosport|rtve|laliga|teledeporte|tv|desport|disney\+?|videopass|prime video|amazon|à punt|mediaset|telecinco|be mad)")
+CHANNEL_LINE_RE = rx(r" tennis channel ", r" orange tv ", r" channel\s*[-–—]\s*orange tv ", r" prime video ", r" à punt mèdia ", r" à punt ", r" mediaset infinity ", r" telecinco ", r" be mad ")
 JUNK_RESIDUES_RE = rx(r"\(\s*(?:cataluña|catalunya|país vasco|pais vasco|galicia|andalucía|andalucia)\s*\)", r"\(\s*(?:ver gratis|ver en directo|acceder|ver)\s*\)", r"\(\s*\d+\s*\)")
 EVENT_CLEANUP_TRAIL_RE = re.compile(
     r"\s*-\s*(?:orange\s*f[uú]tbol\s*\d*|movistar[^\-]*|dazn[^\-]*|nba\s+league\s+pass|primera\s+federaci[oó]n(?:\s*\(\s*[mo]\d+(?:\s+[mo]\d+)*\s*\))?|\(\s*\d+(?:\s*y\s*\d+)?\s*\))\s*$",
@@ -234,7 +234,7 @@ EVENT_CLEANUP_TRAIL_RE = re.compile(
 
 TENNIS_EVENT_RE = rx(
     r" tenis ", r" atp ", r" wta ", r" masters ", r" open ",
-    r" challenger ", r" itf ", r" torneo de "
+    r" itf ", r" torneo de "
 )
 DAVIS_CUP_RE = rx(r" davis cup ", r" copa davis ", r" billie jean king cup ")
 GOLF_RE = rx(r" golf ")

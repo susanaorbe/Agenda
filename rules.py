@@ -139,14 +139,15 @@ def parse_motor_event(blob: str, raw_tournament: str, text_lines: list[str]) -> 
         return (comp_name, event_title, is_fav)
 
     if comp_name == "MotoGP":
-        has_allowed_session = any(k in clean_norm for k in ["carrera", "race", "sprint"])
-        is_practice_or_quali = any(
-            k in clean_norm
-            for k in ["free practice", "practice", "libres", "libre", "treinos libres", "livres", "qualifying", "clasificacion", "fp1", "fp2", "fp3", "q1", "q2"]
-        )
-        if is_practice_or_quali and not has_allowed_session:
+        if re.search(r"\bgala\b|\bawards?\b|\bceremonia\b|\bpremi[oa]s?\b", clean_norm):
             return ("", "", False)
-        return (comp_name, event_title, has_allowed_session)
+        has_allowed_session = any(
+            re.search(pat, clean_norm)
+            for pat in (r"\bcarrera\b", r"\brace\b", r"\bsprint\b")
+        )
+        if not has_allowed_session:
+            return ("", "", False)
+        return (comp_name, event_title, True)
 
     is_fav = any(k in clean_norm for k in ["carrera", "race", "sprint"])
     return (comp_name, event_title, is_fav)
@@ -406,6 +407,8 @@ def is_event_allowed_by_futbolenlatv_rules(
     sport_up = str(sport_label or "").strip().upper()
     if _is_non_football_premier_event(f" {blob} "):
         return (False, False, "", "", "", "", "")
+    if "challenger" in f" {blob} " and sport_up in {"FÚTBOL", "FUTBOL", "FOOTBALL", ""}:
+        return (False, False, "", "", "", "", "")
     if FIBA_RE.search(f" {blob} "):
         return (False, False, "", "", "", "", "")
     if sport_up in {"BALONCESTO", "BASKETBALL"} and (
@@ -518,7 +521,7 @@ def parse_row_elements(item) -> tuple[str, str, list[str], str, list[str]]:
                 "m+", "dazn", "youtube", "fanatiz", "onefootball",
                 "siroko", "tv footballclub", "aragon tv", "aragon play",
                 "cmmplay", "etb1", "tvg", "tv3", "esport3", "hbo max", "ehf tv", "videopass", "prime video", "amazon", "à punt", "rcn", "beisbolplay", "app",
-                "mediaset", "telecinco"
+                "mediaset", "telecinco", "be mad"
             ))
         )
         if looks_like_channel:
