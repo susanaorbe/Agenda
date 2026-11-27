@@ -199,8 +199,9 @@ PRIMERA_RFEF_RE = rx(
     r" spanish primera division rfef ", r" primera division rfef "
 )
 LALIGA_RE = rx(
-    r" liga ea sports ", r" liga ea ", r" espana - la liga ",
+    r" liga ea sports ", r" liga ea ", r" espana - la liga ", r" spanish la liga ",
     r" laliga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ",
+    r" la liga(?![\s\-]*(?:hypermotion|smartbank|tv hypermotion|123)) ",
     r" primera division de espana ", r" primera division espana "
 )
 BASKET_ALLOWED_COMPETITIONS_RE = rx(
